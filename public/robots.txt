@@ -1,0 +1,7 @@
+# SensiVerse Robots.txt
+# https://sensiverse.ai.studio/
+User-agent: *
+Allow: /
+
+# Sitemap Location
+Sitemap: https://sensiverse.ai.studio/sitemap.xml

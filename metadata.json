@@ -1,0 +1,8 @@
+{
+  "name": "SensiVerse - Gaming Sensitivity & HUD Generator",
+  "description": "Calibrate optimized mobile sensitivity settings, fire button sizes, and custom HUD layouts for Free Fire India and Free Fire MAX tailored to your exact phone model and refresh rate.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
