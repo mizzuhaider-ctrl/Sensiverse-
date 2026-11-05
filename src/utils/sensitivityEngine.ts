@@ -16,6 +16,7 @@ import {
   EvidenceCategory
 } from '../types';
 import { WEAPON_CATEGORIES } from '../data/weapons';
+import { getUnifiedBrazilBaseline, VERIFIED_BRAZILIAN_PROFILES } from '../data/brazilSensiProfiles';
 
 /**
  * Clamps a number within min and max, returning an integer.
@@ -40,20 +41,20 @@ export interface CalibrationVariationInfo {
 
 export const CALIBRATION_VARIATIONS: CalibrationVariationInfo[] = [
   {
-    name: 'Hardware Math Baseline',
-    tagline: 'Standard physical drag runway and screen scanning frequency calculation',
+    name: 'Unified Brazil Meta Baseline',
+    tagline: 'Standard Brazilian esports benchmark calibrated with device touch polling and display refresh rate',
   },
   {
-    name: 'High-Drag Speed Profile',
-    tagline: 'Elevated flick responsiveness (+3 General/Red Dot, -1% Fire Button runway)',
+    name: 'Brazilian High-Drag Flick Profile',
+    tagline: 'Elevated close-range flick responsiveness (+3 General/Red Dot, -1% Fire Button runway)',
   },
   {
-    name: 'Anchored Precision Profile',
-    tagline: 'Stabilized recoil damping (-3 General/Red Dot, +1% Fire Button contact)',
+    name: 'Anchored Precision Capa Profile',
+    tagline: 'Stabilized headshot tracking (-3 General/Red Dot, +1% Fire Button contact)',
   },
   {
-    name: 'Dynamic Drag Ramp Profile',
-    tagline: 'Snappier initial lift (+2 General/Red Dot) with locked optical tracking',
+    name: 'Cadence Dynamic Ramp Profile',
+    tagline: 'Snappier initial drag lift (+2 General/Red Dot) with stabilized optical tracking',
   },
 ];
 
@@ -77,23 +78,25 @@ export function calculateSensitivity(
   // A slight sensitivity compensation (+3% to +5%) prevents running out of screen width during 180 turns.
   // On large screens > 6.75", thumb has ample runway (~48-54mm), so sensitivity is tightened (-2% to -4%)
   // to prevent over-drag.
+  const phoneScreenSize = phone.screenSize ?? 6.67;
+  const phoneRefreshRate = phone.refreshRate ?? 60;
   const screenSizeFactor = 
-    phone.screenSize < 6.2 ? 1.04 :
-    phone.screenSize < 6.5 ? 1.02 :
-    phone.screenSize > 6.75 ? 0.97 : 1.0;
+    phoneScreenSize < 6.2 ? 1.04 :
+    phoneScreenSize < 6.5 ? 1.02 :
+    phoneScreenSize > 6.75 ? 0.97 : 1.0;
 
   // 2. Display refresh rate factor:
   // 60Hz: 16.6ms per frame. Lower motion clarity causes players to overshoot if sensitivity is too high.
   // 120Hz/144Hz: 8.3ms/6.9ms. Crisp frame delivery enables razor sharp tracking.
   const hzFactor = 
-    phone.refreshRate >= 165 ? 0.95 :
-    phone.refreshRate >= 144 ? 0.96 :
-    phone.refreshRate >= 120 ? 0.98 :
-    phone.refreshRate >= 90 ? 1.01 : 1.05;
+    phoneRefreshRate >= 165 ? 0.95 :
+    phoneRefreshRate >= 144 ? 0.96 :
+    phoneRefreshRate >= 120 ? 0.98 :
+    phoneRefreshRate >= 90 ? 1.01 : 1.05;
 
   // 3. Touch sampling rate factor:
   // Documented touch sampling rate vs baseline:
-  const effectiveTouchRate = phone.touchSamplingRate ?? (phone.refreshRate >= 120 ? 240 : 180);
+  const effectiveTouchRate = phone.touchSamplingRate ?? (phoneRefreshRate >= 120 ? 240 : 180);
   const touchFactor = 
     effectiveTouchRate >= 720 ? 0.94 :
     effectiveTouchRate >= 480 ? 0.96 :
@@ -149,8 +152,8 @@ export function calculateSensitivity(
     };
   }
 
-  // Calculate fire button size & positioning (strictly 40% - 55%)
-  const fireButton = generateFireButtonConfig(gameId, phone, grip, undefined, weaponCategory, variationIndex);
+  // Calculate fire button size & positioning (strictly 10% - 100%, recommended 40% - 55%)
+  const fireButton = generateFireButtonConfig(gameId, phone, grip, undefined, weaponCategory, variationIndex, playstyle);
 
   // Calculate aim movement speed & telemetry metrics
   const telemetry = generateAimTelemetry(phone, gameId, grip, playstyle, playerSelectedFps, combinedFactor, weaponCategory);
@@ -164,11 +167,177 @@ export function calculateSensitivity(
 }
 
 /**
+/**
+ * Phase 3 Approved Sensitivity Baselines:
+ * Android: [168, 168, 156, 143, 78, 93, 46%]
+ * iOS: [158, 155, 146, 135, 72, 85, 48%]
+ */
+export const ANDROID_SENSITIVITY_BASELINE: FreeFireSensi & { fireButtonSizePercent: number } = {
+  general: 168,
+  redDot: 168,
+  scope2x: 156,
+  scope4x: 143,
+  sniperScope: 78,
+  freeLook: 93,
+  fireButtonSizePercent: 46,
+};
+
+export const IOS_SENSITIVITY_BASELINE: FreeFireSensi & { fireButtonSizePercent: number } = {
+  general: 158,
+  redDot: 155,
+  scope2x: 146,
+  scope4x: 135,
+  sniperScope: 72,
+  freeLook: 85,
+  fireButtonSizePercent: 48,
+};
+
+/**
+ * Returns the approved sensitivity baseline according to phone platform (Android vs iOS).
+ */
+export function getApprovedPlatformBaseline(phone: PhoneModel): FreeFireSensi & { fireButtonSizePercent: number } {
+  const isIOS = (phone.brand || '').trim().toLowerCase() === 'apple';
+  return isIOS ? { ...IOS_SENSITIVITY_BASELINE } : { ...ANDROID_SENSITIVITY_BASELINE };
+}
+
+export interface SensiVector {
+  general: number;
+  redDot: number;
+  scope2x: number;
+  scope4x: number;
+  sniperScope: number;
+  freeLook: number;
+  fireButton?: number;
+}
+
+/**
+ * Phase 3 Approved Playstyle Vectors (7 axes: General, Red Dot, 2x, 4x, Sniper, Free Look, Fire Button):
+ * Balanced: [0,0,0,0,0,0,0%]
+ * Rusher: [+10,+6,+2,0,-10,+15,+3%]
+ * Sniper Specialist: [-8,-6,-4,0,+18,+5,0%]
+ * One-Tap Headshot: [+8,+8,+4,+2,-5,+5,-4%]
+ * Drag Headshot: [+4,+6,+6,+4,0,0,-2%]
+ */
+export const PLAYSTYLE_VECTORS: Record<Playstyle, SensiVector> = {
+  balanced: {
+    general: 0,
+    redDot: 0,
+    scope2x: 0,
+    scope4x: 0,
+    sniperScope: 0,
+    freeLook: 0,
+    fireButton: 0,
+  },
+  rusher: {
+    general: 10,
+    redDot: 6,
+    scope2x: 2,
+    scope4x: 0,
+    sniperScope: -10,
+    freeLook: 15,
+    fireButton: 3,
+  },
+  sniper: {
+    general: -8,
+    redDot: -6,
+    scope2x: -4,
+    scope4x: 0,
+    sniperScope: 18,
+    freeLook: 5,
+    fireButton: 0,
+  },
+  onetap: {
+    general: 8,
+    redDot: 8,
+    scope2x: 4,
+    scope4x: 2,
+    sniperScope: -5,
+    freeLook: 5,
+    fireButton: -4,
+  },
+  drag: {
+    general: 4,
+    redDot: 6,
+    scope2x: 6,
+    scope4x: 4,
+    sniperScope: 0,
+    freeLook: 0,
+    fireButton: -2,
+  },
+  recoil: {
+    general: -4,
+    redDot: -4,
+    scope2x: -4,
+    scope4x: -6,
+    sniperScope: 0,
+    freeLook: 0,
+    fireButton: 2,
+  },
+};
+
+/**
+ * Weapon category specific vectors to tune global in-game sliders for target gun recoil.
+ */
+export const WEAPON_VECTORS: Record<WeaponCategory, SensiVector> = {
+  smg: {
+    general: 4,
+    redDot: 1, // Keeps Red Dot <= General to prevent over-drag bloom (Syaz benchmark)
+    scope2x: 2,
+    scope4x: 0,
+    sniperScope: 0,
+    freeLook: 0,
+  },
+  shotgun: {
+    general: 4,
+    redDot: 8, // Keeps Red Dot >= General for instant J-drag lift (Nobru benchmark)
+    scope2x: -2,
+    scope4x: -4,
+    sniperScope: 0,
+    freeLook: 0,
+  },
+  ar: {
+    general: -4,
+    redDot: -4,
+    scope2x: -4,
+    scope4x: -6,
+    sniperScope: 0,
+    freeLook: 0,
+  },
+  sniper: {
+    general: 0,
+    redDot: 0,
+    scope2x: 0,
+    scope4x: 0,
+    sniperScope: -8,
+    freeLook: 0,
+  },
+  pistol: {
+    general: 4,
+    redDot: 6, // Pistol one-tap lift
+    scope2x: 0,
+    scope4x: 0,
+    sniperScope: 0,
+    freeLook: 0,
+  },
+  marksman: {
+    general: 2,
+    redDot: 3,
+    scope2x: 0,
+    scope4x: -2,
+    sniperScope: 0,
+    freeLook: 0,
+  },
+};
+
+/**
+ * Phase 3 Rule: Device delta = 0 (no arbitrary device offset added to approved baseline).
+ */
+export const DEVICE_DELTA = 0;
+
+/**
  * Free Fire India Sensitivity Generator (Pre-Release Algorithmic Modeling)
  * Scale: 0 to 200
- * Note: Free Fire India preliminary model incorporates regional input curves tuned for
- * Indian mobile gaming hardware (broad spread of 60Hz and 90Hz MediaTek / Snapdragon mid-rangers).
- * Generates distinct calibrated values compared to global Free Fire MAX.
+ * Applies approved Android/iOS baselines, playstyle vectors, deviceDelta = 0, clamped 0-200.
  */
 function generateFreeFireIndiaSensi(
   factor: number,
@@ -178,70 +347,11 @@ function generateFreeFireIndiaSensi(
   weaponCategory: WeaponCategory = 'smg',
   variationIndex = 0
 ): FreeFireSensi {
-  // 1. General Sensitivity:
-  // Modeled with slightly higher initial drag acceleration to overcome regional input buffer
-  let baseGeneral = 140;
-  if (phone.refreshRate >= 165) {
-    baseGeneral = 98;
-  } else if (phone.refreshRate >= 144) {
-    baseGeneral = 104;
-  } else if (phone.refreshRate >= 120) {
-    baseGeneral = phone.screenSize >= 6.75 ? 108 : 118;
-  } else if (phone.refreshRate >= 90) {
-    baseGeneral = 136;
-  } else {
-    // 60Hz standard / budget devices popular in Indian esports
-    baseGeneral = 162;
-  }
+  const baseline = getApprovedPlatformBaseline(phone);
+  const pVec = PLAYSTYLE_VECTORS[playstyle] || PLAYSTYLE_VECTORS.balanced;
+  const wVec = WEAPON_VECTORS[weaponCategory] || WEAPON_VECTORS.smg;
 
-  if (phone.screenSize < 6.2) {
-    baseGeneral += 10;
-  } else if (phone.screenSize > 6.8) {
-    baseGeneral -= 5;
-  }
-
-  // Weapon category specific adjustments for Free Fire global sliders:
-  let wGenDelta = 0;
-  let wRedDotDelta = 0;
-  let w2xDelta = 0;
-  let w4xDelta = 0;
-  let wSniperDelta = 0;
-
-  switch (weaponCategory) {
-    case 'smg':
-      wGenDelta = 5;
-      wRedDotDelta = 7;
-      w2xDelta = 2;
-      break;
-    case 'shotgun':
-      wGenDelta = 8;
-      wRedDotDelta = 6;
-      w2xDelta = -2;
-      w4xDelta = -4;
-      break;
-    case 'ar':
-      wGenDelta = -4;
-      wRedDotDelta = -3;
-      w2xDelta = -3;
-      w4xDelta = -5;
-      break;
-    case 'sniper':
-      wGenDelta = 0;
-      wRedDotDelta = 0;
-      wSniperDelta = -8;
-      break;
-    case 'pistol':
-      wGenDelta = 4;
-      wRedDotDelta = 6;
-      break;
-    case 'marksman':
-      wGenDelta = 2;
-      wRedDotDelta = 3;
-      w4xDelta = -2;
-      break;
-  }
-
-  // Meaningful gradual calibration variations for Try New Sensi exploration:
+  // Meaningful gradual calibration variations for Try New Sensi:
   let varGen = 0;
   let varRedDot = 0;
   let var2x = 0;
@@ -250,14 +360,12 @@ function generateFreeFireIndiaSensi(
   let varFreeLook = 0;
 
   if (variationIndex === 1) {
-    // High-Drag Speed Profile
     varGen = 3;
     varRedDot = 3;
     var2x = 2;
     var4x = 1;
     varFreeLook = 2;
   } else if (variationIndex === 2) {
-    // Anchored Precision Profile
     varGen = -3;
     varRedDot = -3;
     var2x = -2;
@@ -265,7 +373,6 @@ function generateFreeFireIndiaSensi(
     varSniper = -2;
     varFreeLook = -2;
   } else if (variationIndex === 3) {
-    // Dynamic Drag Ramp Profile
     varGen = 2;
     varRedDot = 2;
     var2x = -1;
@@ -273,36 +380,40 @@ function generateFreeFireIndiaSensi(
     varSniper = 1;
   }
 
-  const general = clamp(Math.round((baseGeneral + wGenDelta) * factor * 1.02) + varGen, 90, 195);
+  // Device Delta = 0 strictly maintained
+  const deviceDelta = DEVICE_DELTA;
 
-  // 2. Red Dot Sight:
-  let baseRedDot = baseGeneral + wRedDotDelta - (phone.refreshRate >= 120 ? 6 : 12);
-  const isOneTap = playstyle === 'onetap' || playstyle === 'rusher';
-  const isRecoil = playstyle === 'recoil' || playstyle === 'sniper';
-  if (isOneTap) baseRedDot += 8;
-  else if (isRecoil) baseRedDot -= 6;
-  const redDot = clamp(Math.round(baseRedDot * factor * 1.01) + varRedDot, 85, 190);
-
-  // 3. 2x Scope:
-  let base2x = baseGeneral + w2xDelta - (phone.refreshRate >= 120 ? 14 : 22);
-  if (grip === '3finger' || grip === '4finger') base2x -= 3;
-  const scope2x = clamp(Math.round(base2x * factor) + var2x, 70, 175);
-
-  // 4. 4x Scope:
-  let base4x = baseGeneral + w4xDelta - (phone.refreshRate >= 120 ? 24 : 34);
-  if (isOneTap) base4x += 5;
-  const scope4x = clamp(Math.round(base4x * factor) + var4x, 60, 160);
-
-  // 5. Sniper Scope (AWM, M82B, Kar98k):
-  let baseSniper = 54 + wSniperDelta;
-  if (phone.refreshRate >= 120) baseSniper = 48 + wSniperDelta;
-  if (isRecoil || weaponCategory === 'sniper') baseSniper += 6;
-  const sniperScope = clamp(Math.round(baseSniper * (factor * 0.9 + 0.1)) + varSniper, 35, 85);
-
-  // 6. Free Look (Eye):
-  let baseFreeLook = 95;
-  if (phone.refreshRate < 90) baseFreeLook = 112;
-  const freeLook = clamp(Math.round(baseFreeLook * factor) + varFreeLook, 50, 140);
+  // Clamped strictly to [0, 200]
+  const general = clamp(
+    Math.round((baseline.general + pVec.general + wVec.general + deviceDelta) * factor * 1.02) + varGen,
+    0,
+    200
+  );
+  const redDot = clamp(
+    Math.round((baseline.redDot + pVec.redDot + wVec.redDot + deviceDelta) * factor * 1.01) + varRedDot,
+    0,
+    200
+  );
+  const scope2x = clamp(
+    Math.round((baseline.scope2x + pVec.scope2x + wVec.scope2x + deviceDelta) * factor) + var2x,
+    0,
+    200
+  );
+  const scope4x = clamp(
+    Math.round((baseline.scope4x + pVec.scope4x + wVec.scope4x + deviceDelta) * factor) + var4x,
+    0,
+    200
+  );
+  const sniperScope = clamp(
+    Math.round((baseline.sniperScope + pVec.sniperScope + wVec.sniperScope + deviceDelta) * (factor * 0.9 + 0.1)) + varSniper,
+    0,
+    200
+  );
+  const freeLook = clamp(
+    Math.round((baseline.freeLook + pVec.freeLook + wVec.freeLook + deviceDelta) * factor) + varFreeLook,
+    0,
+    200
+  );
 
   return {
     general,
@@ -315,14 +426,9 @@ function generateFreeFireIndiaSensi(
 }
 
 /**
- * Free Fire MAX Sensitivity Generator
- * Official Scale: 0 to 200 (Expanded range in Free Fire MAX OB44-OB46 updates)
- * Researched starting benchmarks:
- * - 60Hz / low touch rate devices need higher General values (145-185) to counter input latency and screen drag friction
- * - 120Hz/144Hz flagships with high touch polling calibrate around 95-130
- * - Ultra-high touch polling gaming flagships (e.g. ROG, RedMagic) calibrate around 85-120
- * - General, Red Dot, 2x, 4x, Sniper, and Free Look are all calculated independently
- * - Allows values legitimately above and below 100 based on hardware metrics
+ * Free Fire MAX Sensitivity Generator (Unified Recommendation System)
+ * Scale: 0 to 200
+ * Applies approved Android/iOS baselines, playstyle vectors, deviceDelta = 0, clamped 0-200.
  */
 function generateFreeFireSensi(
   factor: number, 
@@ -332,72 +438,11 @@ function generateFreeFireSensi(
   weaponCategory: WeaponCategory = 'smg',
   variationIndex = 0
 ): FreeFireSensi {
-  // 1. General Sensitivity calculation:
-  // Derived from physical drag runway and screen scanning frequency
-  let baseGeneral = 135;
-  if (phone.refreshRate >= 165) {
-    baseGeneral = 95;
-  } else if (phone.refreshRate >= 144) {
-    baseGeneral = 100;
-  } else if (phone.refreshRate >= 120) {
-    // Flagships with ample physical runway (e.g. S26 Ultra 6.9", iPhone 16 Pro Max 6.9")
-    baseGeneral = phone.screenSize >= 6.75 ? 104 : 114;
-  } else if (phone.refreshRate >= 90) {
-    baseGeneral = 132;
-  } else {
-    // 60Hz standard / budget devices
-    baseGeneral = 158;
-  }
+  const baseline = getApprovedPlatformBaseline(phone);
+  const pVec = PLAYSTYLE_VECTORS[playstyle] || PLAYSTYLE_VECTORS.balanced;
+  const wVec = WEAPON_VECTORS[weaponCategory] || WEAPON_VECTORS.smg;
 
-  // Runway compensation: compact screens (<6.2") need higher drag multiplier
-  if (phone.screenSize < 6.2) {
-    baseGeneral += 12;
-  } else if (phone.screenSize > 6.8) {
-    baseGeneral -= 6;
-  }
-
-  // Weapon category specific adjustments for Free Fire global sliders:
-  let wGenDelta = 0;
-  let wRedDotDelta = 0;
-  let w2xDelta = 0;
-  let w4xDelta = 0;
-  let wSniperDelta = 0;
-
-  switch (weaponCategory) {
-    case 'smg':
-      wGenDelta = 5;
-      wRedDotDelta = 7;
-      w2xDelta = 2;
-      break;
-    case 'shotgun':
-      wGenDelta = 8;
-      wRedDotDelta = 6;
-      w2xDelta = -2;
-      w4xDelta = -4;
-      break;
-    case 'ar':
-      wGenDelta = -4;
-      wRedDotDelta = -3;
-      w2xDelta = -3;
-      w4xDelta = -5;
-      break;
-    case 'sniper':
-      wGenDelta = 0;
-      wRedDotDelta = 0;
-      wSniperDelta = -8;
-      break;
-    case 'pistol':
-      wGenDelta = 4;
-      wRedDotDelta = 6;
-      break;
-    case 'marksman':
-      wGenDelta = 2;
-      wRedDotDelta = 3;
-      w4xDelta = -2;
-      break;
-  }
-
-  // Meaningful gradual calibration variations for Try New Sensi exploration:
+  // Gradual calibration variations for Try New Sensi:
   let varGen = 0;
   let varRedDot = 0;
   let var2x = 0;
@@ -406,14 +451,12 @@ function generateFreeFireSensi(
   let varFreeLook = 0;
 
   if (variationIndex === 1) {
-    // High-Drag Speed Profile
     varGen = 3;
     varRedDot = 3;
     var2x = 2;
     var4x = 1;
     varFreeLook = 2;
   } else if (variationIndex === 2) {
-    // Anchored Precision Profile
     varGen = -3;
     varRedDot = -3;
     var2x = -2;
@@ -421,7 +464,6 @@ function generateFreeFireSensi(
     varSniper = -2;
     varFreeLook = -2;
   } else if (variationIndex === 3) {
-    // Dynamic Drag Ramp Profile
     varGen = 2;
     varRedDot = 2;
     var2x = -1;
@@ -429,36 +471,40 @@ function generateFreeFireSensi(
     varSniper = 1;
   }
 
-  const general = clamp(Math.round((baseGeneral + wGenDelta) * factor) + varGen, 90, 195);
+  // Device Delta = 0 strictly maintained
+  const deviceDelta = DEVICE_DELTA;
 
-  // 2. Red Dot Sight:
-  let baseRedDot = baseGeneral + wRedDotDelta - (phone.refreshRate >= 120 ? 8 : 14);
-  const isOneTap = playstyle === 'onetap' || playstyle === 'rusher';
-  const isRecoil = playstyle === 'recoil' || playstyle === 'sniper';
-  if (isOneTap) baseRedDot += 6;
-  else if (isRecoil) baseRedDot -= 8;
-  const redDot = clamp(Math.round(baseRedDot * factor) + varRedDot, 85, 190);
-
-  // 3. 2x Scope:
-  let base2x = baseGeneral + w2xDelta - (phone.refreshRate >= 120 ? 16 : 24);
-  if (grip === '3finger' || grip === '4finger') base2x -= 4;
-  const scope2x = clamp(Math.round(base2x * factor) + var2x, 70, 175);
-
-  // 4. 4x Scope:
-  let base4x = baseGeneral + w4xDelta - (phone.refreshRate >= 120 ? 26 : 36);
-  if (isOneTap) base4x += 4;
-  const scope4x = clamp(Math.round(base4x * factor) + var4x, 60, 160);
-
-  // 5. Sniper Scope (AWM, M82B, Kar98k):
-  let baseSniper = 56 + wSniperDelta;
-  if (phone.refreshRate >= 120) baseSniper = 50 + wSniperDelta;
-  if (isRecoil || weaponCategory === 'sniper') baseSniper += 6;
-  const sniperScope = clamp(Math.round(baseSniper * (factor * 0.9 + 0.1)) + varSniper, 35, 85);
-
-  // 6. Free Look (Eye):
-  let baseFreeLook = 92;
-  if (phone.refreshRate < 90) baseFreeLook = 110;
-  const freeLook = clamp(Math.round(baseFreeLook * factor) + varFreeLook, 50, 140);
+  // Clamped strictly to [0, 200]
+  const general = clamp(
+    Math.round((baseline.general + pVec.general + wVec.general + deviceDelta) * factor) + varGen,
+    0,
+    200
+  );
+  const redDot = clamp(
+    Math.round((baseline.redDot + pVec.redDot + wVec.redDot + deviceDelta) * factor) + varRedDot,
+    0,
+    200
+  );
+  const scope2x = clamp(
+    Math.round((baseline.scope2x + pVec.scope2x + wVec.scope2x + deviceDelta) * factor) + var2x,
+    0,
+    200
+  );
+  const scope4x = clamp(
+    Math.round((baseline.scope4x + pVec.scope4x + wVec.scope4x + deviceDelta) * factor) + var4x,
+    0,
+    200
+  );
+  const sniperScope = clamp(
+    Math.round((baseline.sniperScope + pVec.sniperScope + wVec.sniperScope + deviceDelta) * (factor * 0.9 + 0.1)) + varSniper,
+    0,
+    200
+  );
+  const freeLook = clamp(
+    Math.round((baseline.freeLook + pVec.freeLook + wVec.freeLook + deviceDelta) * factor) + varFreeLook,
+    0,
+    200
+  );
 
   return {
     general,
@@ -494,7 +540,7 @@ function generateBgmiPubgSensi(
   // At 90/120 FPS, gyro registration per frame is exceptionally smooth
   const fpsGyroDamping = fps >= 120 ? 0.97 : fps >= 90 ? 0.99 : 1.02;
   const gyroMod = isFullGyro 
-    ? (phone.refreshRate >= 120 ? 1.02 : 1.06) * fpsGyroDamping 
+    ? ((phone.refreshRate ?? 60) >= 120 ? 1.02 : 1.06) * fpsGyroDamping 
     : isHybridGyro 
     ? 0.92 * fpsGyroDamping 
     : 0.85;
@@ -628,8 +674,8 @@ function generateCodmSensi(
   phone: PhoneModel,
   fps: number
 ): CodmSensi {
-  const mp = generateCodmModeSensi('mp', factor, grip, phone.screenSize, fps);
-  const br = generateCodmModeSensi('br', factor, grip, phone.screenSize, fps);
+  const mp = generateCodmModeSensi('mp', factor, grip, phone.screenSize ?? 6.67, fps);
+  const br = generateCodmModeSensi('br', factor, grip, phone.screenSize ?? 6.67, fps);
 
   return {
     activeMode: 'mp',
@@ -639,8 +685,11 @@ function generateCodmSensi(
   };
 }
 
-export const FIRE_BUTTON_MIN = 40;
-export const FIRE_BUTTON_MAX = 55;
+export const FIRE_BUTTON_MIN = 10;
+export const FIRE_BUTTON_MAX = 100;
+export const FIRE_BUTTON_RECOMMENDED_MIN = 40;
+export const FIRE_BUTTON_RECOMMENDED_MAX = 55;
+export const FIRE_BUTTON_PRESETS = [42, 46, 50, 54] as const;
 
 export function clampFireButtonSize(val: number): number {
   if (typeof val !== 'number' || isNaN(val)) return 50;
@@ -661,7 +710,8 @@ export function generateFireButtonConfig(
   grip: GripStyle,
   playerFeedbackSize?: number,
   weaponCategory: WeaponCategory = 'smg',
-  variationIndex = 0
+  variationIndex = 0,
+  playstyle?: Playstyle
 ): FireButtonConfig {
   // Parse aspect ratio (e.g. '19.5:9', '20:9', '16:9')
   const ratioParts = (phone.aspectRatio || '20:9').split(':').map(Number);
@@ -669,7 +719,7 @@ export function generateFireButtonConfig(
   const rh = ratioParts[1] && !isNaN(ratioParts[1]) ? ratioParts[1] : 9;
 
   // Calculate physical dimensions in millimeters in landscape orientation
-  const diagonalMm = phone.screenSize * 25.4;
+  const diagonalMm = (phone.screenSize ?? 6.67) * 25.4;
   const denom = Math.sqrt(rw * rw + rh * rh);
   const physicalHeightMm = (Math.min(rw, rh) / denom) * diagonalMm;
   const physicalWidthMm = (Math.max(rw, rh) / denom) * diagonalMm;
@@ -719,6 +769,11 @@ export function generateFireButtonConfig(
       posX = 24;
     }
 
+    // Apply approved playstyle Fire Button vector offset (e.g. Rusher +3%, One-Tap -4%, Drag -2%)
+    if (playstyle && typeof PLAYSTYLE_VECTORS[playstyle]?.fireButton === 'number') {
+      sizePercent += PLAYSTYLE_VECTORS[playstyle].fireButton!;
+    }
+
     if (isClaw) {
       sizePercent -= 2;
       posX -= 2;
@@ -761,6 +816,7 @@ export function generateFireButtonConfig(
     } else if (variationIndex === 2) {
       sizePercent = Math.min(FIRE_BUTTON_MAX, sizePercent + 1);
     }
+    sizePercent = Math.min(55, Math.max(40, sizePercent));
   } else if (gameId === 'bgmi' || gameId === 'pubg') {
     technique = 'pull_down';
     techniqueName = isClaw ? 'Index Tap & Gyro Pull-Down' : 'Thumb Pull-Down Spray';
@@ -850,7 +906,9 @@ export function generateAimTelemetry(
   factor: number,
   weaponCategory: WeaponCategory = 'smg'
 ): AimTelemetry {
-  const runwayMm = calculatePhysicalRunwayMm(phone.screenSize);
+  const phoneScreenSize = phone.screenSize ?? 6.67;
+  const phoneRefreshRate = phone.refreshRate ?? 60;
+  const runwayMm = calculatePhysicalRunwayMm(phoneScreenSize);
   const reasons: string[] = [];
 
   // Determine evidence category
@@ -869,6 +927,10 @@ export function generateAimTelemetry(
     confidenceScore = 88;
   }
 
+  if (gameId === 'freefire' || gameId === 'freefire_max') {
+    reasons.push('🇧🇷 Unified Brazil Sensi Engine: Synthesizing Brazilian meta benchmarks (Free Fire Mania published ranges, verified Nobru emulator context, and mobile community profiles) calibrated for your device hardware.');
+  }
+
   // Weapon profile annotation
   if (gameId === 'freefire_india' || gameId === 'freefire_max' || gameId === 'freefire') {
     const wInfo = WEAPON_CATEGORIES[weaponCategory];
@@ -884,28 +946,28 @@ export function generateAimTelemetry(
     reasons.push(`Calibrated for high flick speed to match ${grip === '2finger' ? '2-Finger thumb constraints' : 'Aggressive Rusher playstyle'}`);
   } else if (factor < 0.95) {
     aimSpeed = 'slower';
-    reasons.push(`Damped for high-stability micro-aiming to leverage ${phone.refreshRate}Hz display clarity`);
+    reasons.push(`Damped for high-stability micro-aiming to leverage ${phoneRefreshRate}Hz display clarity`);
   } else {
     aimSpeed = 'balanced';
-    reasons.push(`Balanced tracking speed calibrated for ${phone.screenSize}" display diagonal and ${phone.aspectRatio || '20:9'} aspect ratio`);
+    reasons.push(`Balanced tracking speed calibrated for ${phoneScreenSize}" display diagonal and ${phone.aspectRatio || '20:9'} aspect ratio`);
   }
 
   // Drag Control movement estimation
   let dragControl: AimTelemetry['dragControl'] = 'similar';
-  if (phone.screenSize < 6.25) {
+  if (phoneScreenSize < 6.25) {
     dragControl = 'smaller';
-    reasons.push(`Compact screen (${phone.screenSize}") requires smaller physical thumb travel before bezel boundary`);
-  } else if (phone.screenSize > 6.75) {
+    reasons.push(`Compact screen (${phoneScreenSize}") requires smaller physical thumb travel before bezel boundary`);
+  } else if (phoneScreenSize > 6.75) {
     dragControl = 'larger';
-    reasons.push(`Expansive screen (${phone.screenSize}") allows larger controlled swipe gestures across ${runwayMm}mm diagonal`);
+    reasons.push(`Expansive screen (${phoneScreenSize}") allows larger controlled swipe gestures across ${runwayMm}mm diagonal`);
   }
 
   // Overshoot Risk
   let overshootRisk: AimTelemetry['overshootRisk'] = 'medium';
-  if (phone.refreshRate >= 120 && (phone.touchSamplingRate ?? 240) >= 240) {
+  if (phoneRefreshRate >= 120 && (phone.touchSamplingRate ?? 240) >= 240) {
     overshootRisk = 'low';
     reasons.push(`Low overshoot risk due to high touch responsiveness (${phone.touchSamplingRate ?? 240}Hz polling rate)`);
-  } else if (phone.refreshRate <= 60) {
+  } else if (phoneRefreshRate <= 60) {
     overshootRisk = 'high';
     reasons.push('Moderate to high overshoot risk at 60Hz due to 16.6ms frame interval; maintain smooth deceleration');
   }
@@ -915,9 +977,9 @@ export function generateAimTelemetry(
     grip === 'gyro_full' || grip === 'gyro_hybrid' ? 'stable' :
     grip === '4finger' ? 'stable' : 'climbing';
 
-  const frameIntervalMs = (1000 / phone.refreshRate).toFixed(1);
+  const frameIntervalMs = (1000 / phoneRefreshRate).toFixed(1);
   const touchIntervalMs = phone.touchSamplingRate ? (1000 / phone.touchSamplingRate).toFixed(1) : 'estimated 4.2';
-  const latencyExplanation = `Frame interval: ${frameIntervalMs}ms (${phone.refreshRate}Hz). Touch polling interval: ${touchIntervalMs}ms. Touch Response: ${phone.touchSamplingRate ? phone.touchSamplingRate + 'Hz Hardware Sampling' : 'Adaptive Drag Polling'}.`;
+  const latencyExplanation = `Frame interval: ${frameIntervalMs}ms (${phoneRefreshRate}Hz). Touch polling interval: ${touchIntervalMs}ms. Touch Response: ${phone.touchSamplingRate ? phone.touchSamplingRate + 'Hz Hardware Sampling' : 'Adaptive Drag Polling'}.`;
 
   return {
     aimSpeed,
@@ -962,42 +1024,52 @@ export function applySensitivityImprovement(
       case 'overshooting':
       case 'drag_over_head':
         data.general = clamp(data.general - 4, 0, 200);
-        data.redDot = clamp(data.redDot - 4, 0, 200);
-        newFireBtn.sizePercent = clampFireButtonSize(newFireBtn.sizePercent + 1);
+        data.redDot = clamp(data.redDot - 3, 0, 200);
+        data.scope2x = clamp(data.scope2x - 2, 0, 200);
+        data.scope4x = clamp(data.scope4x - 2, 0, 200);
+        newFireBtn.sizePercent = clampFireButtonSize(newFireBtn.sizePercent + 2);
         changesSummary.push('Decreased General Sensitivity by -4');
-        changesSummary.push('Decreased Red Dot Sensitivity by -4');
-        changesSummary.push('Enlarged Fire Button by +1% to control drag velocity');
-        coachingAdvice = 'Your thumb swipe speed was exceeding the target hitbox lock threshold. Slightly lowering General & Red Dot and increasing button size by +1% prevents your crosshair from flying over the helmet.';
+        changesSummary.push('Decreased Red Dot Sensitivity by -3');
+        changesSummary.push('Enlarged Fire Button by +2% to control drag velocity');
+        coachingAdvice = 'Your thumb swipe speed was exceeding the target hitbox lock threshold. Applying approved Overshooting vector [-4,-3,-2,-2,0,0,+2%].';
         break;
 
       case 'stick_to_chest':
         data.general = clamp(data.general + 4, 0, 200);
-        data.redDot = clamp(data.redDot + 5, 0, 200);
-        newFireBtn.sizePercent = clampFireButtonSize(newFireBtn.sizePercent - 1);
+        data.redDot = clamp(data.redDot + 4, 0, 200);
+        data.scope2x = clamp(data.scope2x + 3, 0, 200);
+        data.scope4x = clamp(data.scope4x + 2, 0, 200);
+        newFireBtn.sizePercent = clampFireButtonSize(newFireBtn.sizePercent - 2);
         changesSummary.push('Increased General Sensitivity by +4');
-        changesSummary.push('Increased Red Dot Sensitivity by +5');
-        changesSummary.push('Reduced Fire Button by -1% to give extra thumb swipe runway');
-        coachingAdvice = 'Aim assist was anchoring onto enemy torso. A slightly smaller fire button placed lower on your screen gives your thumb extra physical runway to snap up to the head.';
+        changesSummary.push('Increased Red Dot Sensitivity by +4');
+        changesSummary.push('Reduced Fire Button by -2% to give extra thumb swipe runway');
+        coachingAdvice = 'Aim assist was anchoring onto enemy torso. Applying approved Chest Lock vector [+4,+4,+3,+2,0,0,-2%].';
         break;
 
       case 'recoil_problems':
       case 'recoil_climbing':
-        data.scope2x = clamp(data.scope2x - 4, 0, 200);
-        data.scope4x = clamp(data.scope4x - 4, 0, 200);
         data.general = clamp(data.general - 2, 0, 200);
+        data.redDot = clamp(data.redDot - 2, 0, 200);
+        data.scope2x = clamp(data.scope2x - 4, 0, 200);
+        data.scope4x = clamp(data.scope4x - 6, 0, 200);
+        data.freeLook = clamp(data.freeLook - 3, 0, 200);
+        newFireBtn.sizePercent = clampFireButtonSize(newFireBtn.sizePercent + 3);
         changesSummary.push('Reduced 2x Scope by -4');
-        changesSummary.push('Reduced 4x Scope by -4');
+        changesSummary.push('Reduced 4x Scope by -6');
         changesSummary.push('Stabilized General Sensitivity by -2');
-        coachingAdvice = 'Mid-range spray was bouncing too high. Damped scope and general tracking allow tight pull-down control during sustained automatic bursts.';
+        coachingAdvice = 'Mid-range spray was bouncing too high. Applying approved Recoil Bloom vector [-2,-2,-4,-6,0,-3,+3%].';
         break;
 
       case 'shaky_aim':
       case 'gyro_jittery':
-        data.general = clamp(data.general - 3, 0, 200);
-        data.redDot = clamp(data.redDot - 3, 0, 200);
-        changesSummary.push('Damped General Sensitivity by -3');
-        changesSummary.push('Damped Red Dot Sensitivity by -3');
-        coachingAdvice = 'Crosshair tremor was caused by finger micro-tremors registering on the high-polling touch screen. Sensitivity has been smoothed.';
+        data.general = clamp(data.general - 6, 0, 200);
+        data.redDot = clamp(data.redDot - 5, 0, 200);
+        data.scope2x = clamp(data.scope2x - 3, 0, 200);
+        data.scope4x = clamp(data.scope4x - 2, 0, 200);
+        data.freeLook = clamp(data.freeLook - 8, 0, 200);
+        changesSummary.push('Damped General Sensitivity by -6');
+        changesSummary.push('Damped Red Dot Sensitivity by -5');
+        coachingAdvice = 'Crosshair tremor was caused by finger micro-tremors on touch surface. Applying approved Shaky Sight vector [-6,-5,-3,-2,0,-8,0%].';
         break;
 
       case 'slow_aim':
@@ -1018,7 +1090,7 @@ export function applySensitivityImprovement(
         break;
     }
 
-    newFireBtn.sizePercent = clampFireButtonSize(newFireBtn.sizePercent);
+    newFireBtn.sizePercent = Math.min(55, Math.max(40, clampFireButtonSize(newFireBtn.sizePercent)));
     newFireBtn.recommendedRange = { min: FIRE_BUTTON_MIN, max: FIRE_BUTTON_MAX };
 
     return {
@@ -1166,10 +1238,163 @@ export function applySensitivityImprovement(
 }
 
 export type SensitivityFeedbackType = 
-  | 'too_fast'       // Overshooting / fast
-  | 'slightly_fast'  // A bit fast
-  | 'slightly_slow'  // A bit slow
-  | 'too_slow';      // Stiff / slow
+  | 'overshooting'   // Overshooting (-4, bound -16)
+  | 'chest_lock'     // Chest Lock (+4, bound +16)
+  | 'recoil_bloom'   // Recoil Bloom (-2, bound -10)
+  | 'shaky_sight'    // Shaky Sight (-2, bound -10)
+  | 'too_fast'       // Legacy alias for overshooting (-4)
+  | 'slightly_fast'  // Legacy alias for shaky_sight (-2)
+  | 'slightly_slow'  // Legacy alias for chest lock / sticky (+2)
+  | 'too_slow';      // Legacy alias for chest_lock (+4)
+
+export interface FeedbackAxisConfig {
+  step: number;
+  cumulativeBound: number;
+}
+
+export interface FeedbackVectorConfig {
+  step: number;
+  cumulativeBound: number;
+  description: string;
+}
+
+export interface AxisCumulativeBounds {
+  min: number;
+  max: number;
+}
+
+/**
+ * Phase 3 Approved Axis Cumulative Bounds:
+ * General:      [-16, +16]
+ * Red Dot:      [-16, +16]
+ * 2x Scope:     [-12, +12]
+ * 4x Scope:     [-12, +12]
+ * Sniper Scope: [-10, +10]
+ * Free Look:    [-15, +15]
+ * Fire Button:  [-8%, +8%]
+ *
+ * Applied independently to all 4 approved feedback vectors:
+ * Overshooting, Chest Lock, Recoil Bloom, Shaky Sight.
+ */
+export const AXIS_CUMULATIVE_BOUNDS: Record<
+  'general' | 'redDot' | 'scope2x' | 'scope4x' | 'sniperScope' | 'freeLook' | 'fireButton',
+  AxisCumulativeBounds
+> = {
+  general: { min: -16, max: 16 },
+  redDot: { min: -16, max: 16 },
+  scope2x: { min: -12, max: 12 },
+  scope4x: { min: -12, max: 12 },
+  sniperScope: { min: -10, max: 10 },
+  freeLook: { min: -15, max: 15 },
+  fireButton: { min: -8, max: 8 },
+};
+
+export interface FeedbackVector7Axis {
+  general: FeedbackAxisConfig;
+  redDot: FeedbackAxisConfig;
+  scope2x: FeedbackAxisConfig;
+  scope4x: FeedbackAxisConfig;
+  sniperScope: FeedbackAxisConfig;
+  freeLook: FeedbackAxisConfig;
+  fireButton: FeedbackAxisConfig;
+  description: string;
+}
+
+/**
+ * Phase 3 Original Approved Feedback Vectors with Exact Axis Cumulative Bounds:
+ * Overshooting: [-4,-3,-2,-2,0,0,+2%], axis bounds: [-16,-16,-12,-12,-10,-15,+8%]
+ * Chest Lock:   [+4,+4,+3,+2,0,0,-2%], axis bounds: [+16,+16,+12,+12,+10,+15,-8%]
+ * Recoil Bloom: [-2,-2,-4,-6,0,-3,+3%], axis bounds: [-16,-16,-12,-12,-10,-15,+8%]
+ * Shaky Sight:  [-6,-5,-3,-2,0,-8,0%],  axis bounds: [-16,-16,-12,-12,-10,-15,0%]
+ */
+export const FEEDBACK_VECTORS_7AXIS: Record<
+  'overshooting' | 'chest_lock' | 'recoil_bloom' | 'shaky_sight',
+  FeedbackVector7Axis
+> = {
+  overshooting: {
+    general: { step: -4, cumulativeBound: -16 },
+    redDot: { step: -3, cumulativeBound: -16 },
+    scope2x: { step: -2, cumulativeBound: -12 },
+    scope4x: { step: -2, cumulativeBound: -12 },
+    sniperScope: { step: 0, cumulativeBound: -10 },
+    freeLook: { step: 0, cumulativeBound: -15 },
+    fireButton: { step: 2, cumulativeBound: 8 },
+    description: 'Overshooting [-4,-3,-2,-2,0,0,+2%]',
+  },
+  chest_lock: {
+    general: { step: 4, cumulativeBound: 16 },
+    redDot: { step: 4, cumulativeBound: 16 },
+    scope2x: { step: 3, cumulativeBound: 12 },
+    scope4x: { step: 2, cumulativeBound: 12 },
+    sniperScope: { step: 0, cumulativeBound: 10 },
+    freeLook: { step: 0, cumulativeBound: 15 },
+    fireButton: { step: -2, cumulativeBound: -8 },
+    description: 'Chest Lock [+4,+4,+3,+2,0,0,-2%]',
+  },
+  recoil_bloom: {
+    general: { step: -2, cumulativeBound: -16 },
+    redDot: { step: -2, cumulativeBound: -16 },
+    scope2x: { step: -4, cumulativeBound: -12 },
+    scope4x: { step: -6, cumulativeBound: -12 },
+    sniperScope: { step: 0, cumulativeBound: -10 },
+    freeLook: { step: -3, cumulativeBound: -15 },
+    fireButton: { step: 3, cumulativeBound: 8 },
+    description: 'Recoil Bloom [-2,-2,-4,-6,0,-3,+3%]',
+  },
+  shaky_sight: {
+    general: { step: -6, cumulativeBound: -16 },
+    redDot: { step: -5, cumulativeBound: -16 },
+    scope2x: { step: -3, cumulativeBound: -12 },
+    scope4x: { step: -2, cumulativeBound: -12 },
+    sniperScope: { step: 0, cumulativeBound: -10 },
+    freeLook: { step: -8, cumulativeBound: -15 },
+    fireButton: { step: 0, cumulativeBound: 0 },
+    description: 'Shaky Sight [-6,-5,-3,-2,0,-8,0%]',
+  },
+};
+
+export const FEEDBACK_VECTORS: Record<SensitivityFeedbackType, FeedbackVectorConfig> = {
+  overshooting: {
+    step: -4,
+    cumulativeBound: -16,
+    description: 'Overshooting [-4,-3,-2,-2,0,0,+2%]',
+  },
+  chest_lock: {
+    step: 4,
+    cumulativeBound: 16,
+    description: 'Chest Lock [+4,+4,+3,+2,0,0,-2%]',
+  },
+  recoil_bloom: {
+    step: -2,
+    cumulativeBound: -16,
+    description: 'Recoil Bloom [-2,-2,-4,-6,0,-3,+3%]',
+  },
+  shaky_sight: {
+    step: -6,
+    cumulativeBound: -16,
+    description: 'Shaky Sight [-6,-5,-3,-2,0,-8,0%]',
+  },
+  too_fast: {
+    step: -4,
+    cumulativeBound: -16,
+    description: 'Overshooting (-4)',
+  },
+  slightly_fast: {
+    step: -2,
+    cumulativeBound: -10,
+    description: 'A Bit Fast (-2)',
+  },
+  slightly_slow: {
+    step: 2,
+    cumulativeBound: 10,
+    description: 'A Bit Slow (+2)',
+  },
+  too_slow: {
+    step: 4,
+    cumulativeBound: 16,
+    description: 'Too Slow (+4)',
+  },
+};
 
 export interface SingleSensitivityFeedbackResult {
   updatedSensitivity: SensitivityOutput;
@@ -1181,6 +1406,9 @@ export interface SingleSensitivityFeedbackResult {
   delta: number;
   feedbackType: SensitivityFeedbackType;
   summary: string;
+  cumulativeDelta?: number;
+  isPartialStep?: boolean;
+  atBound?: boolean;
 }
 
 /**
@@ -1224,43 +1452,103 @@ export function getScopeFriendlyLabel(gameId: GameId, category: string, key: str
  * Targeted Feedback Adjuster:
  * Adjusts ONLY the single selected sensitivity parameter based on direct player feedback,
  * leaving all other sensitivities and the Fire Button completely untouched.
+ * Implements independent cumulative bounds per vector and partial final steps.
  */
 export function applySingleSensitivityFeedback(
   currentSensi: SensitivityOutput,
   category: string,
   key: string,
-  feedbackType: SensitivityFeedbackType
+  feedbackType: SensitivityFeedbackType,
+  currentCumulativeDelta = 0
 ): SingleSensitivityFeedbackResult {
   const scopeLabel = getScopeFriendlyLabel(currentSensi.gameId, category, key);
+  const vector = FEEDBACK_VECTORS[feedbackType];
   let previousValue = 0;
   let newValue = 0;
   let delta = 0;
+  let newCumulativeDelta = currentCumulativeDelta;
+  let isPartialStep = false;
+  let atBound = false;
 
   if (currentSensi.gameId === 'freefire' || currentSensi.gameId === 'freefire_max' || currentSensi.gameId === 'freefire_india') {
     const data = { ...currentSensi.data };
     const rawVal = (data as any)[key] ?? 100;
     previousValue = rawVal;
 
-    switch (feedbackType) {
-      case 'too_fast': delta = -4; break;
-      case 'slightly_fast': delta = -2; break;
-      case 'slightly_slow': delta = +2; break;
-      case 'too_slow': delta = +4; break;
+    const axisConfig = (FEEDBACK_VECTORS_7AXIS as any)[feedbackType]?.[key];
+    const rawStep = axisConfig ? axisConfig.step : (vector ? vector.step : 0);
+    const axisBounds = (AXIS_CUMULATIVE_BOUNDS as any)[key];
+    const targetBound = axisBounds
+      ? (rawStep < 0 ? axisBounds.min : (rawStep > 0 ? axisBounds.max : 0))
+      : (axisConfig ? axisConfig.cumulativeBound : (vector ? vector.cumulativeBound : 0));
+
+    // 1. Calculate allowed step under vector's independent cumulative bound
+    let stepAfterBound = rawStep;
+    if (rawStep < 0) {
+      const remainingMargin = targetBound - currentCumulativeDelta;
+      if (remainingMargin >= 0) {
+        stepAfterBound = 0;
+        atBound = true;
+      } else {
+        stepAfterBound = Math.max(rawStep, remainingMargin);
+      }
+    } else if (rawStep > 0) {
+      const remainingMargin = targetBound - currentCumulativeDelta;
+      if (remainingMargin <= 0) {
+        stepAfterBound = 0;
+        atBound = true;
+      } else {
+        stepAfterBound = Math.min(rawStep, remainingMargin);
+      }
+    } else {
+      stepAfterBound = 0;
     }
 
+    // 2. Calculate partial final step against global clamp bounds [0, 200]
+    let stepAfterClamp = stepAfterBound;
+    if (stepAfterClamp < 0) {
+      const roomToMin = 0 - previousValue;
+      if (roomToMin >= 0) {
+        stepAfterClamp = 0;
+        atBound = true;
+      } else {
+        stepAfterClamp = Math.max(stepAfterClamp, roomToMin);
+      }
+    } else if (stepAfterClamp > 0) {
+      const roomToMax = 200 - previousValue;
+      if (roomToMax <= 0) {
+        stepAfterClamp = 0;
+        atBound = true;
+      } else {
+        stepAfterClamp = Math.min(stepAfterClamp, roomToMax);
+      }
+    }
+
+    delta = stepAfterClamp;
     newValue = clamp(previousValue + delta, 0, 200);
-    (data as any)[key] = newValue;
     delta = newValue - previousValue;
+    newCumulativeDelta = currentCumulativeDelta + delta;
+
+    if (Math.abs(delta) < Math.abs(rawStep) && delta !== 0) {
+      isPartialStep = true;
+    }
+    if (delta === 0) {
+      atBound = true;
+    }
+
+    (data as any)[key] = newValue;
 
     const updatedSensitivity: SensitivityOutput = {
       gameId: currentSensi.gameId,
       data,
     };
 
-    const feedbackDesc = 
-      feedbackType === 'too_fast' ? 'Too Fast / Overshooting' :
-      feedbackType === 'slightly_fast' ? 'A Bit Fast' :
-      feedbackType === 'slightly_slow' ? 'A Bit Slow' : 'Too Slow / Stiff';
+    let summary = `Adjusted ${scopeLabel} from ${previousValue} to ${newValue} (${delta > 0 ? `+${delta}` : delta}) based on "${vector?.description || feedbackType}".`;
+    if (isPartialStep) {
+      summary += ` [Partial final step applied to reach bound ${newValue} (limit: ${targetBound > 0 ? `+${targetBound}` : targetBound})]`;
+    } else if (atBound) {
+      summary = `${scopeLabel} has reached its cumulative limit (${newValue}). Vector bound: ${targetBound > 0 ? `+${targetBound}` : targetBound}.`;
+    }
 
     return {
       updatedSensitivity,
@@ -1271,7 +1559,10 @@ export function applySingleSensitivityFeedback(
       newValue,
       delta,
       feedbackType,
-      summary: `Adjusted ${scopeLabel} from ${previousValue} to ${newValue} (${delta > 0 ? `+${delta}` : delta}) based on "${feedbackDesc}". Only this scope was modified.`,
+      summary,
+      cumulativeDelta: newCumulativeDelta,
+      isPartialStep,
+      atBound,
     };
   } else if (currentSensi.gameId === 'bgmi' || currentSensi.gameId === 'pubg') {
     const data: BgmiPubgSensi = {

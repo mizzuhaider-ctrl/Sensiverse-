@@ -83,6 +83,9 @@ export default function App() {
   // Calibration variation state for meaningful gradual exploration on Try New Sensi
   const [variationIndex, setVariationIndex] = useState<number>(0);
 
+  // Independent cumulative delta tracker for the 4 feedback vectors
+  const [feedbackCumulativeDeltas, setFeedbackCumulativeDeltas] = useState<Record<string, number>>({});
+
   // UI state
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isImproveModalOpen, setIsImproveModalOpen] = useState(false);
@@ -230,6 +233,7 @@ export default function App() {
     // Cycle to next meaningful gradual variation (0: Baseline -> 1: High-Drag Speed -> 2: Anchored Precision -> 3: Dynamic Drag Ramp)
     const nextVariation = (variationIndex + 1) % 4;
     setVariationIndex(nextVariation);
+    setFeedbackCumulativeDeltas({});
 
     runCalibration(selectedGame, selectedPhone, gripStyle, playstyle, selectedFps, weaponCategory, nextVariation);
     setCalibratedPhone(selectedPhone);
@@ -423,6 +427,7 @@ export default function App() {
         sizePercent: clampFireButtonSize(previousProfileSnapshot.fireButton.sizePercent),
         recommendedRange: { min: FIRE_BUTTON_MIN, max: FIRE_BUTTON_MAX },
       });
+      setFeedbackCumulativeDeltas({});
       showToast('Restored previous calibration profile.');
     }
   };
@@ -436,12 +441,24 @@ export default function App() {
     // 1. Preserve current profile to snapshot before adjusting
     setPreviousProfileSnapshot({ sensitivity, fireButton });
 
-    // 2. Adjust ONLY the selected sensitivity
-    const result = applySingleSensitivityFeedback(sensitivity, category, key, feedbackType);
+    // 2. Adjust ONLY the selected sensitivity with independent cumulative bound & partial step
+    const trackingKey = `${category}_${key}_${feedbackType}`;
+    const currentCumulative = feedbackCumulativeDeltas[trackingKey] || 0;
+    const result = applySingleSensitivityFeedback(
+      sensitivity,
+      category,
+      key,
+      feedbackType,
+      currentCumulative
+    );
     setSensitivity(result.updatedSensitivity);
+    setFeedbackCumulativeDeltas((prev) => ({
+      ...prev,
+      [trackingKey]: result.cumulativeDelta !== undefined ? result.cumulativeDelta : currentCumulative + result.delta,
+    }));
 
-    // 3. Strictly enforce fire button remains unchanged and clamped to [40, 55]%
-    setFireButton(prev => ({
+    // 3. Strictly enforce fire button remains unchanged and clamped to [10, 100]%
+    setFireButton((prev) => ({
       ...prev,
       sizePercent: clampFireButtonSize(prev.sizePercent),
       recommendedRange: { min: FIRE_BUTTON_MIN, max: FIRE_BUTTON_MAX },

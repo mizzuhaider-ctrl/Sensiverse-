@@ -96,7 +96,7 @@ export function buildShareableProfileUrl(
 export function formatSensitivityForSharing(
   gameName: string,
   phoneName: string,
-  specs: { refreshRate: number; touchSamplingRate: number | null; recommendedDpi: number },
+  specs: { refreshRate: number | null; touchSamplingRate: number | null; recommendedDpi: number },
   sensitivity: SensitivityOutput,
   fireButtonSize: number,
   dragTip: string,
@@ -106,7 +106,7 @@ export function formatSensitivityForSharing(
 ): string {
   let text = `⚡ SensiVerse Calibration Profile ⚡\n`;
   text += `🎮 Game: ${gameName}\n`;
-  text += `📱 Device: ${phoneName} (${specs.refreshRate}Hz / ${specs.touchSamplingRate ? `${specs.touchSamplingRate}Hz Touch` : 'Standard Touch'} / DPI: ${specs.recommendedDpi})\n`;
+  text += `📱 Device: ${phoneName} (${specs.refreshRate ? `${specs.refreshRate}Hz` : 'Native Hz'} / ${specs.touchSamplingRate ? `${specs.touchSamplingRate}Hz Touch` : 'Standard Touch'} / DPI: ${specs.recommendedDpi})\n`;
   if (weaponName) {
     text += `🔫 Weapon Class: ${weaponName}\n`;
   }

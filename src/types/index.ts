@@ -14,24 +14,51 @@ export type EvidenceCategory =
   | 'algorithmic_estimate' 
   | 'physically_tested';
 
+export type OfficialReleaseStatus = 
+  | 'commercially_released'
+  | 'announced_pending'
+  | 'discontinued';
+
+export type DerivationType = 
+  | 'MANUFACTURER_PUBLISHED'
+  | 'CALCULATED'
+  | 'UNKNOWN';
+
+export type GyroscopeVerification = 
+  | 'PHYSICAL_HARDWARE'
+  | 'VIRTUAL_SOFTWARE_ONLY'
+  | 'INCONCLUSIVE';
+
+export interface CalculationDetails {
+  method: string;
+  formula: string;
+  inputs: Record<string, number | string>;
+}
+
 export interface PhoneModel {
   id: string;
   brand: string;
   name: string;
   series?: string;
   releaseYear?: number | null;
+  releaseStatus?: OfficialReleaseStatus;
+  releaseDate?: string | null;
   region?: string | null;
-  screenSize: number; // inches e.g. 6.67
-  aspectRatio?: string; // e.g. '19.5:9', '20:9', '19.3:9'
+  screenSize: number | null; // inches e.g. 6.67, nullable if undocumented/unverified
+  aspectRatio?: string | null; // e.g. '19.5:9', '20:9', '19.3:9'
+  aspectRatioSource?: DerivationType;
   resolution?: string | null;
-  refreshRate: number; // 60, 90, 120, 144, 165, 185
+  refreshRate: number | null; // 60, 90, 120, 144, 165, 185, nullable if undocumented
   touchSamplingRate: number | null; // Hz (e.g. 180, 240, 360, 480, 720, 960) or null if undocumented
-  touchSamplingRateVerified?: boolean; // true if documented by manufacturer, false if estimated
+  touchSamplingRateVerified?: boolean; // true if documented by manufacturer, false if estimated/unverified
   chipset?: string | null;
   gpu?: string | null;
   nativePpi?: number | null;
+  ppiSource?: DerivationType;
+  ppiDerivation?: CalculationDetails;
   recommendedDpi: number; // Developer options Smallest Width / DPI calibration index
-  hasHardwareGyro?: boolean;
+  hasHardwareGyro?: boolean | null;
+  gyroscopeType?: GyroscopeVerification;
   maxGameFps?: {
     freefire?: number;
     bgmi?: number;
@@ -40,10 +67,12 @@ export interface PhoneModel {
   };
   category: 'flagship' | 'gaming' | 'midrange' | 'budget';
   specsSource?: string;
+  specsSourceUrl?: string | null;
   researchDate?: string;
   verificationStatus: VerificationStatus;
   isDiscontinued?: boolean;
   popular?: boolean;
+  auditNotes?: string;
 }
 
 export interface FreeFireSensi {
@@ -158,7 +187,7 @@ export interface SavedPreset {
   gameId: GameId;
   phoneBrand: string;
   phoneModel: string;
-  refreshRate: number;
+  refreshRate: number | null;
   touchSamplingRate: number | null;
   gripStyle: GripStyle;
   playstyle: Playstyle;

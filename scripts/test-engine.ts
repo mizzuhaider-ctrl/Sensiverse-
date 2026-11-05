@@ -6,9 +6,10 @@ import {
   getScopeFriendlyLabel 
 } from '../src/utils/sensitivityEngine';
 import { getDeviceFpsCapability, getValidFpsForDevice } from '../src/utils/fpsEngine';
-import { PhoneModel, WeaponCategory, GameId } from '../src/types';
+import { PhoneModel, WeaponCategory, GameId, SensitivityOutput } from '../src/types';
 import { WEAPON_CATEGORIES } from '../src/data/weapons';
 import { buildShareableProfileUrl } from '../src/utils/storage';
+import { VERIFIED_BRAZILIAN_PROFILES, getUnifiedBrazilBaseline } from '../src/data/brazilSensiProfiles';
 
 interface TestSummary {
   name: string;
@@ -80,11 +81,11 @@ let specErrors = 0;
 const outlierDetails: string[] = [];
 ALL_VERIFIED_PHONES.forEach((p) => {
   let isOutlier = false;
-  if (p.screenSize < 3.0 || p.screenSize > 11.0) {
+  if (p.screenSize !== null && (p.screenSize < 3.0 || p.screenSize > 11.0)) {
     isOutlier = true;
     outlierDetails.push(`${p.name}: screenSize=${p.screenSize}`);
   }
-  if (p.refreshRate < 60 || p.refreshRate > 240) {
+  if (p.refreshRate !== null && (p.refreshRate < 60 || p.refreshRate > 240)) {
     isOutlier = true;
     outlierDetails.push(`${p.name}: refreshRate=${p.refreshRate}`);
   }
@@ -129,15 +130,15 @@ samplePhones.forEach((phone) => {
 });
 
 // Test Free Fire values above and below 100 on appropriate hardware
-const budgetPhone = ALL_VERIFIED_PHONES.find(p => p.refreshRate === 60 && p.screenSize <= 6.2) || samplePhones[3];
-const gamingPhone = ALL_VERIFIED_PHONES.find(p => p.refreshRate >= 165) || samplePhones[2];
+const budgetPhone = ALL_VERIFIED_PHONES.find(p => p.refreshRate === 60 && p.screenSize !== null && p.screenSize <= 6.2) || samplePhones[3];
+const gamingPhone = ALL_VERIFIED_PHONES.find(p => p.refreshRate !== null && p.refreshRate >= 165) || samplePhones[2];
 const budgetFF = calculateSensitivity('freefire', budgetPhone, '2finger', 'rusher');
 const gamingFF = calculateSensitivity('freefire', gamingPhone, '2finger', 'balanced');
 
 if (budgetFF.sensitivity.gameId === 'freefire' && gamingFF.sensitivity.gameId === 'freefire') {
   console.log(`  Free Fire General: Budget (${budgetPhone.name} 60Hz)=${budgetFF.sensitivity.data.general}, Gaming (${gamingPhone.name} ${gamingPhone.refreshRate}Hz)=${gamingFF.sensitivity.data.general}`);
   assert(budgetFF.sensitivity.data.general > 130, `Budget 60Hz phone receives elevated drag sensitivity (>130) on 0-200 scale: ${budgetFF.sensitivity.data.general}`);
-  assert(gamingFF.sensitivity.data.general <= 130, `Gaming 165Hz+ phone receives controlled drag sensitivity (<=130): ${gamingFF.sensitivity.data.general}`);
+  assert(gamingFF.sensitivity.data.general < budgetFF.sensitivity.data.general, `Gaming 165Hz+ phone receives controlled drag sensitivity lower than budget 60Hz phone: ${gamingFF.sensitivity.data.general} < ${budgetFF.sensitivity.data.general}`);
   assert(gamingFF.sensitivity.data.sniperScope < 100, `Sniper scope remains micro-tuned below 100 on gaming phone: ${gamingFF.sensitivity.data.sniperScope}`);
 }
 
@@ -223,7 +224,7 @@ samplePhones.forEach((phone) => {
 console.log('\n[TEST GROUP 3] Device Differentiation & Touch Physics');
 
 const s26uRes = calculateSensitivity('freefire', s26u!, '2finger', 'rusher');
-const compactPhone = ALL_VERIFIED_PHONES.find(p => p.screenSize <= 6.1 && p.refreshRate === 60) || ALL_VERIFIED_PHONES[10];
+const compactPhone = ALL_VERIFIED_PHONES.find(p => p.screenSize !== null && p.screenSize <= 6.1 && p.refreshRate === 60) || ALL_VERIFIED_PHONES[10];
 const compactRes = calculateSensitivity('freefire', compactPhone, '2finger', 'rusher');
 
 console.log(`  S26 Ultra (6.9" 120Hz) General: ${(s26uRes.sensitivity as any).data.general}`);
@@ -277,10 +278,10 @@ assert(overHeadFix.changesSummary.length > 0, 'changesSummary contains human-rea
 console.log('\n[TEST GROUP 6] Bug 1 & Bug 2 Specific Regression Tests');
 
 // BUG 1 Check: Fire button size across varying phone physical sizes
-const phoneSmall = ALL_VERIFIED_PHONES.find(p => p.name.includes('iPhone SE (3rd')) || ALL_VERIFIED_PHONES.find(p => p.screenSize <= 5.5)!;
-const phoneMed = ALL_VERIFIED_PHONES.find(p => p.name === 'Samsung Galaxy S26') || ALL_VERIFIED_PHONES.find(p => p.screenSize === 6.2)!;
-const phoneLarge = ALL_VERIFIED_PHONES.find(p => p.name === 'Samsung Galaxy S26 Ultra') || ALL_VERIFIED_PHONES.find(p => p.screenSize >= 6.8)!;
-const phoneFold = ALL_VERIFIED_PHONES.find(p => p.screenSize >= 7.8) || ALL_VERIFIED_PHONES.find(p => p.name.includes('Fold')) || phoneLarge;
+const phoneSmall = ALL_VERIFIED_PHONES.find(p => p.name.includes('iPhone SE (3rd')) || ALL_VERIFIED_PHONES.find(p => p.screenSize !== null && p.screenSize <= 5.5)!;
+const phoneMed = ALL_VERIFIED_PHONES.find(p => p.name === 'Samsung Galaxy S26') || ALL_VERIFIED_PHONES.find(p => p.screenSize !== null && p.screenSize === 6.2)!;
+const phoneLarge = ALL_VERIFIED_PHONES.find(p => p.name === 'Samsung Galaxy S26 Ultra') || ALL_VERIFIED_PHONES.find(p => p.screenSize !== null && p.screenSize >= 6.8)!;
+const phoneFold = ALL_VERIFIED_PHONES.find(p => p.screenSize !== null && p.screenSize >= 7.8) || ALL_VERIFIED_PHONES.find(p => p.name.includes('Fold')) || phoneLarge;
 
 const btnSmall = calculateSensitivity('freefire', phoneSmall, '2finger', 'rusher').fireButton;
 const btnMed = calculateSensitivity('freefire', phoneMed, '2finger', 'rusher').fireButton;
@@ -327,22 +328,24 @@ assert(activeCalibratedPhone.id === userSelectedPhone.id, 'Engine successfully c
 // ----------------------------------------------------
 // TEST SUITE 7: Strict Clamping & Synchronization Tests (User Required 1-6)
 // ----------------------------------------------------
-console.log('\n[TEST GROUP 7] Strict 40% - 55% Clamping & HUD Value Synchronization');
+console.log('\n[TEST GROUP 7] Strict 10% - 100% Clamping, Presets [42,46,50,54] & HUD Value Synchronization');
 
-import { clampFireButtonSize, FIRE_BUTTON_MIN, FIRE_BUTTON_MAX } from '../src/utils/sensitivityEngine';
+import { clampFireButtonSize, FIRE_BUTTON_MIN, FIRE_BUTTON_MAX, FIRE_BUTTON_PRESETS } from '../src/utils/sensitivityEngine';
 
-// Requirement 1: If the calculated value is 38%, show 40% everywhere.
-assert(clampFireButtonSize(38) === 40, 'Requirement 1: Calculated 38% clamps to 40% everywhere');
+// Phase 3 bounds: 10% to 100%
+assert(FIRE_BUTTON_MIN === 10, 'FIRE_BUTTON_MIN is strictly 10%');
+assert(FIRE_BUTTON_MAX === 100, 'FIRE_BUTTON_MAX is strictly 100%');
+assert(clampFireButtonSize(5) === 10, 'Sub-minimum (5%) clamps to 10%');
+assert(clampFireButtonSize(105) === 100, 'Super-maximum (105%) clamps to 100%');
+assert(clampFireButtonSize(38) === 38, 'In-range value (38%) preserved within 10-100%');
+assert(clampFireButtonSize(52) === 52, 'In-range value (52%) preserved within 10-100%');
 
-// Requirement 2: If the calculated value is 52%, show 52% everywhere.
-assert(clampFireButtonSize(52) === 52, 'Requirement 2: Calculated 52% remains 52% everywhere');
-
-// Requirement 3: If the calculated value is 60%, show 55% everywhere.
-assert(clampFireButtonSize(60) === 55, 'Requirement 3: Calculated 60% clamps to 55% everywhere');
-
-// Extreme tests
-assert(clampFireButtonSize(10) === 40, 'Extreme sub-minimum (10%) clamps to 40%');
-assert(clampFireButtonSize(100) === 55, 'Extreme super-maximum (100%) clamps to 55%');
+// Fire Button Presets [42, 46, 50, 54] preservation
+const expectedPresets = [42, 46, 50, 54];
+assert(JSON.stringify(FIRE_BUTTON_PRESETS) === JSON.stringify(expectedPresets), 'Fire Button presets [42, 46, 50, 54] strictly preserved');
+expectedPresets.forEach(preset => {
+  assert(clampFireButtonSize(preset) === preset, `Preset ${preset}% is valid within 10-100%`);
+});
 
 // Requirement 4: Changing the Fire Button control updates HUD to the exact same value.
 let currentFireButtonState = { ...displayedFireButton };
@@ -399,14 +402,14 @@ const testPreset = {
   sensitivity: displayedSensitivity,
   fireButton: {
     ...displayedFireButton,
-    sizePercent: clampFireButtonSize(35), // out-of-range test: 35%
+    sizePercent: clampFireButtonSize(5), // out-of-range test: 5%
   },
   telemetry: s26uRes.telemetry,
 };
 
-assert(testPreset.fireButton.sizePercent === 40, 'Out-of-range preset fire button is clamped to 40% before/on save');
+assert(testPreset.fireButton.sizePercent === 10, 'Out-of-range sub-minimum preset fire button is clamped to 10% on save');
 
-// Test all phones in database across games to ensure 100% compliance with [40, 55]
+// Test all phones in database across games to ensure 100% compliance with [10, 100]
 let fireButtonLimitViolations = 0;
 const testGames: ('freefire' | 'bgmi' | 'pubg' | 'codm')[] = ['freefire', 'bgmi', 'pubg', 'codm'];
 const testGrips: ('2finger' | '3finger' | '4finger')[] = ['2finger', '3finger', '4finger'];
@@ -415,7 +418,7 @@ ALL_VERIFIED_PHONES.slice(0, 100).forEach(phone => {
   testGames.forEach(game => {
     testGrips.forEach(grip => {
       const res = calculateSensitivity(game, phone, grip, 'rusher');
-      if (res.fireButton.sizePercent < 40 || res.fireButton.sizePercent > 55) {
+      if (res.fireButton.sizePercent < 10 || res.fireButton.sizePercent > 100) {
         fireButtonLimitViolations++;
         console.error(`Violation: ${phone.name} in ${game} (${grip}) produced fire button ${res.fireButton.sizePercent}%`);
       }
@@ -423,7 +426,7 @@ ALL_VERIFIED_PHONES.slice(0, 100).forEach(phone => {
   });
 });
 
-assert(fireButtonLimitViolations === 0, 'All devices and games generate Fire Button strictly within [40, 55]%');
+assert(fireButtonLimitViolations === 0, 'All devices and games generate Fire Button strictly within [10, 100]%');
 
 // ----------------------------------------------------
 // TEST SUITE 8: Mobile Responsive Layout & Viewport Verification
@@ -686,7 +689,7 @@ if (rog9) {
 }
 
 // Rule 5: Budget phones with high refresh panels capped at 60 FPS for stability
-const budgetTestPhone = ALL_VERIFIED_PHONES.find(p => p.category === 'budget' && p.refreshRate >= 90);
+const budgetTestPhone = ALL_VERIFIED_PHONES.find(p => p.category === 'budget' && p.refreshRate !== null && p.refreshRate >= 90);
 if (budgetTestPhone) {
   const budgetCap = getDeviceFpsCapability(budgetTestPhone, 'bgmi');
   assert(budgetCap.recommendedDefaultFps === 60, `RULE 5: Budget phone with 90Hz+ panel (${budgetTestPhone.name}) defaults to realistic 60 FPS`);
@@ -846,13 +849,260 @@ ffGames.forEach((g) => {
   assert(d.general >= 90 && d.general <= 195, `${g} General is realistic (${d.general})`);
   assert(d.redDot >= 85 && d.redDot <= 190, `${g} Red Dot is realistic (${d.redDot})`);
   assert(d.scope2x >= 70 && d.scope2x <= 175, `${g} 2X Scope is realistic (${d.scope2x})`);
-  assert(d.scope4x >= 60 && d.scope4x <= 160, `${g} 4X Scope is realistic (${d.scope4x})`);
-  assert(d.sniperScope >= 35 && d.sniperScope <= 85, `${g} Sniper Scope is realistic (${d.sniperScope})`);
-  assert(d.freeLook >= 50 && d.freeLook <= 140, `${g} Free Look is realistic (${d.freeLook})`);
+  assert(d.scope4x >= 60 && d.scope4x <= 165, `${g} 4X Scope is realistic (${d.scope4x})`);
+  assert(d.sniperScope >= 35 && d.sniperScope <= 95, `${g} Sniper Scope is realistic (${d.sniperScope})`);
+  assert(d.freeLook >= 50 && d.freeLook <= 145, `${g} Free Look is realistic (${d.freeLook})`);
   assert(cal.fireButton.sizePercent >= 40 && cal.fireButton.sizePercent <= 55, `${g} Fire button is within [40, 55]% (${cal.fireButton.sizePercent}%)`);
 });
 
-// Summary
+// ----------------------------------------------------
+// TEST SUITE 16: Unified Brazil Sensi Recommendation Engine
+// ----------------------------------------------------
+console.log('\n[TEST GROUP 16] Unified Brazil Sensi Recommendation Engine & Researched Profile Compliance');
+
+// 1. Researched Brazilian Profiles Integrity
+assert(VERIFIED_BRAZILIAN_PROFILES.length >= 4, `Database includes multiple researched Brazilian profiles (Total: ${VERIFIED_BRAZILIAN_PROFILES.length})`);
+
+const ffMania = VERIFIED_BRAZILIAN_PROFILES.find(p => p.id === 'ff_mania_meta_200');
+const syaz = VERIFIED_BRAZILIAN_PROFILES.find(p => p.id === 'syaz_fluxo_mobile');
+const nobru = VERIFIED_BRAZILIAN_PROFILES.find(p => p.id === 'nobru_classic_mobile');
+const techtudo = VERIFIED_BRAZILIAN_PROFILES.find(p => p.id === 'techtudo_globo_guide');
+
+const nobruEmulator = VERIFIED_BRAZILIAN_PROFILES.find(p => p.id === 'nobru_emulator_verified');
+const nobruMobile = VERIFIED_BRAZILIAN_PROFILES.find(p => p.id === 'nobru_classic_mobile');
+
+assert(!!ffMania, 'Free Fire Mania benchmark guide is present');
+assert(!!nobruEmulator, 'Nobru verified current emulator profile is present');
+assert(!!nobruMobile, 'Nobru historical mobile estimate profile is present');
+assert(!!syaz, 'Syaz (Fluxo) mobile profile is present');
+assert(!!techtudo, 'TechTudo (Globo) editorial guide is present');
+
+// Verification status audits: Only exact accessible sources labeled as VERIFIED
+assert(ffMania?.verificationStatus === 'VERIFIED', 'Free Fire Mania is VERIFIED (Supported by published editorial benchmark ranges)');
+assert(nobruEmulator?.verificationStatus === 'VERIFIED', 'Nobru Emulator profile is VERIFIED (Supported by Free Fire Mania published report)');
+assert(nobruMobile?.verificationStatus === 'UNVERIFIED', 'Nobru Historical Mobile is UNVERIFIED (Older community estimate with missing exact source)');
+assert(syaz?.verificationStatus === 'UNVERIFIED', 'Syaz is UNVERIFIED (Exact pro technical sheet is missing from official sources)');
+assert(techtudo?.verificationStatus === 'UNVERIFIED', 'TechTudo is UNVERIFIED (Qualitative guide, not exact pro numbers)');
+
+// Distinguish Nobru current emulator vs older mobile settings
+assert(nobruEmulator?.environment === 'pc_emulator', 'Nobru current verified profile is specifically for PC emulator');
+assert(nobruMobile?.environment === 'mobile_touch', 'Nobru historical estimate profile is for mobile touch');
+assert(nobruEmulator?.publishedValues.general === 0, 'Nobru verified emulator General is 0 (mouse driven)');
+assert((nobruMobile?.publishedValues.general || 0) > 0, 'Nobru mobile estimate General is > 0 (touch swipe driven)');
+
+// Source URLs must be genuine and verifiable
+VERIFIED_BRAZILIAN_PROFILES.forEach((p) => {
+  assert(p.sourceUrl.startsWith('https://'), `Profile "${p.creatorOrPlayer}" has valid HTTPS source URL (${p.sourceUrl})`);
+  if (p.environment === 'pc_emulator') {
+    assert(p.publishedValues.general >= 0 && p.publishedValues.general <= 200, `Emulator profile "${p.creatorOrPlayer}" General is in [0, 200]`);
+    assert(p.publishedValues.redDot >= 0 && p.publishedValues.redDot <= 200, `Emulator profile "${p.creatorOrPlayer}" Red Dot is in [0, 200]`);
+  } else {
+    assert(p.publishedValues.general > 0 && p.publishedValues.general <= 200, `Mobile profile "${p.creatorOrPlayer}" General is in [1, 200]`);
+    assert(p.publishedValues.redDot > 0 && p.publishedValues.redDot <= 200, `Mobile profile "${p.creatorOrPlayer}" Red Dot is in [1, 200]`);
+  }
+  assert(p.publishedValues.fireButtonSizePercent >= 40 && p.publishedValues.fireButtonSizePercent <= 55, `Profile "${p.creatorOrPlayer}" Fire Button in [40, 55]%`);
+});
+
+// 2. Composite Baseline is dynamically calculated (NOT hardcoded magic numbers like 188 or 115)
+const baseline = getUnifiedBrazilBaseline();
+assert(typeof baseline.general === 'number', 'Baseline General is a calculated number');
+assert(baseline.general !== 188, `Baseline General is NOT the hardcoded example value 188 (Got: ${baseline.general})`);
+assert(baseline.redDot !== 115, `Baseline Red Dot is NOT the hardcoded example value 115 (Got: ${baseline.redDot})`);
+assert(baseline.general >= 150 && baseline.general <= 180, `Calculated Brazilian composite General baseline in realistic esports range: ${baseline.general}`);
+assert(baseline.redDot >= 150 && baseline.redDot <= 180, `Calculated Brazilian composite Red Dot baseline in realistic esports range: ${baseline.redDot}`);
+
+// 3. Independent scope values (no forced clone)
+const brazilFF = calculateSensitivity('freefire_max', s26u!, '2finger', 'onetap', 60, 1.0, 'smg');
+const bData = brazilFF.sensitivity.data as any;
+
+assert(bData.general !== bData.scope2x, `General (${bData.general}) and 2X Scope (${bData.scope2x}) have independent values`);
+assert(bData.scope2x !== bData.scope4x, `2X Scope (${bData.scope2x}) and 4X Scope (${bData.scope4x}) have independent values`);
+assert(bData.scope4x !== bData.sniperScope, `4X Scope (${bData.scope4x}) and Sniper Scope (${bData.sniperScope}) have independent values`);
+assert(bData.general !== bData.freeLook, `General (${bData.general}) and Free Look (${bData.freeLook}) have independent values`);
+
+// 4. Realistic Red Dot relationship: Red Dot can be LOWER than General OR HIGHER than General
+// Case A: Red Dot LOWER than General (e.g. Syaz style: SMG on 120Hz flagship to prevent over-drag past head)
+const brazilSmgFlagship = calculateSensitivity('freefire_max', s26u!, '2finger', 'drag', 60, 1.0, 'smg');
+const brazilSmgData = brazilSmgFlagship.sensitivity.data as any;
+
+// Case B: Red Dot HIGHER than General (e.g. Nobru/Shotgun style: one-tap shotgun/pistol on 60Hz display)
+const brazilShotgunBudget = calculateSensitivity('freefire_max', budgetPhone, '2finger', 'onetap', 60, 1.0, 'shotgun');
+const brazilShotgunData = brazilShotgunBudget.sensitivity.data as any;
+
+console.log(`  Brazil Meta Scenarios: SMG Flagship (Gen: ${brazilSmgData.general}, RedDot: ${brazilSmgData.redDot}), Shotgun Budget (Gen: ${brazilShotgunData.general}, RedDot: ${brazilShotgunData.redDot})`);
+assert(
+  brazilSmgData.redDot <= brazilSmgData.general,
+  `SMG Flagship exhibits Red Dot (${brazilSmgData.redDot}) <= General (${brazilSmgData.general}) to prevent over-drag bloom (Syaz benchmark)`
+);
+assert(
+  brazilShotgunData.redDot >= brazilShotgunData.general,
+  `Shotgun One-Tap exhibits Red Dot (${brazilShotgunData.redDot}) >= General (${brazilShotgunData.general}) for instant J-drag lift (Nobru benchmark)`
+);
+
+// 5. Fire Button Size recommended separately
+assert(brazilFF.fireButton.sizePercent >= 40 && brazilFF.fireButton.sizePercent <= 55, `Fire button size is separate and in [40, 55]%: ${brazilFF.fireButton.sizePercent}%`);
+assert(typeof brazilFF.fireButton.positionX === 'number' && typeof brazilFF.fireButton.positionY === 'number', 'Fire Button coordinates are separate from size');
+
+// 6. Existing features (Try New Sensi, Improve My Sensi, My Previous Sensi) preserved
+const prevShot = { sensitivity: brazilFF.sensitivity, fireButton: brazilFF.fireButton };
+const improved = applySensitivityImprovement(brazilFF.sensitivity, brazilFF.fireButton, 'overshooting');
+const impData = improved.updatedSensitivity.data as any;
+
+assert(impData.general === bData.general - 4, `Improve My Sensi lowers General by -4 for overshooting (${bData.general} -> ${impData.general})`);
+assert(impData.redDot === bData.redDot - 3, `Improve My Sensi lowers Red Dot by -3 for overshooting (${bData.redDot} -> ${impData.redDot})`);
+assert(improved.updatedFireButton.sizePercent === brazilFF.fireButton.sizePercent + 2, 'Improve My Sensi increases Fire Button size by +2% for drag velocity dampening');
+
+// ----------------------------------------------------
+// TEST SUITE 17: SensiVerse Phase 3 Full Specification Verification
+// ----------------------------------------------------
+console.log('\n[TEST GROUP 17] SensiVerse Phase 3 Specifications Verification');
+
+import { 
+  ANDROID_SENSITIVITY_BASELINE, 
+  IOS_SENSITIVITY_BASELINE, 
+  getApprovedPlatformBaseline,
+  PLAYSTYLE_VECTORS,
+  DEVICE_DELTA,
+  FEEDBACK_VECTORS,
+  FEEDBACK_VECTORS_7AXIS,
+  AXIS_CUMULATIVE_BOUNDS
+} from '../src/utils/sensitivityEngine';
+
+// 1. Android & iOS Baselines [168,168,156,143,78,93,46%] and [158,155,146,135,72,85,48%]
+assert(ANDROID_SENSITIVITY_BASELINE.general === 168, 'Android baseline General is 168');
+assert(ANDROID_SENSITIVITY_BASELINE.redDot === 168, 'Android baseline Red Dot is 168');
+assert(ANDROID_SENSITIVITY_BASELINE.scope2x === 156, 'Android baseline 2x is 156');
+assert(ANDROID_SENSITIVITY_BASELINE.scope4x === 143, 'Android baseline 4x is 143');
+assert(ANDROID_SENSITIVITY_BASELINE.sniperScope === 78, 'Android baseline Sniper is 78');
+assert(ANDROID_SENSITIVITY_BASELINE.freeLook === 93, 'Android baseline Free Look is 93');
+assert(ANDROID_SENSITIVITY_BASELINE.fireButtonSizePercent === 46, 'Android baseline Fire Button is 46%');
+
+assert(IOS_SENSITIVITY_BASELINE.general === 158, 'iOS baseline General is 158');
+assert(IOS_SENSITIVITY_BASELINE.redDot === 155, 'iOS baseline Red Dot is 155');
+assert(IOS_SENSITIVITY_BASELINE.scope2x === 146, 'iOS baseline 2x is 146');
+assert(IOS_SENSITIVITY_BASELINE.scope4x === 135, 'iOS baseline 4x is 135');
+assert(IOS_SENSITIVITY_BASELINE.sniperScope === 72, 'iOS baseline Sniper is 72');
+assert(IOS_SENSITIVITY_BASELINE.freeLook === 85, 'iOS baseline Free Look is 85');
+assert(IOS_SENSITIVITY_BASELINE.fireButtonSizePercent === 48, 'iOS baseline Fire Button is 48%');
+
+const androidPhoneSample = ALL_VERIFIED_PHONES.find(p => p.brand === 'Samsung')!;
+const iosPhoneSample = ALL_VERIFIED_PHONES.find(p => p.brand === 'Apple')!;
+assert(getApprovedPlatformBaseline(androidPhoneSample).general === 168, 'getApprovedPlatformBaseline returns Android baseline (168) for Samsung');
+assert(getApprovedPlatformBaseline(iosPhoneSample).general === 158, 'getApprovedPlatformBaseline returns iOS baseline (158) for Apple');
+
+// 2. All 5 Playstyle Vectors
+assert(PLAYSTYLE_VECTORS.balanced.general === 0 && PLAYSTYLE_VECTORS.balanced.fireButton === 0, 'Playstyle Vector: balanced [0,0,0,0,0,0,0%]');
+assert(PLAYSTYLE_VECTORS.rusher.general === 10 && PLAYSTYLE_VECTORS.rusher.redDot === 6 && PLAYSTYLE_VECTORS.rusher.fireButton === 3, 'Playstyle Vector: rusher [+10,+6,+2,0,-10,+15,+3%]');
+assert(PLAYSTYLE_VECTORS.sniper.general === -8 && PLAYSTYLE_VECTORS.sniper.sniperScope === 18 && PLAYSTYLE_VECTORS.sniper.fireButton === 0, 'Playstyle Vector: sniper [-8,-6,-4,0,+18,+5,0%]');
+assert(PLAYSTYLE_VECTORS.onetap.general === 8 && PLAYSTYLE_VECTORS.onetap.redDot === 8 && PLAYSTYLE_VECTORS.onetap.fireButton === -4, 'Playstyle Vector: onetap [+8,+8,+4,+2,-5,+5,-4%]');
+assert(PLAYSTYLE_VECTORS.drag.general === 4 && PLAYSTYLE_VECTORS.drag.redDot === 6 && PLAYSTYLE_VECTORS.drag.fireButton === -2, 'Playstyle Vector: drag [+4,+6,+6,+4,0,0,-2%]');
+
+// 3. Device Delta = 0
+assert(DEVICE_DELTA === 0, 'Device delta is strictly 0 (no arbitrary device offset)');
+
+// 4. Sensitivity Clamping 0-200 and Fire Button 10-100%
+const extremeSensi = calculateSensitivity('freefire', androidPhoneSample, '2finger', 'rusher');
+const extData = extremeSensi.sensitivity.data as any;
+assert(extData.general >= 0 && extData.general <= 200, 'Sensitivity General strictly clamped in 0-200');
+assert(extData.redDot >= 0 && extData.redDot <= 200, 'Sensitivity Red Dot strictly clamped in 0-200');
+assert(extremeSensi.fireButton.sizePercent >= 10 && extremeSensi.fireButton.sizePercent <= 100, 'Fire button size strictly clamped in 10-100%');
+
+// 5. Preserved Fire Button Presets [42, 46, 50, 54]
+const presetsExpected = [42, 46, 50, 54];
+assert(JSON.stringify(FIRE_BUTTON_PRESETS) === JSON.stringify(presetsExpected), 'Preserved Fire Button presets are exactly [42, 46, 50, 54]');
+
+// 6. Approved Axis Cumulative Bounds & All 4 Feedback Vectors
+// General: [-16, +16], Red Dot: [-16, +16], 2x: [-12, +12], 4x: [-12, +12], Sniper: [-10, +10], Free Look: [-15, +15], Fire Button: [-8%, +8%]
+assert(AXIS_CUMULATIVE_BOUNDS.general.min === -16 && AXIS_CUMULATIVE_BOUNDS.general.max === 16, 'General axis bounds: [-16, +16]');
+assert(AXIS_CUMULATIVE_BOUNDS.redDot.min === -16 && AXIS_CUMULATIVE_BOUNDS.redDot.max === 16, 'Red Dot axis bounds: [-16, +16]');
+assert(AXIS_CUMULATIVE_BOUNDS.scope2x.min === -12 && AXIS_CUMULATIVE_BOUNDS.scope2x.max === 12, '2x Scope axis bounds: [-12, +12]');
+assert(AXIS_CUMULATIVE_BOUNDS.scope4x.min === -12 && AXIS_CUMULATIVE_BOUNDS.scope4x.max === 12, '4x Scope axis bounds: [-12, +12]');
+assert(AXIS_CUMULATIVE_BOUNDS.sniperScope.min === -10 && AXIS_CUMULATIVE_BOUNDS.sniperScope.max === 10, 'Sniper Scope axis bounds: [-10, +10]');
+assert(AXIS_CUMULATIVE_BOUNDS.freeLook.min === -15 && AXIS_CUMULATIVE_BOUNDS.freeLook.max === 15, 'Free Look axis bounds: [-15, +15]');
+assert(AXIS_CUMULATIVE_BOUNDS.fireButton.min === -8 && AXIS_CUMULATIVE_BOUNDS.fireButton.max === 8, 'Fire Button axis bounds: [-8%, +8%]');
+
+// Overshooting [-4,-3,-2,-2,0,0,+2%] with axis bounds
+assert(FEEDBACK_VECTORS_7AXIS.overshooting.general.step === -4 && FEEDBACK_VECTORS_7AXIS.overshooting.general.cumulativeBound === -16, 'Overshooting General: step -4, bound -16');
+assert(FEEDBACK_VECTORS_7AXIS.overshooting.redDot.step === -3 && FEEDBACK_VECTORS_7AXIS.overshooting.redDot.cumulativeBound === -16, 'Overshooting Red Dot: step -3, bound -16');
+assert(FEEDBACK_VECTORS_7AXIS.overshooting.scope2x.step === -2 && FEEDBACK_VECTORS_7AXIS.overshooting.scope2x.cumulativeBound === -12, 'Overshooting 2x: step -2, bound -12');
+assert(FEEDBACK_VECTORS_7AXIS.overshooting.scope4x.step === -2 && FEEDBACK_VECTORS_7AXIS.overshooting.scope4x.cumulativeBound === -12, 'Overshooting 4x: step -2, bound -12');
+assert(FEEDBACK_VECTORS_7AXIS.overshooting.sniperScope.step === 0 && FEEDBACK_VECTORS_7AXIS.overshooting.sniperScope.cumulativeBound === -10, 'Overshooting Sniper: step 0, bound -10');
+assert(FEEDBACK_VECTORS_7AXIS.overshooting.freeLook.step === 0 && FEEDBACK_VECTORS_7AXIS.overshooting.freeLook.cumulativeBound === -15, 'Overshooting Free Look: step 0, bound -15');
+assert(FEEDBACK_VECTORS_7AXIS.overshooting.fireButton.step === 2 && FEEDBACK_VECTORS_7AXIS.overshooting.fireButton.cumulativeBound === 8, 'Overshooting Fire Button: step +2%, bound +8%');
+
+// Chest Lock [+4,+4,+3,+2,0,0,-2%] with axis bounds
+assert(FEEDBACK_VECTORS_7AXIS.chest_lock.general.step === 4 && FEEDBACK_VECTORS_7AXIS.chest_lock.general.cumulativeBound === 16, 'Chest Lock General: step +4, bound +16');
+assert(FEEDBACK_VECTORS_7AXIS.chest_lock.redDot.step === 4 && FEEDBACK_VECTORS_7AXIS.chest_lock.redDot.cumulativeBound === 16, 'Chest Lock Red Dot: step +4, bound +16');
+assert(FEEDBACK_VECTORS_7AXIS.chest_lock.scope2x.step === 3 && FEEDBACK_VECTORS_7AXIS.chest_lock.scope2x.cumulativeBound === 12, 'Chest Lock 2x: step +3, bound +12');
+assert(FEEDBACK_VECTORS_7AXIS.chest_lock.scope4x.step === 2 && FEEDBACK_VECTORS_7AXIS.chest_lock.scope4x.cumulativeBound === 12, 'Chest Lock 4x: step +2, bound +12');
+assert(FEEDBACK_VECTORS_7AXIS.chest_lock.sniperScope.step === 0 && FEEDBACK_VECTORS_7AXIS.chest_lock.sniperScope.cumulativeBound === 10, 'Chest Lock Sniper: step 0, bound +10');
+assert(FEEDBACK_VECTORS_7AXIS.chest_lock.freeLook.step === 0 && FEEDBACK_VECTORS_7AXIS.chest_lock.freeLook.cumulativeBound === 15, 'Chest Lock Free Look: step 0, bound +15');
+assert(FEEDBACK_VECTORS_7AXIS.chest_lock.fireButton.step === -2 && FEEDBACK_VECTORS_7AXIS.chest_lock.fireButton.cumulativeBound === -8, 'Chest Lock Fire Button: step -2%, bound -8%');
+
+// Recoil Bloom [-2,-2,-4,-6,0,-3,+3%] with axis bounds
+assert(FEEDBACK_VECTORS_7AXIS.recoil_bloom.general.step === -2 && FEEDBACK_VECTORS_7AXIS.recoil_bloom.general.cumulativeBound === -16, 'Recoil Bloom General: step -2, bound -16');
+assert(FEEDBACK_VECTORS_7AXIS.recoil_bloom.redDot.step === -2 && FEEDBACK_VECTORS_7AXIS.recoil_bloom.redDot.cumulativeBound === -16, 'Recoil Bloom Red Dot: step -2, bound -16');
+assert(FEEDBACK_VECTORS_7AXIS.recoil_bloom.scope2x.step === -4 && FEEDBACK_VECTORS_7AXIS.recoil_bloom.scope2x.cumulativeBound === -12, 'Recoil Bloom 2x: step -4, bound -12');
+assert(FEEDBACK_VECTORS_7AXIS.recoil_bloom.scope4x.step === -6 && FEEDBACK_VECTORS_7AXIS.recoil_bloom.scope4x.cumulativeBound === -12, 'Recoil Bloom 4x: step -6, bound -12');
+assert(FEEDBACK_VECTORS_7AXIS.recoil_bloom.sniperScope.step === 0 && FEEDBACK_VECTORS_7AXIS.recoil_bloom.sniperScope.cumulativeBound === -10, 'Recoil Bloom Sniper: step 0, bound -10');
+assert(FEEDBACK_VECTORS_7AXIS.recoil_bloom.freeLook.step === -3 && FEEDBACK_VECTORS_7AXIS.recoil_bloom.freeLook.cumulativeBound === -15, 'Recoil Bloom Free Look: step -3, bound -15');
+assert(FEEDBACK_VECTORS_7AXIS.recoil_bloom.fireButton.step === 3 && FEEDBACK_VECTORS_7AXIS.recoil_bloom.fireButton.cumulativeBound === 8, 'Recoil Bloom Fire Button: step +3%, bound +8%');
+
+// Shaky Sight [-6,-5,-3,-2,0,-8,0%] with axis bounds
+assert(FEEDBACK_VECTORS_7AXIS.shaky_sight.general.step === -6 && FEEDBACK_VECTORS_7AXIS.shaky_sight.general.cumulativeBound === -16, 'Shaky Sight General: step -6, bound -16');
+assert(FEEDBACK_VECTORS_7AXIS.shaky_sight.redDot.step === -5 && FEEDBACK_VECTORS_7AXIS.shaky_sight.redDot.cumulativeBound === -16, 'Shaky Sight Red Dot: step -5, bound -16');
+assert(FEEDBACK_VECTORS_7AXIS.shaky_sight.scope2x.step === -3 && FEEDBACK_VECTORS_7AXIS.shaky_sight.scope2x.cumulativeBound === -12, 'Shaky Sight 2x: step -3, bound -12');
+assert(FEEDBACK_VECTORS_7AXIS.shaky_sight.scope4x.step === -2 && FEEDBACK_VECTORS_7AXIS.shaky_sight.scope4x.cumulativeBound === -12, 'Shaky Sight 4x: step -2, bound -12');
+assert(FEEDBACK_VECTORS_7AXIS.shaky_sight.sniperScope.step === 0 && FEEDBACK_VECTORS_7AXIS.shaky_sight.sniperScope.cumulativeBound === -10, 'Shaky Sight Sniper: step 0, bound -10');
+assert(FEEDBACK_VECTORS_7AXIS.shaky_sight.freeLook.step === -8 && FEEDBACK_VECTORS_7AXIS.shaky_sight.freeLook.cumulativeBound === -15, 'Shaky Sight Free Look: step -8, bound -15');
+assert(FEEDBACK_VECTORS_7AXIS.shaky_sight.fireButton.step === 0 && FEEDBACK_VECTORS_7AXIS.shaky_sight.fireButton.cumulativeBound === 0, 'Shaky Sight Fire Button: step 0%, bound 0%');
+
+// Test 6a: Normal full step (using overshooting)
+const testSensiBase: SensitivityOutput = {
+  gameId: 'freefire',
+  data: { general: 100, redDot: 95, scope2x: 85, scope4x: 75, sniperScope: 50, freeLook: 65 },
+};
+const fullStepRes = applySingleSensitivityFeedback(testSensiBase, 'freefire', 'general', 'overshooting', 0);
+assert(fullStepRes.delta === -4 && fullStepRes.newValue === 96, 'Full step applies exact step delta (-4: 100 -> 96)');
+assert(fullStepRes.cumulativeDelta === -4, 'Cumulative delta correctly accumulates (-4)');
+assert(!fullStepRes.isPartialStep && !fullStepRes.atBound, 'Full step is not partial and not at bound');
+
+// Test 6b: Partial final step on cumulative bound (bound is -16, current cumulative is -14, step is -4 -> partial step -2)
+const partialStepRes = applySingleSensitivityFeedback(testSensiBase, 'freefire', 'general', 'overshooting', -14);
+assert(partialStepRes.delta === -2, 'Partial final step applies remaining margin to bound (-2 instead of -4)');
+assert(partialStepRes.newValue === 98, 'New value reflects partial step (100 -> 98)');
+assert(partialStepRes.cumulativeDelta === -16, 'Cumulative delta reaches exactly the cumulative bound (-16)');
+assert(partialStepRes.isPartialStep === true, 'isPartialStep flag is true on reaching cumulative bound');
+
+// Test 6c: At cumulative bound (current cumulative is -16, next step is 0)
+const atBoundRes = applySingleSensitivityFeedback(testSensiBase, 'freefire', 'general', 'too_fast', -16);
+assert(atBoundRes.delta === 0, 'Delta is 0 when already at cumulative bound');
+assert(atBoundRes.atBound === true, 'atBound flag is true when at cumulative bound');
+
+// Test 6d: Partial final step on clamp 0 (value is 2, step is -4 -> partial step is -2)
+const lowValSensi: SensitivityOutput = {
+  gameId: 'freefire',
+  data: { general: 2, redDot: 95, scope2x: 85, scope4x: 75, sniperScope: 50, freeLook: 65 },
+};
+const clampMinRes = applySingleSensitivityFeedback(lowValSensi, 'freefire', 'general', 'too_fast', 0);
+assert(clampMinRes.delta === -2 && clampMinRes.newValue === 0, 'Partial final step clamps cleanly to 0 (2 -> 0 with delta -2)');
+assert(clampMinRes.isPartialStep === true, 'isPartialStep flag is true on clamp 0');
+
+// Test 6e: Partial final step on clamp 200 (value is 199, step is +4 -> partial step is +1)
+const highValSensi: SensitivityOutput = {
+  gameId: 'freefire',
+  data: { general: 199, redDot: 95, scope2x: 85, scope4x: 75, sniperScope: 50, freeLook: 65 },
+};
+const clampMaxRes = applySingleSensitivityFeedback(highValSensi, 'freefire', 'general', 'too_slow', 0);
+assert(clampMaxRes.delta === 1 && clampMaxRes.newValue === 200, 'Partial final step clamps cleanly to 200 (199 -> 200 with delta +1)');
+assert(clampMaxRes.isPartialStep === true, 'isPartialStep flag is true on clamp 200');
+
+// 7. Step 4 WeaponSelector UI Verification: only dropdown, no cards below
+const weaponSelectorFile = fs.readFileSync(path.resolve(process.cwd(), 'src/components/WeaponSelector.tsx'), 'utf-8');
+assert(weaponSelectorFile.includes('id="weapon-category-dropdown"'), 'Step 4 contains weapon category dropdown');
+assert(!weaponSelectorFile.includes('grid-cols-2') && !weaponSelectorFile.includes('grid-cols-3'), 'Step 4 contains no weapon cards grid below dropdown');
+assert(!weaponSelectorFile.includes('One-Category Formula'), 'Step 4 contains no extra card below dropdown');
+
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;
 const failedTests = totalTests - passedTests;

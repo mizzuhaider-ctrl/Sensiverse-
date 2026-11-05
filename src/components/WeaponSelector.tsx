@@ -71,14 +71,6 @@ export const WeaponSelector: React.FC<WeaponSelectorProps> = ({
           <ChevronDown className="w-4 h-4 text-zinc-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
         </div>
       </div>
-
-      {/* Free Fire In-Game Architecture Reminder */}
-      <div className="mt-3.5 p-3 rounded-xl bg-black/40 border border-zinc-800 flex items-center gap-2 text-xs text-zinc-400">
-        <Zap className="w-4 h-4 text-[#00FF66] shrink-0" />
-        <span>
-          <strong>One-Category Formula:</strong> Selecting one category sets its corresponding starting calibration without asking you to tune individual guns.
-        </span>
-      </div>
     </div>
   );
 };

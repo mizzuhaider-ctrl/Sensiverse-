@@ -82,10 +82,12 @@ RAW_PHONES.forEach((phone) => {
   }
 
   // Ensure aspect ratio is populated if missing
+  const screenSize = phone.screenSize ?? 6.67;
+  const refreshRate = phone.refreshRate ?? 60;
   const aspectRatio = phone.aspectRatio || (
-    phone.screenSize >= 6.8 ? '19.5:9' :
-    phone.screenSize >= 6.6 ? '20:9' :
-    phone.screenSize <= 6.1 ? '19.5:9' : '20:9'
+    screenSize >= 6.8 ? '19.5:9' :
+    screenSize >= 6.6 ? '20:9' :
+    screenSize <= 6.1 ? '19.5:9' : '20:9'
   );
 
   ALL_VERIFIED_PHONES.push({
@@ -102,7 +104,7 @@ RAW_PHONES.forEach((phone) => {
         phone.category === 'gaming'
       ))
     ),
-    hasHardwareGyro: phone.hasHardwareGyro ?? (phone.category !== 'budget' || phone.refreshRate >= 90),
+    hasHardwareGyro: phone.hasHardwareGyro ?? (phone.category !== 'budget' || refreshRate >= 90),
   });
 });
 

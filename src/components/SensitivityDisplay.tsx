@@ -308,7 +308,7 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 w-full sm:w-auto">
               <button
                 type="button"
-                onClick={() => handleFeedback('too_fast')}
+                onClick={() => handleFeedback('overshooting')}
                 className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
                 title="Aim flies past enemy head into the sky"
               >
@@ -317,29 +317,29 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
 
               <button
                 type="button"
-                onClick={() => handleFeedback('slightly_fast')}
+                onClick={() => handleFeedback('chest_lock')}
+                className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
+                title="Crosshair sticks to chest or cannot drag upward"
+              >
+                <span>🧲 Chest Lock (+4)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleFeedback('recoil_bloom')}
+                className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
+                title="Bullet spread blooms or kicks excessively during spray"
+              >
+                <span>🧗 Recoil Bloom (-2)</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => handleFeedback('shaky_sight')}
                 className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
                 title="Crosshair shakes or jitters during tracking"
               >
-                <span>⚡ Shaky Aim (-2)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleFeedback('slightly_slow')}
-                className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
-                title="Crosshair feels heavy or sticks to chest"
-              >
-                <span>🎯 Heavy / Sticky (+2)</span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleFeedback('too_slow')}
-                className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
-                title="Camera turns too slow for drag flicks"
-              >
-                <span>🐢 Slow Aim (+4)</span>
+                <span>⚡ Shaky Sight (-2)</span>
               </button>
             </div>
           </div>
@@ -518,8 +518,8 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
                 Official Free Fire References & Standards
               </h4>
               <div className="grid grid-cols-1 gap-3">
-                {RESEARCH_REFERENCES.map((ref) => (
-                  <div key={ref.gameId} className="p-3.5 rounded-xl bg-black/60 border border-zinc-800 space-y-2">
+                {RESEARCH_REFERENCES.map((ref, idx) => (
+                  <div key={`${ref.gameId}-${ref.sourceTitle}-${idx}`} className="p-3.5 rounded-xl bg-black/60 border border-zinc-800 space-y-2">
                     <div className="flex items-center justify-between gap-2">
                       <span className="font-bold text-white text-xs sm:text-sm">{ref.gameVersion}</span>
                       <span className="text-[10px] font-mono-code px-2 py-0.5 rounded bg-[#00FF66]/10 text-[#00FF66] border border-[#00FF66]/30">

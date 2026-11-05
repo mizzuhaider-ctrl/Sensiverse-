@@ -19,7 +19,7 @@ interface FireButtonHUDVisualizerProps {
   config: FireButtonConfig;
   onChangeSize: (size: number) => void;
   phoneName: string;
-  screenSize: number;
+  screenSize: number | null;
   gripStyle: GripStyle;
 }
 
@@ -57,7 +57,7 @@ export const FireButtonHUDVisualizer: React.FC<FireButtonHUDVisualizerProps> = (
             </h2>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Calibrated for <span className="text-[#00FF66] font-semibold">{screenSize}" screen</span> diagonal and {gripStyle.replace('_', ' ')} grip
+            Calibrated for <span className="text-[#00FF66] font-semibold">{screenSize ? `${screenSize}"` : 'Calibrated'} screen</span> diagonal and {gripStyle.replace('_', ' ')} grip
           </p>
         </div>
 
@@ -276,9 +276,9 @@ export const FireButtonHUDVisualizer: React.FC<FireButtonHUDVisualizerProps> = (
                 className="w-full accent-[#00FF66] cursor-pointer"
               />
               <div className="flex justify-between text-[10px] font-mono-code text-zinc-500 mt-1">
-                <span>40% (Max Runway)</span>
-                <span>47% (Balanced)</span>
-                <span>55% (Max Tap Area)</span>
+                <span>10% (Min)</span>
+                <span>50% (Balanced)</span>
+                <span>100% (Max)</span>
               </div>
             </div>
 
