@@ -60,10 +60,10 @@ export const PlaystyleSelector: React.FC<PlaystyleSelectorProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <span className="w-6 h-6 rounded-md bg-[#00FF66]/10 border border-[#00FF66]/30 flex items-center justify-center text-[#00FF66] font-cyber text-xs font-bold">
-              03
+              02
             </span>
             <h2 className="text-lg sm:text-xl font-bold font-cyber text-white">
-              STEP 3: SELECT COMBAT PLAYSTYLE
+              STEP 2: SELECT COMBAT PLAYSTYLE
             </h2>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
@@ -72,7 +72,7 @@ export const PlaystyleSelector: React.FC<PlaystyleSelectorProps> = ({
         </div>
 
         {/* Quick HUD Grip toggle */}
-        <div className="flex items-center gap-1.5 p-1 bg-black/70 rounded-xl border border-zinc-800 self-start sm:self-auto">
+        <div className="flex items-center gap-1.5 p-1 bg-black/70 rounded-xl border border-zinc-800 self-start sm:self-auto flex-wrap">
           <span className="text-[10px] font-mono-code text-zinc-500 px-1 hidden sm:inline">HUD Grip:</span>
           {gripOptions.map((g) => {
             const isGripActive = gripStyle === g.id;
@@ -84,14 +84,15 @@ export const PlaystyleSelector: React.FC<PlaystyleSelectorProps> = ({
                   playCyberClick('click');
                   onSelectGrip(g.id);
                 }}
-                className={`px-2 py-0.5 rounded text-[11px] font-mono-code transition-all cursor-pointer ${
+                className={`px-2.5 py-1.5 sm:py-0.5 rounded text-[11px] font-mono-code transition-all cursor-pointer min-h-[36px] sm:min-h-0 flex items-center justify-center touch-manipulation ${
                   isGripActive
                     ? 'bg-[#00FF66] text-black font-bold shadow-[0_0_8px_rgba(0,255,102,0.4)]'
-                    : 'text-zinc-400 hover:text-white'
+                    : 'text-zinc-400 hover:text-white hover:bg-zinc-900/60'
                 }`}
                 title={`${g.label} layout`}
               >
-                {g.icon} {g.label.split(' ')[0]}
+                <span>{g.icon}</span>
+                <span>{g.label.split(' ')[0]}</span>
               </button>
             );
           })}

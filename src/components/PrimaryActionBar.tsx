@@ -113,18 +113,18 @@ export const PrimaryActionBar: React.FC<PrimaryActionBarProps> = ({
       </div>
 
       {/* Secondary Quick Action Bar: Save, Copy, Share */}
-      <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-wrap items-center justify-between gap-3">
+      <div className="mt-4 pt-3 border-t border-zinc-800/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 w-full">
         
         {/* Save Current Preset */}
-        <div className="flex items-center gap-2">
+        <div className="w-full sm:w-auto">
           {showSaveInput ? (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 w-full">
               <input
                 type="text"
                 value={customNameInput}
                 onChange={(e) => setCustomNameInput(e.target.value)}
                 placeholder="Name preset (e.g. Tournament Fast)"
-                className="bg-black border border-[#00FF66]/50 rounded-lg px-3 py-1.5 text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#00FF66]"
+                className="flex-1 sm:w-48 bg-black border border-[#00FF66]/50 rounded-lg px-3 py-2 min-h-[44px] text-xs text-white placeholder:text-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#00FF66]"
                 autoFocus
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') handleSaveClick();
@@ -133,13 +133,13 @@ export const PrimaryActionBar: React.FC<PrimaryActionBarProps> = ({
               />
               <button
                 onClick={handleSaveClick}
-                className="px-3 py-1.5 rounded-lg bg-[#00FF66] text-black font-bold text-xs font-cyber hover:bg-[#00e65c]"
+                className="px-4 py-2 min-h-[44px] rounded-lg bg-[#00FF66] text-black font-bold text-xs font-cyber hover:bg-[#00e65c] transition-colors cursor-pointer touch-manipulation"
               >
                 Save
               </button>
               <button
                 onClick={() => setShowSaveInput(false)}
-                className="px-2 py-1.5 text-xs text-zinc-400 hover:text-white"
+                className="px-3 py-2 min-h-[44px] text-xs text-zinc-400 hover:text-white transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -150,29 +150,29 @@ export const PrimaryActionBar: React.FC<PrimaryActionBarProps> = ({
                 playCyberClick('click');
                 setShowSaveInput(true);
               }}
-              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-cyber font-bold transition-all cursor-pointer ${
+              className={`w-full sm:w-auto flex items-center justify-center gap-2 px-3.5 py-2.5 min-h-[44px] rounded-lg text-xs font-cyber font-bold transition-all cursor-pointer touch-manipulation ${
                 saved
                   ? 'bg-[#00FF66]/20 text-[#00FF66] border border-[#00FF66]'
                   : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 hover:border-zinc-700'
               }`}
             >
-              {saved ? <Check className="w-3.5 h-3.5 text-[#00FF66]" /> : <Bookmark className="w-3.5 h-3.5 text-[#00FF66]" />}
+              {saved ? <Check className="w-4 h-4 text-[#00FF66]" /> : <Bookmark className="w-4 h-4 text-[#00FF66]" />}
               <span>{saved ? 'Saved to My Previous Sensi!' : 'SAVE MY SENSI'}</span>
             </button>
           )}
         </div>
 
         {/* Copy Settings & Share My Sensi Buttons */}
-        <div className="flex items-center gap-2 ml-auto flex-wrap">
+        <div className="grid grid-cols-2 sm:flex sm:items-center gap-2 w-full sm:w-auto">
           <button
             onClick={handleCopyClick}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-cyber font-bold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1.5 px-3.5 py-2.5 min-h-[44px] rounded-lg text-xs font-cyber font-bold transition-all cursor-pointer touch-manipulation ${
               copied
                 ? 'bg-[#00FF66]/20 text-[#00FF66] border border-[#00FF66]'
                 : 'bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 hover:border-zinc-700'
             }`}
           >
-            {copied ? <Check className="w-3.5 h-3.5 text-[#00FF66]" /> : <Copy className="w-3.5 h-3.5 text-[#00FF66]" />}
+            {copied ? <Check className="w-4 h-4 text-[#00FF66]" /> : <Copy className="w-4 h-4 text-[#00FF66]" />}
             <span>{copied ? 'COPIED!' : 'COPY SETTINGS'}</span>
           </button>
 
@@ -181,9 +181,9 @@ export const PrimaryActionBar: React.FC<PrimaryActionBarProps> = ({
               playCyberClick('click');
               onShare();
             }}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 hover:border-zinc-700 text-xs font-cyber font-bold transition-all cursor-pointer hover:text-white"
+            className="flex items-center justify-center gap-1.5 px-3.5 py-2.5 min-h-[44px] rounded-lg bg-zinc-900 hover:bg-zinc-800 text-zinc-300 border border-zinc-800 hover:border-zinc-700 text-xs font-cyber font-bold transition-all cursor-pointer hover:text-white touch-manipulation"
           >
-            <Share2 className="w-3.5 h-3.5 text-[#00FF66]" />
+            <Share2 className="w-4 h-4 text-[#00FF66]" />
             <span>SHARE MY SENSI</span>
           </button>
         </div>

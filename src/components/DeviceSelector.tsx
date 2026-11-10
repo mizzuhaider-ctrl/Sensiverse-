@@ -9,13 +9,15 @@ import {
   ShieldCheck, 
   AlertCircle,
   Sparkles,
-  Gamepad2
+  Gamepad2,
+  Search
 } from 'lucide-react';
 import { PhoneModel } from '../types';
 import { 
   getModelsByBrand, 
   getBrandsForCategory, 
-  CUSTOM_DEVICE_TEMPLATE 
+  CUSTOM_DEVICE_TEMPLATE,
+  ALL_VERIFIED_PHONES
 } from '../data/phones/index';
 import { playCyberClick } from '../utils/sound';
 
@@ -73,6 +75,20 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
   const availableModels = useMemo(() => {
     return getModelsByBrand(selectedBrand, category);
   }, [selectedBrand, category]);
+
+  // Instant device search query state & matcher across database
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const searchResults = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (!q) return [];
+    return ALL_VERIFIED_PHONES.filter((p) => {
+      const matchName = p.name.toLowerCase().includes(q);
+      const matchBrand = p.brand.toLowerCase().includes(q);
+      const matchSeries = p.series ? p.series.toLowerCase().includes(q) : false;
+      const matchCombined = `${p.brand} ${p.name}`.toLowerCase().includes(q);
+      return matchName || matchBrand || matchSeries || matchCombined;
+    });
+  }, [searchQuery]);
 
   // Handle Category Change (All Phones vs Gaming Phones)
   const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -181,10 +197,10 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <span className="w-6 h-6 rounded-md bg-[#00FF66]/10 border border-[#00FF66]/30 flex items-center justify-center text-[#00FF66] font-cyber text-xs font-bold">
-              02
+              01
             </span>
             <h2 className="text-base sm:text-xl font-bold font-cyber text-white">
-              STEP 2: SELECT YOUR PHONE HARDWARE
+              STEP 1: SELECT YOUR PHONE HARDWARE
             </h2>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
@@ -193,8 +209,66 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
         </div>
       </div>
 
+      {/* Instant Device Search Bar */}
+      <div className="pt-3">
+        <div className="relative w-full">
+          <Search className="w-3.5 h-3.5 text-zinc-500 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Quick search any phone (e.g. Edge 70 Pro, G84, S26, iPhone 16)..."
+            aria-label="Quick search phone model"
+            className="w-full bg-black/60 border border-zinc-800 hover:border-zinc-700 focus:border-[#00FF66] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#00FF66]/30 transition-all font-mono-code"
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 text-zinc-500 hover:text-white text-xs px-1 cursor-pointer"
+              title="Clear search"
+            >
+              ×
+            </button>
+          )}
+        </div>
+
+        {/* Live Search Matches List */}
+        {searchResults.length > 0 && searchQuery.trim() && (
+          <div className="mt-1.5 p-1.5 rounded-xl bg-zinc-950/95 border border-[#00FF66]/40 shadow-2xl max-h-56 overflow-y-auto z-30 space-y-1 backdrop-blur-md">
+            <div className="text-[10px] font-mono-code text-zinc-400 px-2 py-0.5 border-b border-zinc-900 flex justify-between items-center">
+              <span>Found {searchResults.length} matching devices:</span>
+              <span className="text-[#00FF66]">Tap to load</span>
+            </div>
+            {searchResults.slice(0, 12).map((phone) => (
+              <button
+                key={phone.id}
+                type="button"
+                onClick={() => {
+                  playCyberClick('click');
+                  setSelectedBrand(phone.brand);
+                  setIsCustomMode(false);
+                  onSelectPhone(phone);
+                  setSearchQuery('');
+                }}
+                className={`w-full text-left px-2.5 py-1.5 rounded-lg text-xs flex items-center justify-between transition-colors cursor-pointer ${
+                  selectedPhone.id === phone.id
+                    ? 'bg-[#00FF66]/20 text-[#00FF66] font-bold border border-[#00FF66]/30'
+                    : 'text-zinc-200 hover:bg-zinc-900 hover:text-white'
+                }`}
+              >
+                <span className="truncate">{phone.name}</span>
+                <span className="text-[10px] font-mono-code text-zinc-500 shrink-0 ml-2">
+                  {phone.brand} • {phone.refreshRate}Hz
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+
       {/* THREE DROPDOWNS SIDE BY SIDE IN ONE HORIZONTAL ROW (Date of Birth style) */}
-      <div className="pt-4">
+      <div className="pt-3">
         <div className="grid grid-cols-3 gap-1.5 sm:gap-3 w-full">
           {/* 1. BRAND DROPDOWN */}
           <div className="flex flex-col min-w-0">
@@ -211,7 +285,7 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
                 value={selectedBrand}
                 onChange={handleBrandChange}
                 aria-label="Select Phone Brand"
-                className="w-full min-w-0 max-w-full appearance-none bg-black/95 text-white font-medium text-xs sm:text-sm border border-zinc-700 hover:border-[#00FF66]/60 focus:border-[#00FF66] rounded-lg sm:rounded-xl px-2 sm:px-3 py-2 sm:py-2.5 pr-6 sm:pr-8 focus:outline-none focus:ring-1 focus:ring-[#00FF66]/40 transition-all cursor-pointer shadow-inner truncate text-ellipsis overflow-hidden"
+                className="w-full min-w-0 max-w-full min-h-[44px] appearance-none bg-black/95 text-white font-medium text-xs sm:text-sm border border-zinc-700 hover:border-[#00FF66]/60 focus:border-[#00FF66] rounded-lg sm:rounded-xl px-2 sm:px-3 py-2 sm:py-2.5 pr-6 sm:pr-8 focus:outline-none focus:ring-1 focus:ring-[#00FF66]/40 transition-all cursor-pointer shadow-inner truncate text-ellipsis overflow-hidden touch-manipulation"
               >
                 {availableBrands.map((brand) => (
                   <option 
@@ -249,17 +323,281 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
                 value={selectedPhone.id}
                 onChange={handleModelChange}
                 aria-label="Select Phone Model"
-                className="w-full min-w-0 max-w-full appearance-none bg-black/95 text-white font-medium text-xs sm:text-sm border border-zinc-700 hover:border-[#00FF66]/60 focus:border-[#00FF66] rounded-lg sm:rounded-xl px-2 sm:px-3 py-2 sm:py-2.5 pr-6 sm:pr-8 focus:outline-none focus:ring-1 focus:ring-[#00FF66]/40 transition-all cursor-pointer shadow-inner truncate text-ellipsis overflow-hidden"
+                className="w-full min-w-0 max-w-full min-h-[44px] appearance-none bg-black/95 text-white font-medium text-xs sm:text-sm border border-zinc-700 hover:border-[#00FF66]/60 focus:border-[#00FF66] rounded-lg sm:rounded-xl px-2 sm:px-3 py-2 sm:py-2.5 pr-6 sm:pr-8 focus:outline-none focus:ring-1 focus:ring-[#00FF66]/40 transition-all cursor-pointer shadow-inner truncate text-ellipsis overflow-hidden touch-manipulation"
               >
-                {availableModels.map((model) => (
-                  <option 
-                    key={model.id} 
-                    value={model.id} 
-                    className="bg-[#09120b] text-white py-1"
-                  >
-                    {model.name}
-                  </option>
-                ))}
+                {selectedBrand === 'Apple' ? (
+                  // Group all 29 models by generation for Apple iPhone
+                  (() => {
+                    const groups: Record<string, PhoneModel[]> = {};
+                    availableModels.forEach((m) => {
+                      const gen = m.series ? `${m.series} Series` : 'Other iPhone Models';
+                      if (!groups[gen]) groups[gen] = [];
+                      groups[gen].push(m);
+                    });
+                    return Object.entries(groups).map(([gen, models]) => (
+                      <optgroup key={gen} label={gen} className="bg-black text-[#00FF66] font-bold">
+                        {models.map((model) => (
+                          <option 
+                            key={model.id} 
+                            value={model.id} 
+                            className="bg-[#09120b] text-white py-1 font-normal"
+                          >
+                            {model.name}
+                          </option>
+                        ))}
+                      </optgroup>
+                    ));
+                  })()
+                ) : selectedBrand === 'Motorola' ? (
+                  // Group Motorola models by Edge, G, and E series
+                  (() => {
+                    const seriesOrder = ['Edge Series', 'G Series', 'E Series'];
+                    const groups: Record<string, PhoneModel[]> = {
+                      'Edge Series': [],
+                      'G Series': [],
+                      'E Series': [],
+                    };
+                    availableModels.forEach((m) => {
+                      if (m.series?.includes('Edge') || m.name.includes('Edge')) {
+                        groups['Edge Series'].push(m);
+                      } else if (m.series?.includes('E') || m.name.startsWith('E') || m.name.includes(' E')) {
+                        groups['E Series'].push(m);
+                      } else {
+                        groups['G Series'].push(m);
+                      }
+                    });
+                    return seriesOrder
+                      .filter((s) => groups[s] && groups[s].length > 0)
+                      .map((seriesName) => (
+                        <optgroup key={seriesName} label={`Motorola ${seriesName}`} className="bg-black text-[#00FF66] font-bold">
+                          {groups[seriesName].map((model) => (
+                            <option 
+                              key={model.id} 
+                              value={model.id} 
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : selectedBrand === 'Xiaomi' ? (
+                  // Group Xiaomi models year-wise (older models first, 2023 models minimal)
+                  (() => {
+                    const yearOrder = ['2020 Era', '2021 Era', '2022 Era', '2023 Era', '2024 Era', '2025 Era', 'Next-Gen Flagships (2026+)'];
+                    const groups: Record<string, PhoneModel[]> = {
+                      '2020 Era': [],
+                      '2021 Era': [],
+                      '2022 Era': [],
+                      '2023 Era': [],
+                      '2024 Era': [],
+                      '2025 Era': [],
+                      'Next-Gen Flagships (2026+)': [],
+                    };
+                    availableModels.forEach((m) => {
+                      const yr = m.releaseYear || 2020;
+                      if (yr <= 2020) groups['2020 Era'].push(m);
+                      else if (yr === 2021) groups['2021 Era'].push(m);
+                      else if (yr === 2022) groups['2022 Era'].push(m);
+                      else if (yr === 2023) groups['2023 Era'].push(m);
+                      else if (yr === 2024) groups['2024 Era'].push(m);
+                      else if (yr === 2025) groups['2025 Era'].push(m);
+                      else groups['Next-Gen Flagships (2026+)'].push(m);
+                    });
+                    return yearOrder
+                      .filter((y) => groups[y] && groups[y].length > 0)
+                      .map((yearLabel) => (
+                        <optgroup key={yearLabel} label={`Xiaomi ${yearLabel}`} className="bg-black text-[#00FF66] font-bold">
+                          {groups[yearLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : selectedBrand === 'Redmi' ? (
+                  // Group Redmi models year-wise (older models first, 2023 models minimal)
+                  (() => {
+                    const yearOrder = ['2019 Era', '2020 Era', '2021 Era', '2022 Era', '2023 Era', '2024 Era', '2025 Era', 'Next-Gen (2026+)'];
+                    const groups: Record<string, PhoneModel[]> = {
+                      '2019 Era': [],
+                      '2020 Era': [],
+                      '2021 Era': [],
+                      '2022 Era': [],
+                      '2023 Era': [],
+                      '2024 Era': [],
+                      '2025 Era': [],
+                      'Next-Gen (2026+)': [],
+                    };
+                    availableModels.forEach((m) => {
+                      const yr = m.releaseYear || 2020;
+                      if (yr <= 2019) groups['2019 Era'].push(m);
+                      else if (yr === 2020) groups['2020 Era'].push(m);
+                      else if (yr === 2021) groups['2021 Era'].push(m);
+                      else if (yr === 2022) groups['2022 Era'].push(m);
+                      else if (yr === 2023) groups['2023 Era'].push(m);
+                      else if (yr === 2024) groups['2024 Era'].push(m);
+                      else if (yr === 2025) groups['2025 Era'].push(m);
+                      else groups['Next-Gen (2026+)'].push(m);
+                    });
+                    return yearOrder
+                      .filter((y) => groups[y] && groups[y].length > 0)
+                      .map((yearLabel) => (
+                        <optgroup key={yearLabel} label={`Redmi ${yearLabel}`} className="bg-black text-[#00FF66] font-bold">
+                          {groups[yearLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : selectedBrand === 'POCO' ? (
+                  // Group POCO models year-wise
+                  (() => {
+                    const yearOrder = ['2018–2020 Era', '2021 Era', '2022 Era', '2023 Era', '2024 Era', '2025 Era', 'Next-Gen Flagships (2026+)'];
+                    const groups: Record<string, PhoneModel[]> = {
+                      '2018–2020 Era': [],
+                      '2021 Era': [],
+                      '2022 Era': [],
+                      '2023 Era': [],
+                      '2024 Era': [],
+                      '2025 Era': [],
+                      'Next-Gen Flagships (2026+)': [],
+                    };
+                    availableModels.forEach((m) => {
+                      const yr = m.releaseYear || 2020;
+                      if (yr <= 2020) groups['2018–2020 Era'].push(m);
+                      else if (yr === 2021) groups['2021 Era'].push(m);
+                      else if (yr === 2022) groups['2022 Era'].push(m);
+                      else if (yr === 2023) groups['2023 Era'].push(m);
+                      else if (yr === 2024) groups['2024 Era'].push(m);
+                      else if (yr === 2025) groups['2025 Era'].push(m);
+                      else groups['Next-Gen Flagships (2026+)'].push(m);
+                    });
+                    return yearOrder
+                      .filter((y) => groups[y] && groups[y].length > 0)
+                      .map((yearLabel) => (
+                        <optgroup key={yearLabel} label={`POCO ${yearLabel}`} className="bg-black text-[#00FF66] font-bold">
+                          {groups[yearLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : selectedBrand === 'Realme' ? (
+                  (() => {
+                    const seriesOrder = [
+                      'Realme GT Series',
+                      'Realme Number Series',
+                      'Realme P Series',
+                      'Realme Narzo Series',
+                      'Realme C Series',
+                    ];
+                    const groups: Record<string, PhoneModel[]> = {
+                      'Realme GT Series': [],
+                      'Realme Number Series': [],
+                      'Realme P Series': [],
+                      'Realme Narzo Series': [],
+                      'Realme C Series': [],
+                    };
+                    availableModels.forEach((m) => {
+                      if (m.name.startsWith('GT ') || m.series?.includes('GT')) {
+                        groups['Realme GT Series'].push(m);
+                      } else if (m.name.includes('Narzo') || m.series?.includes('Narzo')) {
+                        groups['Realme Narzo Series'].push(m);
+                      } else if (m.name.includes(' P') || m.series?.includes('Realme P')) {
+                        groups['Realme P Series'].push(m);
+                      } else if (m.name.includes(' C') || m.series?.includes('Realme C')) {
+                        groups['Realme C Series'].push(m);
+                      } else {
+                        groups['Realme Number Series'].push(m);
+                      }
+                    });
+                    return seriesOrder
+                      .filter((s) => groups[s] && groups[s].length > 0)
+                      .map((seriesLabel) => (
+                        <optgroup key={seriesLabel} label={seriesLabel} className="bg-black text-[#00FF66] font-bold">
+                          {groups[seriesLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : selectedBrand === 'OnePlus' ? (
+                  (() => {
+                    const seriesOrder = [
+                      'OnePlus Flagship & R Series',
+                      'OnePlus Nord Series',
+                      'OnePlus Nord CE Series',
+                      'OnePlus Nord N Series',
+                    ];
+                    const groups: Record<string, PhoneModel[]> = {
+                      'OnePlus Flagship & R Series': [],
+                      'OnePlus Nord Series': [],
+                      'OnePlus Nord CE Series': [],
+                      'OnePlus Nord N Series': [],
+                    };
+                    availableModels.forEach((m) => {
+                      if (m.name.includes('Nord CE') || m.series?.includes('CE')) {
+                        groups['OnePlus Nord CE Series'].push(m);
+                      } else if (m.name.includes('Nord N') || m.series?.includes('Nord N')) {
+                        groups['OnePlus Nord N Series'].push(m);
+                      } else if (m.name.startsWith('Nord') || m.series === 'OnePlus Nord') {
+                        groups['OnePlus Nord Series'].push(m);
+                      } else {
+                        groups['OnePlus Flagship & R Series'].push(m);
+                      }
+                    });
+                    return seriesOrder
+                      .filter((s) => groups[s] && groups[s].length > 0)
+                      .map((seriesLabel) => (
+                        <optgroup key={seriesLabel} label={seriesLabel} className="bg-black text-[#00FF66] font-bold">
+                          {groups[seriesLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : (
+                  availableModels.map((model) => (
+                    <option 
+                      key={model.id} 
+                      value={model.id} 
+                      className="bg-[#09120b] text-white py-1"
+                    >
+                      {model.name}
+                    </option>
+                  ))
+                )}
                 <option value="custom-mode-trigger" className="bg-zinc-900 text-[#00FF66] font-semibold">
                   + Custom Specs...
                 </option>
@@ -285,7 +623,7 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
                 value={category}
                 onChange={handleCategoryChange}
                 aria-label="Filter by Category"
-                className="w-full min-w-0 max-w-full appearance-none bg-black/95 text-white font-medium text-xs sm:text-sm border border-zinc-700 hover:border-[#00FF66]/60 focus:border-[#00FF66] rounded-lg sm:rounded-xl px-2 sm:px-3 py-2 sm:py-2.5 pr-6 sm:pr-8 focus:outline-none focus:ring-1 focus:ring-[#00FF66]/40 transition-all cursor-pointer shadow-inner truncate text-ellipsis overflow-hidden"
+                className="w-full min-w-0 max-w-full min-h-[44px] appearance-none bg-black/95 text-white font-medium text-xs sm:text-sm border border-zinc-700 hover:border-[#00FF66]/60 focus:border-[#00FF66] rounded-lg sm:rounded-xl px-2 sm:px-3 py-2 sm:py-2.5 pr-6 sm:pr-8 focus:outline-none focus:ring-1 focus:ring-[#00FF66]/40 transition-all cursor-pointer shadow-inner truncate text-ellipsis overflow-hidden touch-manipulation"
               >
                 <option value="all" className="bg-[#09120b] text-white py-1">
                   All Phones

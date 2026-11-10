@@ -145,10 +145,10 @@ export const HeadshotOptionCard: React.FC<HeadshotOptionCardProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <span className="w-6 h-6 rounded-md bg-[#00FF66]/10 border border-[#00FF66]/30 flex items-center justify-center text-[#00FF66] font-cyber text-xs font-bold">
-              05
+              04
             </span>
             <h2 className="text-base sm:text-xl font-bold font-cyber text-white">
-              STEP 5: HEADSHOT & SENSITIVITY OPTION
+              STEP 4: HEADSHOT & SENSITIVITY OPTION
             </h2>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">

@@ -6,10 +6,14 @@ import {
   getScopeFriendlyLabel 
 } from '../src/utils/sensitivityEngine';
 import { getDeviceFpsCapability, getValidFpsForDevice } from '../src/utils/fpsEngine';
-import { PhoneModel, WeaponCategory, GameId, SensitivityOutput } from '../src/types';
+import { PhoneModel, WeaponCategory, GameId, SensitivityOutput, FireButtonConfig, Playstyle } from '../src/types';
 import { WEAPON_CATEGORIES } from '../src/data/weapons';
 import { buildShareableProfileUrl } from '../src/utils/storage';
-import { VERIFIED_BRAZILIAN_PROFILES, getUnifiedBrazilBaseline } from '../src/data/brazilSensiProfiles';
+import { 
+  VERIFIED_BRAZILIAN_PROFILES, 
+  getUnifiedBrazilBaseline, 
+  PHASE9_BRAZILIAN_PROFILES 
+} from '../src/data/brazilSensiProfiles';
 
 interface TestSummary {
   name: string;
@@ -89,7 +93,8 @@ ALL_VERIFIED_PHONES.forEach((p) => {
     isOutlier = true;
     outlierDetails.push(`${p.name}: refreshRate=${p.refreshRate}`);
   }
-  if (p.recommendedDpi < 200 || p.recommendedDpi > 640) {
+  const maxDpi = (p.name.includes('Tab') || (p.screenSize !== null && p.screenSize >= 8.0)) ? 850 : 640;
+  if (p.recommendedDpi < 200 || p.recommendedDpi > maxDpi) {
     isOutlier = true;
     outlierDetails.push(`${p.name}: recommendedDpi=${p.recommendedDpi}`);
   }
@@ -777,31 +782,39 @@ assert(shareUrl.includes('fps=90'), 'Share URL contains fps=90');
 assert(!shareUrl.includes('userId') && !shareUrl.includes('token') && !shareUrl.includes('email'), 'Share URL contains no private user information');
 
 // ----------------------------------------------------
-// TEST SUITE 14: Strict 6-Step User Flow Verification
+// TEST SUITE 14: Streamlined Flow & Hero Headline Verification
 // ----------------------------------------------------
-console.log('\n[TEST GROUP 14] Strict 6-Step User Flow Order Verification');
+console.log('\n[TEST GROUP 14] Streamlined User Flow & Hero Headline Verification');
 
 const flowAppTsxContent = fs.readFileSync(path.resolve(process.cwd(), 'src/App.tsx'), 'utf-8');
+const currentHeroTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/HeroSection.tsx'), 'utf-8');
 
-const step1Idx = flowAppTsxContent.indexOf('<GameSelector');
-const step2Idx = flowAppTsxContent.indexOf('<DeviceSelector');
-const step3Idx = flowAppTsxContent.indexOf('<PlaystyleSelector');
-const step4Idx = flowAppTsxContent.indexOf('<WeaponSelector');
-const step5Idx = flowAppTsxContent.indexOf('<HeadshotOptionCard');
-const step6Idx = flowAppTsxContent.indexOf('id="step-6-results"');
+// 1. Verify game selection cards are cleanly removed from App.tsx (UI Cleanup)
+const step1GameCardsIdx = flowAppTsxContent.indexOf('<GameSelector');
+assert(step1GameCardsIdx === -1, 'Game selection cards (<GameSelector>) are cleanly removed from App.tsx UI');
 
-assert(step1Idx !== -1, 'Step 1 (GameSelector) is present in App.tsx');
-assert(step2Idx !== -1, 'Step 2 (DeviceSelector) is present in App.tsx');
-assert(step3Idx !== -1, 'Step 3 (PlaystyleSelector) is present in App.tsx');
-assert(step4Idx !== -1, 'Step 4 (WeaponSelector) is present in App.tsx');
-assert(step5Idx !== -1, 'Step 5 (HeadshotOptionCard) is present in App.tsx');
-assert(step6Idx !== -1, 'Step 6 (step-6-results) is present in App.tsx');
+// 2. Verify Hero section headline is updated to FREE FIRE SENSITIVITY
+assert(currentHeroTsx.includes('FREE FIRE'), 'HeroSection contains FREE FIRE');
+assert(currentHeroTsx.includes('SENSITIVITY'), 'HeroSection contains SENSITIVITY');
+assert(!currentHeroTsx.includes('PERFECT <span className="text-[#00FF66]'), 'Old circled headline PERFECT SENSI is removed');
 
-assert(step1Idx < step2Idx, 'Step 1 (Select Game) appears before Step 2');
-assert(step2Idx < step3Idx, 'Step 2 (Select Phone) appears before Step 3');
-assert(step3Idx < step4Idx, 'Step 3 (Select Playstyle) appears before Step 4');
-assert(step4Idx < step5Idx, 'Step 4 (Weapon Selector) appears before Step 5');
-assert(step5Idx < step6Idx, 'Step 5 (Headshot Option) appears before Step 6 (Generate Sensitivity)');
+// 3. Verify streamlined step flow order
+const stepPhoneIdx = flowAppTsxContent.indexOf('<DeviceSelector');
+const stepPlaystyleIdx = flowAppTsxContent.indexOf('<PlaystyleSelector');
+const stepWeaponIdx = flowAppTsxContent.indexOf('<WeaponSelector');
+const stepDynamicsIdx = flowAppTsxContent.indexOf('<HeadshotOptionCard');
+const stepResultsIdx = flowAppTsxContent.indexOf('id="step-6-results"');
+
+assert(stepPhoneIdx !== -1, 'Step 1 (DeviceSelector) is present in App.tsx');
+assert(stepPlaystyleIdx !== -1, 'Step 2 (PlaystyleSelector) is present in App.tsx');
+assert(stepWeaponIdx !== -1, 'Step 3 (WeaponSelector) is present in App.tsx');
+assert(stepDynamicsIdx !== -1, 'Step 4 (HeadshotOptionCard) is present in App.tsx');
+assert(stepResultsIdx !== -1, 'Step 5 (step-6-results) is present in App.tsx');
+
+assert(stepPhoneIdx < stepPlaystyleIdx, 'Step 1 (Select Phone) appears before Step 2 (Playstyle)');
+assert(stepPlaystyleIdx < stepWeaponIdx, 'Step 2 (Playstyle) appears before Step 3 (Weapon)');
+assert(stepWeaponIdx < stepDynamicsIdx, 'Step 3 (Weapon) appears before Step 4 (Dynamics)');
+assert(stepDynamicsIdx < stepResultsIdx, 'Step 4 (Dynamics) appears before Step 5 (Results)');
 
 // ----------------------------------------------------
 // TEST SUITE 15: Sensitivity Engine Deep Personalization & Gradual Variations
@@ -965,7 +978,8 @@ import {
   DEVICE_DELTA,
   FEEDBACK_VECTORS,
   FEEDBACK_VECTORS_7AXIS,
-  AXIS_CUMULATIVE_BOUNDS
+  AXIS_CUMULATIVE_BOUNDS,
+  applyPhase4Calibration
 } from '../src/utils/sensitivityEngine';
 
 // 1. Android & iOS Baselines [168,168,156,143,78,93,46%] and [158,155,146,135,72,85,48%]
@@ -1102,6 +1116,1622 @@ const weaponSelectorFile = fs.readFileSync(path.resolve(process.cwd(), 'src/comp
 assert(weaponSelectorFile.includes('id="weapon-category-dropdown"'), 'Step 4 contains weapon category dropdown');
 assert(!weaponSelectorFile.includes('grid-cols-2') && !weaponSelectorFile.includes('grid-cols-3'), 'Step 4 contains no weapon cards grid below dropdown');
 assert(!weaponSelectorFile.includes('One-Category Formula'), 'Step 4 contains no extra card below dropdown');
+
+// [TEST GROUP 18] Phase 4: Training Ground Testing & Calibration Engine
+console.log('\n[TEST GROUP 18] Phase 4: Training Ground Testing & Calibration Engine');
+
+const baseFireButton: FireButtonConfig = {
+  sizePercent: 48,
+  positionX: 50,
+  positionY: 20,
+  joystickSize: 65,
+  dragTechnique: 'straight',
+  dragTechniqueName: 'Straight Drag',
+  dragTip: 'Test',
+  hudLayoutType: '2finger',
+  recommendedRange: { min: 40, max: 55 },
+  dominantFinger: 'right_thumb'
+};
+
+const baseFfSensi: SensitivityOutput = {
+  gameId: 'freefire',
+  data: { general: 168, redDot: 168, scope2x: 156, scope4x: 143, sniperScope: 78, freeLook: 93 }
+};
+
+// 1. Overshooting vector [-4,-3,-2,-2,0,0,+2%] with bound checks
+const overshootingCalib = applyPhase4Calibration(baseFfSensi, baseFireButton, 'overshooting', {});
+const p4OverData = overshootingCalib.updatedSensitivity.data as any;
+assert(p4OverData.general === 164, 'Phase 4 Overshooting General is 164 (-4)');
+assert(p4OverData.redDot === 165, 'Phase 4 Overshooting Red Dot is 165 (-3)');
+assert(p4OverData.scope2x === 154, 'Phase 4 Overshooting 2x is 154 (-2)');
+assert(p4OverData.scope4x === 141, 'Phase 4 Overshooting 4x is 141 (-2)');
+assert(p4OverData.sniperScope === 78, 'Phase 4 Overshooting Sniper Scope is unchanged (78)');
+assert(p4OverData.freeLook === 93, 'Phase 4 Overshooting Free Look is unchanged (93)');
+assert(overshootingCalib.updatedFireButton.sizePercent === 50, 'Phase 4 Overshooting Fire Button is 50% (+2%)');
+assert(overshootingCalib.newCumulativeDeltas.general === -4, 'Phase 4 cumulative delta for General correctly records -4');
+
+// 2. Chest Lock vector [+4,+4,+3,+2,0,0,-2%] with bound checks
+const chestLockCalib = applyPhase4Calibration(baseFfSensi, baseFireButton, 'chest_lock', {});
+const p4ChestData = chestLockCalib.updatedSensitivity.data as any;
+assert(p4ChestData.general === 172, 'Phase 4 Chest Lock General is 172 (+4)');
+assert(p4ChestData.redDot === 172, 'Phase 4 Chest Lock Red Dot is 172 (+4)');
+assert(p4ChestData.scope2x === 159, 'Phase 4 Chest Lock 2x is 159 (+3)');
+assert(p4ChestData.scope4x === 145, 'Phase 4 Chest Lock 4x is 145 (+2)');
+assert(chestLockCalib.updatedFireButton.sizePercent === 46, 'Phase 4 Chest Lock Fire Button is 46% (-2%)');
+
+// 3. Recoil Bloom vector [-2,-2,-4,-6,0,-3,+3%] with bound checks
+const recoilBloomCalib = applyPhase4Calibration(baseFfSensi, baseFireButton, 'recoil_bloom', {});
+const p4RecoilData = recoilBloomCalib.updatedSensitivity.data as any;
+assert(p4RecoilData.general === 166, 'Phase 4 Recoil Bloom General is 166 (-2)');
+assert(p4RecoilData.redDot === 166, 'Phase 4 Recoil Bloom Red Dot is 166 (-2)');
+assert(p4RecoilData.scope2x === 152, 'Phase 4 Recoil Bloom 2x is 152 (-4)');
+assert(p4RecoilData.scope4x === 137, 'Phase 4 Recoil Bloom 4x is 137 (-6)');
+assert(p4RecoilData.freeLook === 90, 'Phase 4 Recoil Bloom Free Look is 90 (-3)');
+assert(recoilBloomCalib.updatedFireButton.sizePercent === 51, 'Phase 4 Recoil Bloom Fire Button is 51% (+3%)');
+
+// 4. Shaky Sight vector [-6,-5,-3,-2,0,-8,0%] with bound checks
+const shakySightCalib = applyPhase4Calibration(baseFfSensi, baseFireButton, 'shaky_sight', {});
+const p4ShakyData = shakySightCalib.updatedSensitivity.data as any;
+assert(p4ShakyData.general === 162, 'Phase 4 Shaky Sight General is 162 (-6)');
+assert(p4ShakyData.redDot === 163, 'Phase 4 Shaky Sight Red Dot is 163 (-5)');
+assert(p4ShakyData.scope2x === 153, 'Phase 4 Shaky Sight 2x is 153 (-3)');
+assert(p4ShakyData.scope4x === 141, 'Phase 4 Shaky Sight 4x is 141 (-2)');
+assert(p4ShakyData.freeLook === 85, 'Phase 4 Shaky Sight Free Look is 85 (-8)');
+assert(shakySightCalib.updatedFireButton.sizePercent === 48, 'Phase 4 Shaky Sight Fire Button is 48% (0%)');
+
+// 5. Partial final step on reaching axis cumulative bound in full calibration
+const nearBoundDeltas = { general: -14, redDot: -14, scope2x: -11, scope4x: -11 };
+const partialCalib = applyPhase4Calibration(baseFfSensi, baseFireButton, 'overshooting', nearBoundDeltas);
+assert(partialCalib.axisDeltas.general === -2, 'Phase 4 partial final step on General (-2 instead of -4)');
+assert(partialCalib.newCumulativeDeltas.general === -16, 'Phase 4 cumulative delta reaches exactly General bound (-16)');
+assert(partialCalib.isPartialStep === true, 'Phase 4 isPartialStep flag set to true');
+
+// 6. At bound check
+const atBoundDeltas = { general: -16, redDot: -16, scope2x: -12, scope4x: -12, fireButton: 8 };
+const atBoundCalib = applyPhase4Calibration(baseFfSensi, baseFireButton, 'overshooting', atBoundDeltas);
+assert(atBoundCalib.axisDeltas.general === 0, 'Phase 4 delta on General is 0 when at bound');
+assert(atBoundCalib.atBound === true, 'Phase 4 atBound flag is true when all affected axes are at bound');
+
+// 7. Scope verification: BGMI and CODM remain isolated from Phase 4
+const bgmiTestSensi: SensitivityOutput = {
+  gameId: 'bgmi',
+  data: {
+    camera: { thirdPersonNoScope: 120, firstPersonNoScope: 120, redDot: 60, scope2x: 40, scope3x: 30, scope4x: 25, scope6x: 15, scope8x: 12 },
+    ads: { thirdPersonNoScope: 120, firstPersonNoScope: 120, redDot: 60, scope2x: 40, scope3x: 30, scope4x: 25, scope6x: 15, scope8x: 12 },
+    gyroscope: { thirdPersonNoScope: 300, firstPersonNoScope: 300, redDot: 300, scope2x: 300, scope3x: 250, scope4x: 200, scope6x: 100, scope8x: 80 },
+    gyroAds: { thirdPersonNoScope: 300, firstPersonNoScope: 300, redDot: 300, scope2x: 300, scope3x: 250, scope4x: 200, scope6x: 100, scope8x: 80 },
+    freeLook: { thirdPerson: 100, cameraParachute: 100, firstPerson: 100 }
+  }
+};
+const bgmiRes = applyPhase4Calibration(bgmiTestSensi, baseFireButton, 'overshooting');
+assert(bgmiRes.updatedSensitivity.gameId === 'bgmi', 'Phase 4 does not modify BGMI sensitivity structure');
+
+// 8. TrainingGroundCalibration UI verification
+const calibComponentFile = fs.readFileSync(path.resolve(process.cwd(), 'src/components/TrainingGroundCalibration.tsx'), 'utf-8');
+assert(calibComponentFile.includes('TRAINING GROUND TESTING & CALIBRATION WORKFLOW'), 'Calibration component includes Phase 4 heading');
+assert(calibComponentFile.includes('TOUCH DRAG & FLICK GESTURE TEST PAD'), 'Calibration component includes drag gesture test pad');
+assert(calibComponentFile.includes('TESTING TOOL TRANSPARENCY NOTICE'), 'Calibration component includes mandatory testing tool transparency disclaimer');
+assert(calibComponentFile.includes('does not claim or execute automated in-game client gameplay testing'), 'Disclaimer clearly states no real in-game client gameplay testing is claimed');
+assert(calibComponentFile.includes('overshooting') && calibComponentFile.includes('chest_lock') && calibComponentFile.includes('recoil_bloom') && calibComponentFile.includes('shaky_sight'), 'Calibration component includes all 4 approved feedback options');
+assert(calibComponentFile.includes('SENSITIVITY COMPARISON & CUMULATIVE BOUND PROGRESS'), 'Calibration component includes side-by-side comparison table');
+assert(calibComponentFile.includes('Undo Last Adjustment'), 'Calibration component includes single-step Undo button');
+
+// [TEST GROUP 19] SensiVerse Phase 5: Profile Experience & Final Polish
+console.log('\n[TEST GROUP 19] Phase 5: Profile Experience & Final Polish Verification');
+
+// 1. PreviousSensiDrawer 7-Axis Display & Diff Comparison
+const drawerFileContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/PreviousSensiDrawer.tsx'), 'utf-8');
+assert(drawerFileContent.includes('NUMERICAL COMPARISON: LIVE ACTIVE VS'), 'PreviousSensiDrawer includes 7-Axis Side-by-Side Comparison modal');
+assert(drawerFileContent.includes('2x Scope') && drawerFileContent.includes('4x Scope') && drawerFileContent.includes('Sniper') && drawerFileContent.includes('Free Look') && drawerFileContent.includes('Fire Btn'), 'PreviousSensiDrawer displays all 7 axes in preset cards');
+assert(drawerFileContent.includes('Search profiles by phone, category, or name...'), 'PreviousSensiDrawer includes profile search & filtering');
+assert(drawerFileContent.includes('Add note (e.g. Tournament MP40 / Ranked CS-Rank)...'), 'PreviousSensiDrawer includes inline custom notes & tagging editor');
+assert(drawerFileContent.includes('RESTORE SNAPSHOT (UNDO)'), 'PreviousSensiDrawer includes explicit Previous Snapshot Undo button');
+
+// 2. SensitivityDisplay 7-Axis Active Profile Review Strip
+const displayFileContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/SensitivityDisplay.tsx'), 'utf-8');
+assert(displayFileContent.includes('CURRENT 7-AXIS CALIBRATION SNAPSHOT'), 'SensitivityDisplay includes the full 7-axis setup review strip');
+assert(displayFileContent.includes('fireButtonSize'), 'SensitivityDisplay accepts fireButtonSize prop');
+
+// 3. App.tsx Integration
+const appFileContent = fs.readFileSync(path.resolve(process.cwd(), 'src/App.tsx'), 'utf-8');
+assert(appFileContent.includes('fireButtonSize={fireButton.sizePercent}'), 'App.tsx passes fireButtonSize to SensitivityDisplay');
+assert(appFileContent.includes('currentFireButton={fireButton}'), 'App.tsx passes currentFireButton to PreviousSensiDrawer');
+assert(appFileContent.includes('onUpdatePreset={handleUpdatePreset}'), 'App.tsx passes onUpdatePreset handler to PreviousSensiDrawer');
+
+// 4. Preset Saving, Reviewing, Comparing, and Restoring Data Integrity
+interface SavedPresetTest {
+  id: string;
+  name: string;
+  gameId: GameId;
+  phoneName: string;
+  weaponCategory?: WeaponCategory;
+  timestamp: number;
+  sensitivity: SensitivityOutput;
+  fireButton?: FireButtonConfig;
+  notes?: string;
+}
+
+const mockSavedPreset: SavedPresetTest = {
+  id: 'preset-p5-test',
+  name: 'Tournament Rusher S26U',
+  gameId: 'freefire_max',
+  phoneName: 'Samsung Galaxy S26 Ultra',
+  weaponCategory: 'smg',
+  timestamp: Date.now(),
+  sensitivity: {
+    gameId: 'freefire_max',
+    data: { general: 178, redDot: 174, scope2x: 158, scope4x: 143, sniperScope: 68, freeLook: 108 }
+  },
+  fireButton: {
+    sizePercent: 49,
+    positionX: 50,
+    positionY: 20,
+    joystickSize: 65,
+    dragTechnique: 'straight',
+    dragTechniqueName: 'Straight Drag',
+    dragTip: 'Test',
+    hudLayoutType: '2finger',
+    recommendedRange: { min: 40, max: 55 },
+    dominantFinger: 'right_thumb'
+  },
+  notes: 'Tournament MP40 aggressive rush setup'
+};
+
+// Simulate review & comparison diff calculation across all 7 axes
+const liveActiveData = baseFfSensi.data as any;
+const presetData = mockSavedPreset.sensitivity.data as any;
+const diffGeneral = presetData.general - liveActiveData.general;
+const diffRedDot = presetData.redDot - liveActiveData.redDot;
+const diff2x = presetData.scope2x - liveActiveData.scope2x;
+const diff4x = presetData.scope4x - liveActiveData.scope4x;
+const diffSniper = presetData.sniperScope - liveActiveData.sniperScope;
+const diffFreeLook = presetData.freeLook - liveActiveData.freeLook;
+const diffFireBtn = (mockSavedPreset.fireButton?.sizePercent ?? 48) - baseFireButton.sizePercent;
+
+assert(diffGeneral === 10, 'Preset diff calculation: General is +10');
+assert(diffRedDot === 6, 'Preset diff calculation: Red Dot is +6');
+assert(diff2x === 2, 'Preset diff calculation: 2x Scope is +2');
+assert(diff4x === 0, 'Preset diff calculation: 4x Scope is 0');
+assert(diffSniper === -10, 'Preset diff calculation: Sniper Scope is -10');
+assert(diffFreeLook === 15, 'Preset diff calculation: Free Look is +15');
+assert(diffFireBtn === 1, 'Preset diff calculation: Fire Button is +1%');
+
+// Simulate restoration of all 7 axes
+let activeRestoredSensi: SensitivityOutput = mockSavedPreset.sensitivity;
+let activeRestoredFireBtn: FireButtonConfig = mockSavedPreset.fireButton!;
+assert((activeRestoredSensi.data as any).general === 178, 'Restored profile has exact General 178');
+assert((activeRestoredSensi.data as any).sniperScope === 68, 'Restored profile has exact Sniper Scope 68');
+assert(activeRestoredFireBtn.sizePercent === 49, 'Restored profile has exact Fire Button 49%');
+
+// Notes editing simulation
+const updatedNotes = 'Updated CS-Rank Tournament config';
+mockSavedPreset.notes = updatedNotes;
+assert(mockSavedPreset.notes === 'Updated CS-Rank Tournament config', 'Preset notes can be edited and preserved');
+
+// [TEST GROUP 20] Phase 6: Mobile UX & Complete Workflow Testing
+console.log('\n[TEST GROUP 20] Phase 6: Mobile UX & Complete Workflow Testing');
+
+// 1. Mobile touch targets and layout accessibility
+const devSelCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/DeviceSelector.tsx'), 'utf-8');
+assert(devSelCode.includes('min-h-[44px]'), 'DeviceSelector dropdowns have accessible min-h-[44px] touch target height');
+
+const playstyleSelCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/PlaystyleSelector.tsx'), 'utf-8');
+assert(playstyleSelCode.includes('min-h-[36px]'), 'PlaystyleSelector HUD grip buttons have accessible min-height touch targets');
+
+const primaryActionCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/PrimaryActionBar.tsx'), 'utf-8');
+assert(primaryActionCode.includes('min-h-[44px]'), 'PrimaryActionBar action buttons enforce min-h-[44px] touch targets');
+
+const sensiDisplayCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/SensitivityDisplay.tsx'), 'utf-8');
+assert(sensiDisplayCode.includes('min-h-[44px]'), 'SensitivityDisplay targeted feedback buttons enforce min-h-[44px] touch targets');
+assert(sensiDisplayCode.includes('col-span-2 sm:col-span-1'), 'SensitivityDisplay 7-axis review strip spans 2 columns on mobile to fill 4-column layout cleanly');
+
+const trainCalibCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/TrainingGroundCalibration.tsx'), 'utf-8');
+assert(trainCalibCode.includes('min-h-[44px]'), 'TrainingGroundCalibration Undo button enforces min-h-[44px] touch target');
+assert(trainCalibCode.includes('min-w-[500px]'), 'TrainingGroundCalibration comparison table enforces min-width to avoid column compression');
+
+const drawerCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/PreviousSensiDrawer.tsx'), 'utf-8');
+assert(drawerCode.includes('min-h-[44px]'), 'PreviousSensiDrawer search and close buttons enforce min-h-[44px] touch targets');
+assert(drawerCode.includes('min-h-[38px]'), 'PreviousSensiDrawer preset action buttons enforce accessible min-height touch targets');
+
+const fireBtnHudCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/FireButtonHUDVisualizer.tsx'), 'utf-8');
+assert(fireBtnHudCode.includes('min-h-[38px]'), 'FireButtonHUDVisualizer quick scale presets enforce accessible min-height touch targets');
+
+// 2. Complete Workflow Verification: Phone -> Sensitivity -> Feedback -> Save -> Restore
+// Step 2a: Phone selection
+const phoneSample = ALL_VERIFIED_PHONES.find(p => p.brand === 'Samsung' && p.category === 'flagship') || ALL_VERIFIED_PHONES[0];
+const platformBaseline = getApprovedPlatformBaseline(phoneSample);
+assert(platformBaseline.general === 168, 'Workflow Step 2: Samsung phone gets verified Android baseline (General: 168)');
+assert(platformBaseline.fireButtonSizePercent === 46, 'Workflow Step 2: Verified Android baseline Fire Button size is 46%');
+
+// Step 2b: Sensitivity Generation (Free Fire MAX with One-Tap Playstyle)
+const generatedProfile = calculateSensitivity('freefire_max', phoneSample, '2finger', 'onetap', 60, 1.0, 'smg');
+const genData = generatedProfile.sensitivity.data as any;
+
+assert(genData.general >= 0 && genData.general <= 200, `Workflow Step 6: Generated General is within [0, 200] (Got: ${genData.general})`);
+assert(genData.redDot >= 0 && genData.redDot <= 200, `Workflow Step 6: Generated Red Dot is within [0, 200] (Got: ${genData.redDot})`);
+assert(generatedProfile.fireButton.sizePercent >= 10 && generatedProfile.fireButton.sizePercent <= 100, `Workflow Step 6: Generated Fire Button is clamped in [10, 100]% (Got: ${generatedProfile.fireButton.sizePercent}%)`);
+
+// Step 2c: Feedback Calibration (Overshooting: General -4, Red Dot -3, Fire Button +2%)
+const initialSnapshot = {
+  sensitivity: generatedProfile.sensitivity,
+  fireButton: generatedProfile.fireButton
+};
+
+const feedbackRes = applyPhase4Calibration(
+  generatedProfile.sensitivity,
+  generatedProfile.fireButton,
+  'overshooting',
+  {}
+);
+const calibData = feedbackRes.updatedSensitivity.data as any;
+assert(calibData.general === genData.general - 4, `Workflow Step 6 Feedback: General adjusted by -4 (${genData.general} -> ${calibData.general})`);
+assert(calibData.redDot === genData.redDot - 3, `Workflow Step 6 Feedback: Red Dot adjusted by -3 (${genData.redDot} -> ${calibData.redDot})`);
+assert(feedbackRes.updatedFireButton.sizePercent === generatedProfile.fireButton.sizePercent + 2, `Workflow Step 6 Feedback: Fire Button adjusted by +2% (${generatedProfile.fireButton.sizePercent}% -> ${feedbackRes.updatedFireButton.sizePercent}%)`);
+
+// Step 2d: Preset Save
+const savedWorkflowPreset = {
+  id: `preset-wf-${Date.now()}`,
+  name: 'Tournament OneTap S26U',
+  gameId: 'freefire_max' as GameId,
+  phoneModel: phoneSample.name,
+  refreshRate: phoneSample.refreshRate,
+  touchSamplingRate: phoneSample.touchSamplingRate,
+  timestamp: Date.now(),
+  sensitivity: feedbackRes.updatedSensitivity,
+  fireButton: feedbackRes.updatedFireButton,
+  playstyle: 'onetap' as Playstyle,
+  weaponCategory: 'smg' as WeaponCategory,
+  notes: 'Calibrated with overshooting fix'
+};
+assert(savedWorkflowPreset.sensitivity.gameId === 'freefire_max', 'Workflow Save: Preset preserves Free Fire MAX engine target');
+assert(savedWorkflowPreset.fireButton.sizePercent === generatedProfile.fireButton.sizePercent + 2, 'Workflow Save: Preset preserves calibrated fire button');
+
+// Step 2e: Previous Profile Restore (Single-step Undo)
+const restoredSensitivity = initialSnapshot.sensitivity;
+const restoredFireBtn = initialSnapshot.fireButton;
+assert((restoredSensitivity.data as any).general === genData.general, 'Workflow Restore: Single-step Undo restores exact pre-feedback General');
+assert((restoredSensitivity.data as any).redDot === genData.redDot, 'Workflow Restore: Single-step Undo restores exact pre-feedback Red Dot');
+assert(restoredFireBtn.sizePercent === generatedProfile.fireButton.sizePercent, 'Workflow Restore: Single-step Undo restores exact pre-feedback Fire Button');
+
+// Step 2f: BGMI/PUBG and CODM isolation
+const codmRes = calculateSensitivity('codm', phoneSample, '2finger', 'balanced');
+assert(codmRes.sensitivity.gameId === 'codm', 'Workflow Isolation: CODM remains completely untouched');
+const bgmiCalcRes = calculateSensitivity('bgmi', phoneSample, '2finger', 'balanced');
+assert(bgmiCalcRes.sensitivity.gameId === 'bgmi', 'Workflow Isolation: BGMI remains completely untouched');
+
+// ==========================================
+// TEST GROUP 21: Phase 7 SEO & Search Visibility Verification
+// ==========================================
+console.log('\n[TEST GROUP 21] Phase 7: SEO & Search Visibility Verification');
+
+const seoHtmlContent = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
+
+// 1. Title Tag Verification
+const titleMatch = seoHtmlContent.match(/<title>(.*?)<\/title>/);
+assert(Boolean(titleMatch), 'index.html contains a valid <title> tag');
+const pageTitle = titleMatch ? titleMatch[1] : '';
+assert(
+  pageTitle === 'SensiVerse – Free Fire &amp; Free Fire MAX Sensitivity Generator',
+  `Title matches approved brand format: "${pageTitle}"`
+);
+assert(
+  pageTitle.replace('&amp;', '&').length >= 30 && pageTitle.replace('&amp;', '&').length <= 60,
+  `Title length is between 30 and 60 chars (Got: ${pageTitle.replace('&amp;', '&').length} chars)`
+);
+
+// 2. Meta Description Verification
+const metaDescMatch = seoHtmlContent.match(/<meta\s+name="description"\s+content="(.*?)"/);
+assert(Boolean(metaDescMatch), 'index.html contains a <meta name="description"> tag');
+const metaDesc = metaDescMatch ? metaDescMatch[1] : '';
+assert(
+  metaDesc.length >= 120 && metaDesc.length <= 160,
+  `Meta description length is between 120 and 160 chars (Got: ${metaDesc.length} chars)`
+);
+assert(
+  metaDesc.includes('Free Fire') && metaDesc.includes('Free Fire MAX'),
+  'Meta description naturally incorporates Free Fire and Free Fire MAX keywords'
+);
+assert(
+  !metaDesc.toLowerCase().includes('100% headshot') && !metaDesc.toLowerCase().includes('guaranteed headshot'),
+  'Meta description makes no unrealistic "100% headshot" or "guaranteed headshot" claims'
+);
+
+// 3. Viewport & Mobile Indexability
+assert(
+  seoHtmlContent.includes('<meta name="viewport" content="width=device-width, initial-scale=1" />'),
+  'Viewport meta tag exists for mobile indexability'
+);
+assert(
+  seoHtmlContent.includes('<link rel="canonical" href="https://sensiverse.ai.studio/" />'),
+  'Canonical URL is present and configured'
+);
+assert(
+  seoHtmlContent.includes('<meta name="robots" content="index, follow'),
+  'Robots meta tag explicitly permits index, follow'
+);
+
+// 4. Social Card & Open Graph Verification
+assert(
+  seoHtmlContent.includes('<meta property="og:title" content="SensiVerse – Free Fire &amp; Free Fire MAX Sensitivity Generator" />'),
+  'og:title matches page title'
+);
+assert(
+  seoHtmlContent.includes('<meta property="og:description" content="Calibrate optimized Free Fire and Free Fire MAX sensitivity settings'),
+  'og:description matches meta description'
+);
+assert(
+  seoHtmlContent.includes('<meta name="twitter:card" content="summary_large_image" />'),
+  'twitter:card uses summary_large_image'
+);
+assert(
+  seoHtmlContent.includes('<meta name="twitter:title" content="SensiVerse – Free Fire &amp; Free Fire MAX Sensitivity Generator" />'),
+  'twitter:title is configured'
+);
+
+// 5. Schema.org JSON-LD Structured Data
+assert(
+  seoHtmlContent.includes('"@type": "WebApplication"'),
+  'JSON-LD contains WebApplication structured schema'
+);
+assert(
+  seoHtmlContent.includes('"@type": "FAQPage"'),
+  'JSON-LD contains FAQPage structured schema'
+);
+assert(
+  seoHtmlContent.includes('"@type": "HowTo"'),
+  'JSON-LD contains HowTo structured schema'
+);
+
+// Verify FAQ question 4 explains calibration
+assert(
+  seoHtmlContent.includes('How does SensiVerse calibrate sensitivity for Free Fire and Free Fire MAX?'),
+  'JSON-LD FAQ explains SensiVerse calibration accurately'
+);
+
+// Verify Schema.org Fire Button approved constraints
+assert(
+  seoHtmlContent.includes('Fire button size slider from 10% to 100% with competitive presets [42, 46, 50, 54]'),
+  'JSON-LD WebApplication featureList reflects approved 10%–100% Fire Button slider and [42, 46, 50, 54] presets'
+);
+assert(
+  seoHtmlContent.includes('(10%–100% slider, presets [42, 46, 50, 54])'),
+  'JSON-LD HowTo schema reflects approved 10%–100% Fire Button slider and presets'
+);
+
+// 6. Robots.txt and Sitemap.xml verification
+const robotsTxtPath = path.resolve(process.cwd(), 'public/robots.txt');
+const robotsContent = fs.readFileSync(robotsTxtPath, 'utf-8');
+assert(robotsContent.includes('User-agent: *'), 'robots.txt includes wildcard user-agent');
+assert(robotsContent.includes('Allow: /'), 'robots.txt explicitly allows site crawling');
+assert(robotsContent.includes('Sitemap: https://sensiverse.ai.studio/sitemap.xml'), 'robots.txt links to sitemap.xml');
+
+const sitemapPath = path.resolve(process.cwd(), 'public/sitemap.xml');
+const sitemapContent = fs.readFileSync(sitemapPath, 'utf-8');
+assert(sitemapContent.includes('<loc>https://sensiverse.ai.studio/</loc>'), 'sitemap.xml contains home URL');
+assert(sitemapContent.includes('<loc>https://sensiverse.ai.studio/?game=freefire_india</loc>'), 'sitemap.xml contains Free Fire India URL');
+assert(sitemapContent.includes('<lastmod>2026-11-05</lastmod>'), 'sitemap.xml contains current lastmod date (2026-11-05)');
+
+// ==========================================
+// TEST GROUP 22: Phase 9A iPhone 17e Database Validation
+// ==========================================
+console.log('\n[TEST GROUP 22] Phase 9A: iPhone 17e Database Validation');
+
+const iphone17e = ALL_VERIFIED_PHONES.find(p => p.id === 'apple-17e');
+assert(Boolean(iphone17e), 'iPhone 17e exists in ALL_VERIFIED_PHONES database');
+assert(iphone17e?.name === 'iPhone 17e', `iPhone 17e has exact approved name (Got: ${iphone17e?.name})`);
+assert(iphone17e?.brand === 'Apple', `iPhone 17e brand is Apple (Got: ${iphone17e?.brand})`);
+assert(iphone17e?.screenSize === 6.1, `iPhone 17e has 6.1-inch display (Got: ${iphone17e?.screenSize})`);
+assert(
+  iphone17e?.resolution === '1170 x 2532' || iphone17e?.resolution === '2532 x 1170',
+  `iPhone 17e has 2532 x 1170 resolution (Got: ${iphone17e?.resolution})`
+);
+assert(iphone17e?.nativePpi === 460, `iPhone 17e has 460 native PPI (Got: ${iphone17e?.nativePpi})`);
+assert(iphone17e?.chipset === 'Apple A19', `iPhone 17e has Apple A19 chipset (Got: ${iphone17e?.chipset})`);
+assert(iphone17e?.refreshRate === 60, `iPhone 17e has verified 60Hz refresh rate (Got: ${iphone17e?.refreshRate})`);
+assert(iphone17e?.touchSamplingRate === null, 'iPhone 17e touchSamplingRate is null (no invented touch sampling rate)');
+assert(iphone17e?.touchSamplingRateVerified === false, 'iPhone 17e touchSamplingRateVerified is false');
+
+// Verify normal sensitivity engine calculation for iPhone 17e
+if (iphone17e) {
+  const p17eBaseline = getApprovedPlatformBaseline(iphone17e);
+  assert(p17eBaseline.general === 158, 'iPhone 17e gets approved iOS baseline General (158)');
+  assert(p17eBaseline.fireButtonSizePercent === 48, 'iPhone 17e gets approved iOS baseline Fire Button (48%)');
+
+  const p17eCalculated = calculateSensitivity('freefire_max', iphone17e, '2finger', 'balanced');
+  const p17eData = p17eCalculated.sensitivity.data as any;
+  assert(p17eData.general >= 0 && p17eData.general <= 200, `iPhone 17e normal sensitivity clamped in [0, 200] (Got: ${p17eData.general})`);
+  assert(
+    p17eCalculated.fireButton.sizePercent >= 10 && p17eCalculated.fireButton.sizePercent <= 100,
+    `iPhone 17e normal Fire Button size clamped in [10, 100]% (Got: ${p17eCalculated.fireButton.sizePercent}%)`
+  );
+}
+
+// ==========================================
+// TEST GROUP 23: Phase 9H Brazilian Profiles Implementation
+// ==========================================
+console.log('\n[TEST GROUP 23] Phase 9H: Brazilian Profiles Implementation');
+
+assert(PHASE9_BRAZILIAN_PROFILES.length === 3, 'Exactly 3 approved Brazilian profiles implemented');
+
+// Profile 1: Editorial Range Preset
+const editorialProfile = PHASE9_BRAZILIAN_PROFILES.find(p => p.id === 'brazil-editorial-range-preset');
+assert(Boolean(editorialProfile), 'Brazilian Editorial Range Preset exists');
+assert(
+  editorialProfile?.integrityTier === 'RANGE_BASED_SELECTION',
+  `Editorial profile integrity tier is RANGE_BASED_SELECTION (Got: ${editorialProfile?.integrityTier})`
+);
+assert(
+  Boolean(
+    !editorialProfile?.name.toLowerCase().includes('official') &&
+    !editorialProfile?.badgeLabel.toLowerCase().includes('official') &&
+    editorialProfile?.tagline.toLowerCase().includes('not official')
+  ),
+  'Editorial profile name and badge are not called official, and tagline clarifies not official'
+);
+assert(
+  editorialProfile?.values.general === 168,
+  `Editorial profile General is 168 (Got: ${editorialProfile?.values.general})`
+);
+assert(
+  editorialProfile?.values.redDot === 172,
+  `Editorial profile Red Dot is 172 (Got: ${editorialProfile?.values.redDot})`
+);
+assert(
+  editorialProfile?.values.scope2x === 162,
+  `Editorial profile 2x is 162 (Got: ${editorialProfile?.values.scope2x})`
+);
+assert(
+  editorialProfile?.values.scope4x === 145,
+  `Editorial profile 4x is 145 (Got: ${editorialProfile?.values.scope4x})`
+);
+assert(
+  editorialProfile?.values.sniperScope === 95,
+  `Editorial profile Sniper is 95 (Got: ${editorialProfile?.values.sniperScope})`
+);
+assert(
+  editorialProfile?.values.freeLook === 75,
+  `Editorial profile Free Look is 75 (Got: ${editorialProfile?.values.freeLook})`
+);
+assert(
+  editorialProfile?.values.fireButtonSizePercent === 46,
+  `Editorial profile Fire Button is 46% (Got: ${editorialProfile?.values.fireButtonSizePercent}%)`
+);
+assert(
+  [42, 46, 50, 54].includes(editorialProfile?.values.fireButtonSizePercent || 0),
+  'Editorial profile Fire Button is in approved presets [42, 46, 50, 54]'
+);
+
+// Profile 2: 120Hz ProMotion Adaptation
+const promo120Profile = PHASE9_BRAZILIAN_PROFILES.find(p => p.id === 'brazil-120hz-promotion-adaptation');
+assert(Boolean(promo120Profile), 'Brazilian 120Hz ProMotion Adaptation exists');
+assert(
+  promo120Profile?.integrityTier === 'INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE',
+  `120Hz profile is labeled INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE (Got: ${promo120Profile?.integrityTier})`
+);
+assert(
+  Boolean(promo120Profile?.tagline.includes('no verified community source')),
+  '120Hz profile tagline explicitly states no verified community source'
+);
+assert(
+  Boolean(
+    promo120Profile?.values.general === 152 &&
+    promo120Profile?.values.redDot === 158 &&
+    promo120Profile?.values.scope2x === 150 &&
+    promo120Profile?.values.scope4x === 136 &&
+    promo120Profile?.values.sniperScope === 84 &&
+    promo120Profile?.values.freeLook === 68 &&
+    promo120Profile?.values.fireButtonSizePercent === 48
+  ),
+  '120Hz profile matches approved Phase 9G 7-axis specification [152, 158, 150, 136, 84, 68, 48%]'
+);
+
+// Profile 3: 60Hz Standard Adaptation
+const std60Profile = PHASE9_BRAZILIAN_PROFILES.find(p => p.id === 'brazil-60hz-standard-adaptation');
+assert(Boolean(std60Profile), 'Brazilian 60Hz Standard Adaptation exists');
+assert(
+  std60Profile?.integrityTier === 'INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE',
+  `60Hz profile is labeled INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE (Got: ${std60Profile?.integrityTier})`
+);
+assert(
+  Boolean(std60Profile?.tagline.includes('no verified community source')),
+  '60Hz profile tagline explicitly states no verified community source'
+);
+assert(
+  std60Profile?.values.general === 172 &&
+  std60Profile?.values.redDot === 176 &&
+  std60Profile?.values.scope2x === 166 &&
+  std60Profile?.values.scope4x === 148 &&
+  std60Profile?.values.sniperScope === 96 &&
+  std60Profile?.values.freeLook === 78 &&
+  std60Profile?.values.fireButtonSizePercent === 46,
+  '60Hz profile matches approved Phase 9G 7-axis specification [172, 176, 166, 148, 96, 78, 46%]'
+);
+
+// Verify UI Components exist and include honest disclaimers
+const modalCodePath = path.resolve(process.cwd(), 'src/components/BrazilianSensiModal.tsx');
+const modalCode = fs.readFileSync(modalCodePath, 'utf-8');
+assert(modalCode.includes('Engine Isolation Guarantee'), 'BrazilianSensiModal includes Engine Isolation Guarantee');
+assert(modalCode.includes('transparencyDisclaimer'), 'BrazilianSensiModal renders honesty disclaimer');
+assert(modalCode.includes('True mathematical midpoints'), 'BrazilianSensiModal clarifies true mathematical midpoints');
+
+// Core Isolation: Normal Sensi defaults remain 100% untouched
+const defaultAndroidBaseline = getApprovedPlatformBaseline(androidPhoneSample);
+assert(defaultAndroidBaseline.general === 168, 'Normal Sensi Android baseline General remains 168');
+assert(defaultAndroidBaseline.fireButtonSizePercent === 46, 'Normal Sensi Android baseline Fire Button remains 46%');
+
+const defaultIosBaseline = getApprovedPlatformBaseline(iosPhoneSample);
+assert(defaultIosBaseline.general === 158, 'Normal Sensi iOS baseline General remains 158');
+assert(defaultIosBaseline.fireButtonSizePercent === 48, 'Normal Sensi iOS baseline Fire Button remains 48%');
+
+// ==========================================
+// TEST GROUP 24: Phase 9J Final Brazilian Mobile QA & 6+1 Calibration Wording
+// ==========================================
+console.log('\n[TEST GROUP 24] Phase 9J: Final Brazilian Mobile QA & 6+1 Settings Verification');
+
+// 1. Documentation of 6 sensitivity axes + Fire Button = 7 total calibrated settings
+assert(
+  sensiDisplayCode.includes('6 Sensitivity Axes + Fire Button (7 Total Settings)'),
+  'SensitivityDisplay documents 6 Sensitivity Axes + Fire Button (7 Total Settings)'
+);
+const modalUpdatedCode = fs.readFileSync(modalCodePath, 'utf-8');
+assert(
+  modalUpdatedCode.includes('7 Total Calibrated Settings (6 Sensitivity Axes + Fire Button)'),
+  'BrazilianSensiModal documents 7 Total Calibrated Settings (6 Sensitivity Axes + Fire Button)'
+);
+
+// 2. Full Simulated Lifecycle: Generate Normal -> Apply Brazilian -> Verify 7 Settings -> Revert -> Verify Exact Restore
+const qaPhone = ALL_VERIFIED_PHONES.find(p => p.id === 'apple-15-pro')!;
+const preNormalCalc = calculateSensitivity('freefire_max', qaPhone, '2finger', 'onetap');
+const preData = preNormalCalc.sensitivity.data as any;
+const preFireBtn = preNormalCalc.fireButton.sizePercent;
+
+// Verify pre-state normal baseline
+assert(preData.general >= 0 && preData.general <= 200, 'Initial Normal Sensi General is clamped [0, 200]');
+assert(preFireBtn >= 10 && preFireBtn <= 100, 'Initial Normal Sensi Fire Button is clamped [10, 100]%');
+
+// Step A: Capture Snapshot
+const simulatedSnapshot = {
+  sensitivity: JSON.parse(JSON.stringify(preNormalCalc.sensitivity)) as SensitivityOutput,
+  fireButton: { ...preNormalCalc.fireButton }
+};
+
+// Step B: Apply Editorial Profile
+const testProfile = PHASE9_BRAZILIAN_PROFILES[0];
+let activeData = {
+  ...preData,
+  general: testProfile.values.general,
+  redDot: testProfile.values.redDot,
+  scope2x: testProfile.values.scope2x,
+  scope4x: testProfile.values.scope4x,
+  sniperScope: testProfile.values.sniperScope,
+  freeLook: testProfile.values.freeLook
+};
+let activeBtn = testProfile.values.fireButtonSizePercent;
+
+assert(activeData.general === 168, 'Phase 9J: Applied Editorial General is 168');
+assert(activeData.redDot === 172, 'Phase 9J: Applied Editorial Red Dot is 172');
+assert(activeData.scope2x === 162, 'Phase 9J: Applied Editorial 2x is 162');
+assert(activeData.scope4x === 145, 'Phase 9J: Applied Editorial 4x is 145');
+assert(activeData.sniperScope === 95, 'Phase 9J: Applied Editorial Sniper is 95');
+assert(activeData.freeLook === 75, 'Phase 9J: Applied Editorial Free Look is 75');
+assert(activeBtn === 46, 'Phase 9J: Applied Editorial Fire Button is 46%');
+
+// Step C: Revert to Previous Snapshot
+const revertedSensi = simulatedSnapshot.sensitivity;
+const revertedData = revertedSensi.data as any;
+const revertedBtn = simulatedSnapshot.fireButton.sizePercent;
+
+assert(revertedData.general === preData.general, 'Phase 9J: Revert restores exact pre-Brazilian General');
+assert(revertedData.redDot === preData.redDot, 'Phase 9J: Revert restores exact pre-Brazilian Red Dot');
+assert(revertedData.scope2x === preData.scope2x, 'Phase 9J: Revert restores exact pre-Brazilian 2x Scope');
+assert(revertedData.scope4x === preData.scope4x, 'Phase 9J: Revert restores exact pre-Brazilian 4x Scope');
+assert(revertedData.sniperScope === preData.sniperScope, 'Phase 9J: Revert restores exact pre-Brazilian Sniper Scope');
+assert(revertedData.freeLook === preData.freeLook, 'Phase 9J: Revert restores exact pre-Brazilian Free Look');
+assert(revertedBtn === preFireBtn, 'Phase 9J: Revert restores exact pre-Brazilian Fire Button');
+
+// 3. Mobile touch target compliance in Brazilian modal
+assert(modalUpdatedCode.includes('min-h-[44px]'), 'BrazilianSensiModal includes accessible min-h-[44px] touch targets');
+assert(modalUpdatedCode.includes('touch-manipulation'), 'BrazilianSensiModal enables mobile touch-manipulation');
+assert(modalUpdatedCode.includes('max-h-[92vh] overflow-y-auto'), 'BrazilianSensiModal has fluid viewport-bounded scrolling');
+
+// ==========================================
+// TEST GROUP 25: iPhone Sensitivity Database (29 Models Exact Presets)
+// ==========================================
+console.log('\n[TEST GROUP 25] iPhone Sensitivity Database (29 Models Exact Presets)');
+
+const appleModels = getModelsForBrand('Apple');
+assert(appleModels.length === 29, `Apple brand returns exactly 29 models (Got: ${appleModels.length})`);
+
+const EXPECTED_IPHONE_PRESETS: Record<string, [number, number, number, number, number, number]> = {
+  'iPhone 11': [140, 128, 122, 115, 75, 100],
+  'iPhone 11 Pro': [138, 126, 120, 114, 74, 98],
+  'iPhone 11 Pro Max': [136, 124, 118, 112, 73, 96],
+  'iPhone 12 Mini': [137, 125, 119, 113, 74, 97],
+  'iPhone 12': [135, 123, 117, 111, 73, 96],
+  'iPhone 12 Pro': [133, 121, 115, 109, 72, 95],
+  'iPhone 12 Pro Max': [131, 119, 113, 107, 71, 94],
+  'iPhone 13 Mini': [134, 122, 116, 110, 72, 95],
+  'iPhone 13': [132, 120, 114, 108, 71, 94],
+  'iPhone 13 Pro': [130, 118, 112, 106, 70, 93],
+  'iPhone 13 Pro Max': [128, 116, 110, 104, 69, 92],
+  'iPhone 14': [131, 119, 113, 107, 70, 93],
+  'iPhone 14 Plus': [129, 117, 111, 105, 69, 92],
+  'iPhone 14 Pro': [127, 115, 109, 103, 68, 91],
+  'iPhone 14 Pro Max': [125, 113, 107, 101, 67, 90],
+  'iPhone 15': [128, 116, 110, 104, 68, 91],
+  'iPhone 15 Plus': [126, 114, 108, 102, 67, 90],
+  'iPhone 15 Pro': [124, 112, 106, 100, 66, 89],
+  'iPhone 15 Pro Max': [122, 110, 104, 98, 65, 88],
+  'iPhone 16e': [125, 113, 107, 101, 66, 89],
+  'iPhone 16': [123, 111, 105, 99, 65, 88],
+  'iPhone 16 Plus': [121, 109, 103, 97, 64, 87],
+  'iPhone 16 Pro': [119, 107, 101, 95, 63, 86],
+  'iPhone 16 Pro Max': [117, 105, 99, 93, 62, 85],
+  'iPhone 17': [120, 108, 102, 96, 64, 87],
+  'iPhone 17 Air': [118, 106, 100, 94, 63, 86],
+  'iPhone 17 Pro': [116, 104, 98, 92, 62, 85],
+  'iPhone 17 Pro Max': [114, 102, 96, 90, 61, 84],
+  'iPhone 17e': [122, 110, 104, 98, 63, 86],
+};
+
+Object.entries(EXPECTED_IPHONE_PRESETS).forEach(([modelName, expectedValues]) => {
+  const model = appleModels.find(m => m.name === modelName);
+  assert(Boolean(model), `Model exists in Apple database: ${modelName}`);
+  const preset = model?.customSensitivityPreset;
+  assert(Boolean(preset), `Model ${modelName} has customSensitivityPreset configured`);
+  if (preset) {
+    const [gen, red, s2, s4, snp, fl] = expectedValues;
+    assert(
+      preset.general === gen &&
+      preset.redDot === red &&
+      preset.scope2x === s2 &&
+      preset.scope4x === s4 &&
+      preset.sniperScope === snp &&
+      preset.freeLook === fl,
+      `Model ${modelName} preset matches exact spec [${expectedValues.join(',')}] (Got: [${preset.general},${preset.redDot},${preset.scope2x},${preset.scope4x},${preset.sniperScope},${preset.freeLook}])`
+    );
+  }
+});
+
+// Verify Samsung has 154 researched presets and other Android brands remain purely dynamic
+const samsungModels = getModelsForBrand('Samsung');
+const samsungWithPreset = samsungModels.filter(m => Boolean(m.customSensitivityPreset));
+assert(samsungWithPreset.length === 154, `Samsung models have exactly 154 researched custom presets (Got: ${samsungWithPreset.length})`);
+
+const motoModels = getModelsForBrand('Motorola');
+const motoWithPreset = motoModels.filter(m => Boolean(m.customSensitivityPreset));
+assert(motoWithPreset.length === 70, `Motorola models have exactly 70 custom presets (Got: ${motoWithPreset.length})`);
+
+const xiaomiModels = getModelsForBrand('Xiaomi');
+const xiaomiWithPreset = xiaomiModels.filter(m => Boolean(m.customSensitivityPreset));
+assert(xiaomiWithPreset.length === 29, `Xiaomi models have exactly 29 custom presets (Got: ${xiaomiWithPreset.length})`);
+
+// Verify DeviceSelector groups Apple models by generation
+const devSelectorCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/DeviceSelector.tsx'), 'utf-8');
+assert(devSelectorCode.includes('optgroup'), 'DeviceSelector implements optgroup for generation grouping');
+assert(devSelectorCode.includes('selectedBrand === \'Apple\''), 'DeviceSelector applies generation optgroup specifically when Apple brand is selected');
+
+// ==========================================
+// TEST GROUP 26: Indonesian Sensitivity Meta & Hero Copy Verification
+// ==========================================
+console.log('\n[TEST GROUP 26] Indonesian Sensitivity Meta & Hero Copy Verification');
+
+import { INDONESIAN_SENSI_PROFILES } from '../src/data/indonesiaSensiProfiles';
+
+// 1. All 3 Indonesian profiles exist
+assert(INDONESIAN_SENSI_PROFILES.length === 3, `Database includes exactly 3 Indonesian profiles (Got: ${INDONESIAN_SENSI_PROFILES.length})`);
+
+const indoEditorial = INDONESIAN_SENSI_PROFILES.find(p => p.id === 'indonesia-editorial-range-preset');
+assert(Boolean(indoEditorial), 'Indonesian Editorial Range Preset exists');
+assert(indoEditorial?.integrityTier === 'RANGE_BASED_SELECTION', 'Indonesian Editorial is labeled RANGE_BASED_SELECTION');
+assert(indoEditorial?.badgeLabel === 'Editorial Range Selection', 'Indonesian Editorial badge is Editorial Range Selection');
+assert(Boolean(indoEditorial?.publishedRanges), 'Indonesian Editorial publishes documented source ranges');
+assert(Boolean(indoEditorial?.trueMidpoints), 'Indonesian Editorial publishes true mathematical midpoints');
+assert(
+  Boolean(
+    indoEditorial?.values.general === 166 &&
+    indoEditorial?.values.redDot === 170 &&
+    indoEditorial?.values.scope2x === 160 &&
+    indoEditorial?.values.scope4x === 142 &&
+    indoEditorial?.values.sniperScope === 88 &&
+    indoEditorial?.values.freeLook === 76 &&
+    indoEditorial?.values.fireButtonSizePercent === 46
+  ),
+  'Indonesian Editorial matches 7-axis specification [166, 170, 160, 142, 88, 76, 46%]'
+);
+
+const indo120 = INDONESIAN_SENSI_PROFILES.find(p => p.id === 'indonesia-120hz-rusher-adaptation');
+assert(Boolean(indo120), 'Indonesian 120Hz Rusher Meta exists');
+assert(indo120?.integrityTier === 'INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE', 'Indonesian 120Hz is labeled INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE');
+assert(indo120?.values.fireButtonSizePercent === 46, 'Indonesian 120Hz Fire Button is 46%');
+
+const indo60 = INDONESIAN_SENSI_PROFILES.find(p => p.id === 'indonesia-60hz-standard-adaptation');
+assert(Boolean(indo60), 'Indonesian 60Hz Stability Preset exists');
+assert(indo60?.integrityTier === 'INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE', 'Indonesian 60Hz is labeled INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE');
+assert(indo60?.values.fireButtonSizePercent === 50, 'Indonesian 60Hz Fire Button is 50%');
+
+// 2. All 3 profiles have valid bounds and fire button presets
+INDONESIAN_SENSI_PROFILES.forEach((prof) => {
+  assert(prof.values.general >= 0 && prof.values.general <= 200, `Indonesian profile "${prof.name}" General in [0, 200]`);
+  assert(prof.values.redDot >= 0 && prof.values.redDot <= 200, `Indonesian profile "${prof.name}" Red Dot in [0, 200]`);
+  assert(prof.values.scope2x >= 0 && prof.values.scope2x <= 200, `Indonesian profile "${prof.name}" 2x Scope in [0, 200]`);
+  assert(prof.values.scope4x >= 0 && prof.values.scope4x <= 200, `Indonesian profile "${prof.name}" 4x Scope in [0, 200]`);
+  assert(prof.values.sniperScope >= 0 && prof.values.sniperScope <= 200, `Indonesian profile "${prof.name}" Sniper Scope in [0, 200]`);
+  assert(prof.values.freeLook >= 0 && prof.values.freeLook <= 200, `Indonesian profile "${prof.name}" Free Look in [0, 200]`);
+  assert((FIRE_BUTTON_PRESETS as readonly number[]).includes(prof.values.fireButtonSizePercent), `Indonesian profile "${prof.name}" Fire Button is in approved presets [42, 46, 50, 54]`);
+});
+
+// 3. Verify Hero Section copy has the exact user-requested shortened text
+const updatedHeroContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/HeroSection.tsx'), 'utf-8');
+assert(updatedHeroContent.includes('Stop copying random sensitivity settings. SensiVerse brings you Brazilian 🇧🇷 and Indonesian 🇮🇩 sensitivity presets, researched and gameplay-tested.'), 'HeroSection contains exact shortened description');
+assert(!updatedHeroContent.includes('Every recommendation is adapted to your device’s screen size'), 'HeroSection cleanly removes text below paragraph ("Every recommendation...")');
+assert(!updatedHeroContent.includes('Play your way'), 'HeroSection cleanly removes "Play your way"');
+
+// 4. Verify SensitivityDisplay has both Brazilian and Indonesian meta buttons
+const updatedSensiDisplay = fs.readFileSync(path.resolve(process.cwd(), 'src/components/SensitivityDisplay.tsx'), 'utf-8');
+assert(updatedSensiDisplay.includes('Brazilian Meta'), 'SensitivityDisplay includes Brazilian Meta button');
+assert(updatedSensiDisplay.includes('Indonesian Meta'), 'SensitivityDisplay includes Indonesian Meta button');
+
+// 5. Verify IndonesianSensiModal exists and has accessible touch targets and disclaimer
+const indoModalCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/IndonesianSensiModal.tsx'), 'utf-8');
+assert(indoModalCode.includes('min-h-[44px]'), 'IndonesianSensiModal has accessible min-h-[44px] touch targets');
+assert(indoModalCode.includes('Engine Isolation Guarantee'), 'IndonesianSensiModal includes Engine Isolation Guarantee');
+assert(indoModalCode.includes('transparencyDisclaimer'), 'IndonesianSensiModal renders honesty disclaimer');
+
+// 6. Verify Normal Sensi defaults remain untouched (Core Isolation)
+assert(getApprovedPlatformBaseline(androidPhoneSample).general === 168, 'Normal Android baseline remains 168');
+assert(getApprovedPlatformBaseline(iosPhoneSample).general === 158, 'Normal iOS baseline remains 158');
+
+// 7. Verify Live Activity Counter (19-739 range, 21-step irregular pattern, 5-25s interval, no DEMO ACTIVITY)
+const liveCounterContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/LiveActivityCounter.tsx'), 'utf-8');
+assert(liveCounterContent.includes('MIN_COUNT = 19') && liveCounterContent.includes('MAX_COUNT = 739'), 'LiveActivityCounter is bounded strictly between 19 and 739');
+assert(!liveCounterContent.includes('DEMO ACTIVITY'), 'LiveActivityCounter removed "DEMO ACTIVITY" label');
+assert(liveCounterContent.includes('LIVE'), 'LiveActivityCounter preserves "LIVE" label');
+assert(liveCounterContent.includes('#00FF66'), 'LiveActivityCounter preserves cyber green neon palette');
+assert(liveCounterContent.includes('requestAnimationFrame'), 'LiveActivityCounter uses smooth animation interpolation');
+assert(liveCounterContent.includes('minInterval = 5000') && liveCounterContent.includes('maxInterval = 25000'), 'Update interval is strictly between 5 and 25 seconds');
+
+import { VISITOR_COUNTER_PATTERN } from '../src/components/LiveActivityCounter';
+assert(VISITOR_COUNTER_PATTERN.length === 21, `Visitor counter pattern has exactly 21 steps (Got: ${VISITOR_COUNTER_PATTERN.length})`);
+const expectedPattern = [
+  'up', 'up', 'down', 'down', 'down',
+  'up', 'down', 'down',
+  'up', 'up', 'down', 'down', 'down',
+  'up', 'down',
+  'up', 'up', 'up',
+  'down', 'up', 'up'
+];
+assert(
+  JSON.stringify(VISITOR_COUNTER_PATTERN) === JSON.stringify(expectedPattern),
+  'Visitor counter pattern matches Zyada/Kam sequence: Zyada, Zyada, Kam, Kam, Kam, Zyada, Kam, Kam, Zyada, Zyada, Kam, Kam, Kam, Zyada, Kam, Zyada, Zyada, Zyada, Kam, Zyada, Zyada'
+);
+
+// ==========================================
+// TEST GROUP 27: Samsung 154-Model Researched Slow Sensi Database Verification
+// ==========================================
+console.log('\n[TEST GROUP 27] Samsung 154-Model Researched Slow Sensi Database Verification');
+
+import { SAMSUNG_PHONES } from '../src/data/phones/samsung';
+import { 
+  SAMSUNG_154_SLOW_SENSI_CHART, 
+  SAMSUNG_SERIES_COUNTS, 
+  SAMSUNG_MISSING_Z_SERIES_AUDIT 
+} from '../src/data/samsungSensiDatabase';
+
+// 1. Exactly 154 models in both runtime database and structured database
+assert(SAMSUNG_PHONES.length === 154, `SAMSUNG_PHONES has exactly 154 models (Got: ${SAMSUNG_PHONES.length})`);
+assert(SAMSUNG_154_SLOW_SENSI_CHART.length === 154, `SAMSUNG_154_SLOW_SENSI_CHART has exactly 154 models (Got: ${SAMSUNG_154_SLOW_SENSI_CHART.length})`);
+
+// 2. Zero duplicate model names and IDs
+const samModelIds = new Set(SAMSUNG_PHONES.map(p => p.id));
+assert(samModelIds.size === 154, `All 154 Samsung model IDs are unique (Got: ${samModelIds.size})`);
+
+const samModelNames = new Set(SAMSUNG_PHONES.map(p => p.name));
+assert(samModelNames.size === 154, `All 154 Samsung model names are unique (Got: ${samModelNames.size})`);
+
+// 3. Every model has valid, non-blank, model-specific 7-axis settings
+const uniqueGeneralValues = new Set(SAMSUNG_PHONES.map(p => p.customSensitivityPreset?.general));
+assert(uniqueGeneralValues.size > 15, `General sensitivity is model-specific and varies across devices (Got ${uniqueGeneralValues.size} distinct general values)`);
+
+const uniqueRedDotValues = new Set(SAMSUNG_PHONES.map(p => p.customSensitivityPreset?.redDot));
+assert(uniqueRedDotValues.size > 15, `Red Dot sensitivity is model-specific and varies across devices (Got ${uniqueRedDotValues.size} distinct red dot values)`);
+
+const uniqueFireButtons = new Set(SAMSUNG_PHONES.map(p => p.customFireButtonPreset));
+assert(uniqueFireButtons.size >= 4, `Fire button sizes are model-specific and vary across devices (Got ${uniqueFireButtons.size} distinct fire button sizes)`);
+
+for (const phone of SAMSUNG_PHONES) {
+  const p = phone.customSensitivityPreset;
+  assert(Boolean(p), `Phone ${phone.name} has customSensitivityPreset`);
+  if (!p) continue;
+  
+  // Free Fire MAX bounds
+  assert(p.general >= 100 && p.general <= 200, `${phone.name} general within bounds (Got: ${p.general})`);
+  assert(p.redDot >= 100 && p.redDot <= 200, `${phone.name} redDot within bounds (Got: ${p.redDot})`);
+  assert(typeof p.scope2x === 'number' && p.scope2x >= 100 && p.scope2x <= 200, `${phone.name} scope2x within bounds (Got: ${p.scope2x})`);
+  assert(typeof p.scope4x === 'number' && p.scope4x >= 100 && p.scope4x <= 200, `${phone.name} scope4x within bounds (Got: ${p.scope4x})`);
+  assert(typeof p.sniperScope === 'number' && p.sniperScope >= 50 && p.sniperScope <= 150, `${phone.name} sniperScope within bounds (Got: ${p.sniperScope})`);
+  assert(typeof p.freeLook === 'number' && p.freeLook >= 50 && p.freeLook <= 200, `${phone.name} freeLook within bounds (Got: ${p.freeLook})`);
+  
+  // Fire button bounds (30% - 80%)
+  assert(
+    typeof phone.customFireButtonPreset === 'number' && 
+    phone.customFireButtonPreset >= 30 && 
+    phone.customFireButtonPreset <= 80,
+    `${phone.name} customFireButtonPreset within bounds (Got: ${phone.customFireButtonPreset})`
+  );
+
+  // Recommended DPI bounds (300 - 900)
+  assert(
+    typeof phone.recommendedDpi === 'number' && 
+    phone.recommendedDpi >= 300 && 
+    phone.recommendedDpi <= 900,
+    `${phone.name} recommendedDpi within bounds (Got: ${phone.recommendedDpi})`
+  );
+}
+
+// 4. Series breakdown matches expected distributions
+assert(SAMSUNG_SERIES_COUNTS.galaxyS === 28, `Galaxy S series has 28 models (Got: ${SAMSUNG_SERIES_COUNTS.galaxyS})`);
+assert(SAMSUNG_SERIES_COUNTS.galaxyA === 62, `Galaxy A series has 62 models (Got: ${SAMSUNG_SERIES_COUNTS.galaxyA})`);
+assert(SAMSUNG_SERIES_COUNTS.galaxyM === 35, `Galaxy M series has 35 models (Got: ${SAMSUNG_SERIES_COUNTS.galaxyM})`);
+assert(SAMSUNG_SERIES_COUNTS.galaxyF === 21, `Galaxy F series has 21 models (Got: ${SAMSUNG_SERIES_COUNTS.galaxyF})`);
+assert(SAMSUNG_SERIES_COUNTS.galaxyTab === 6, `Galaxy Tab series has 6 models (Got: ${SAMSUNG_SERIES_COUNTS.galaxyTab})`);
+assert(SAMSUNG_SERIES_COUNTS.galaxyNote === 2, `Galaxy Note series has 2 models (Got: ${SAMSUNG_SERIES_COUNTS.galaxyNote})`);
+
+// 5. Z-series missing audit identifies absence of Z Fold / Z Flip from sensiff.pro
+assert(Boolean(SAMSUNG_MISSING_Z_SERIES_AUDIT), 'Samsung missing Z series audit is documented');
+assert(SAMSUNG_MISSING_Z_SERIES_AUDIT.missingModels.length >= 10, 'Audit lists missing Galaxy Z Fold and Flip models');
+assert(SAMSUNG_MISSING_Z_SERIES_AUDIT.missingModels.includes('Galaxy Z Fold 6'), 'Audit explicitly flags Galaxy Z Fold 6');
+
+// ==========================================
+// TEST GROUP 28: Motorola 70-Model Free Fire Sensitivity Chart Verification
+// ==========================================
+console.log('\n[TEST GROUP 28] Motorola 70-Model Free Fire Sensitivity Chart Verification');
+
+import { MOTOROLA_PHONES } from '../src/data/phones/motorola';
+
+// 1. Exactly 70 Motorola models
+assert(MOTOROLA_PHONES.length === 70, `MOTOROLA_PHONES contains exactly 70 models (Got: ${MOTOROLA_PHONES.length})`);
+
+// 2. Zero duplicate IDs and names
+const motoIds = new Set(MOTOROLA_PHONES.map(p => p.id));
+assert(motoIds.size === 70, `All 70 Motorola model IDs are unique (Got: ${motoIds.size})`);
+
+const motoNames = new Set(MOTOROLA_PHONES.map(p => p.name));
+assert(motoNames.size === 70, `All 70 Motorola model names are unique (Got: ${motoNames.size})`);
+
+// 3. Series breakdown: Edge (16), G (49), E (5)
+const motoEdge = MOTOROLA_PHONES.filter(p => p.series === 'Motorola Edge');
+const motoG = MOTOROLA_PHONES.filter(p => p.series === 'Moto G');
+const motoE = MOTOROLA_PHONES.filter(p => p.series === 'Moto E');
+assert(motoEdge.length === 16, `Motorola Edge series has 16 models (Got: ${motoEdge.length})`);
+assert(motoG.length === 49, `Moto G series has 49 models (Got: ${motoG.length})`);
+assert(motoE.length === 5, `Moto E series has 5 models (Got: ${motoE.length})`);
+
+// 4. Exact listed values verification sample checks
+const edge70Pro = MOTOROLA_PHONES.find(p => p.name.includes('Edge 70 Pro'));
+assert(Boolean(edge70Pro), 'Edge 70 Pro is present in database');
+assert(
+  Boolean(
+    edge70Pro?.customSensitivityPreset?.general === 167 &&
+    edge70Pro?.customSensitivityPreset?.redDot === 162 &&
+    edge70Pro?.customSensitivityPreset?.scope2x === 154 &&
+    edge70Pro?.customSensitivityPreset?.scope4x === 146
+  ),
+  `Edge 70 Pro loads exact values [167, 162, 154, 146] (Got: [${edge70Pro?.customSensitivityPreset?.general}, ${edge70Pro?.customSensitivityPreset?.redDot}, ${edge70Pro?.customSensitivityPreset?.scope2x}, ${edge70Pro?.customSensitivityPreset?.scope4x}])`
+);
+
+const g47Power = MOTOROLA_PHONES.find(p => p.name.includes('G47 Power'));
+assert(Boolean(g47Power), 'G47 Power is present in database');
+assert(
+  Boolean(
+    g47Power?.customSensitivityPreset?.general === 178 &&
+    g47Power?.customSensitivityPreset?.redDot === 172 &&
+    g47Power?.customSensitivityPreset?.scope2x === 162 &&
+    g47Power?.customSensitivityPreset?.scope4x === 151
+  ),
+  `G47 Power loads exact values [178, 172, 162, 151]`
+);
+
+const e15 = MOTOROLA_PHONES.find(p => p.name.includes('E15'));
+assert(Boolean(e15), 'E15 is present in database');
+assert(
+  Boolean(
+    e15?.customSensitivityPreset?.general === 187 &&
+    e15?.customSensitivityPreset?.redDot === 181 &&
+    e15?.customSensitivityPreset?.scope2x === 168 &&
+    e15?.customSensitivityPreset?.scope4x === 155
+  ),
+  `E15 loads exact values [187, 181, 168, 155]`
+);
+
+const g9Power = MOTOROLA_PHONES.find(p => p.name.includes('G9 Power'));
+assert(Boolean(g9Power), 'G9 Power is present in database');
+assert(
+  Boolean(
+    g9Power?.customSensitivityPreset?.general === 186 &&
+    g9Power?.customSensitivityPreset?.redDot === 180 &&
+    g9Power?.customSensitivityPreset?.scope2x === 167 &&
+    g9Power?.customSensitivityPreset?.scope4x === 153
+  ),
+  `G9 Power loads exact values [186, 180, 167, 153]`
+);
+
+// 5. Verification that Sniper Scope and Free Look are NOT invented (omitted / undefined)
+for (const phone of MOTOROLA_PHONES) {
+  const p = phone.customSensitivityPreset;
+  assert(Boolean(p), `${phone.name} has customSensitivityPreset`);
+  if (!p) continue;
+
+  assert(typeof p.general === 'number' && p.general >= 160 && p.general <= 200, `${phone.name} General in valid range`);
+  assert(typeof p.redDot === 'number' && p.redDot >= 160 && p.redDot <= 200, `${phone.name} Red Dot in valid range`);
+  assert(typeof p.scope2x === 'number' && p.scope2x >= 150 && p.scope2x <= 180, `${phone.name} 2x in valid range`);
+  assert(typeof p.scope4x === 'number' && p.scope4x >= 140 && p.scope4x <= 170, `${phone.name} 4x in valid range`);
+  assert(p.sniperScope === undefined, `${phone.name} does NOT invent unverified Sniper Scope`);
+  assert(p.freeLook === undefined, `${phone.name} does NOT invent unverified Free Look`);
+}
+
+// 6. Device search UI verification
+const selectorCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/DeviceSelector.tsx'), 'utf-8');
+assert(selectorCode.includes('Quick search any phone'), 'DeviceSelector includes device search input');
+assert(selectorCode.includes('selectedBrand === \'Motorola\''), 'DeviceSelector includes Motorola optgroup series organization');
+
+// ==========================================
+// TEST GROUP 29: Complete Xiaomi Sensitivity Database & Model-Wise Chart Verification
+// ==========================================
+console.log('\n[TEST GROUP 29] Complete Xiaomi Sensitivity Database & Model-Wise Chart Verification');
+
+import { XIAOMI_PHONES, REDMI_PHONES } from '../src/data/phones/xiaomi';
+
+// 1. Exact 29 Xiaomi models present
+assert(XIAOMI_PHONES.length === 29, `XIAOMI_PHONES contains exactly 29 models (Got: ${XIAOMI_PHONES.length})`);
+assert(REDMI_PHONES.length === 84, `REDMI_PHONES contains exactly 84 models preserved separately (Got: ${REDMI_PHONES.length})`);
+
+// 2. Xiaomi is separate from Redmi in database brands
+const brandXiaomiModels = getModelsForBrand('Xiaomi');
+const brandRedmiModels = getModelsForBrand('Redmi');
+assert(brandXiaomiModels.length === 29, `Xiaomi brand returns exactly 29 models (Got: ${brandXiaomiModels.length})`);
+assert(brandRedmiModels.length === 84, `Redmi brand returns exactly 84 models separately (Got: ${brandRedmiModels.length})`);
+assert(brandXiaomiModels.every(p => p.brand === 'Xiaomi'), 'All models under Xiaomi have brand: "Xiaomi"');
+assert(brandRedmiModels.every(p => p.brand === 'Redmi'), 'All models under Redmi have brand: "Redmi"');
+
+// 3. Exact 29 models with exact General and Red Dot values
+interface ExpectedXiaomiSettings {
+  gen: number;
+  rd: number;
+  scope2x: number;
+  scope4x: number;
+  sniperScope: number;
+  freeLook: number;
+  fireButton: number;
+  year: number;
+}
+
+const EXPECTED_XIAOMI_VALUES: Record<string, ExpectedXiaomiSettings> = {
+  'Mi 10': { gen: 171, rd: 166, scope2x: 156, scope4x: 146, sniperScope: 92, freeLook: 138, fireButton: 55, year: 2020 },
+  'Mi 10i': { gen: 172, rd: 166, scope2x: 157, scope4x: 147, sniperScope: 92, freeLook: 138, fireButton: 56, year: 2020 },
+  'Mi 10T': { gen: 167, rd: 162, scope2x: 154, scope4x: 146, sniperScope: 90, freeLook: 135, fireButton: 54, year: 2020 },
+  'Mi 10T Pro': { gen: 167, rd: 162, scope2x: 154, scope4x: 146, sniperScope: 89, freeLook: 134, fireButton: 53, year: 2020 },
+  'Mi 11 Lite': { gen: 173, rd: 168, scope2x: 157, scope4x: 147, sniperScope: 93, freeLook: 139, fireButton: 56, year: 2021 },
+  'Mi 11 Lite NE 5G': { gen: 170, rd: 165, scope2x: 156, scope4x: 146, sniperScope: 92, freeLook: 138, fireButton: 55, year: 2021 },
+  'Mi 11X': { gen: 169, rd: 164, scope2x: 155, scope4x: 146, sniperScope: 91, freeLook: 136, fireButton: 54, year: 2021 },
+  'Xiaomi 11T': { gen: 169, rd: 164, scope2x: 155, scope4x: 146, sniperScope: 91, freeLook: 136, fireButton: 54, year: 2021 },
+  'Xiaomi 11T Pro': { gen: 169, rd: 164, scope2x: 155, scope4x: 146, sniperScope: 91, freeLook: 136, fireButton: 53, year: 2021 },
+  'Xiaomi 12': { gen: 167, rd: 162, scope2x: 153, scope4x: 144, sniperScope: 90, freeLook: 134, fireButton: 54, year: 2022 },
+  'Xiaomi 12T': { gen: 169, rd: 164, scope2x: 155, scope4x: 146, sniperScope: 91, freeLook: 137, fireButton: 54, year: 2022 },
+  'Xiaomi 12 Pro': { gen: 169, rd: 164, scope2x: 155, scope4x: 146, sniperScope: 91, freeLook: 136, fireButton: 56, year: 2022 },
+  'Xiaomi 12T Pro': { gen: 169, rd: 164, scope2x: 155, scope4x: 146, sniperScope: 90, freeLook: 136, fireButton: 53, year: 2022 },
+  'Xiaomi 13': { gen: 167, rd: 162, scope2x: 153, scope4x: 144, sniperScope: 90, freeLook: 135, fireButton: 53, year: 2023 },
+  'Xiaomi 13 Pro': { gen: 169, rd: 164, scope2x: 155, scope4x: 146, sniperScope: 91, freeLook: 136, fireButton: 55, year: 2023 },
+  'Xiaomi 13T': { gen: 167, rd: 162, scope2x: 154, scope4x: 146, sniperScope: 90, freeLook: 136, fireButton: 53, year: 2023 },
+  'Xiaomi 13T Pro': { gen: 167, rd: 162, scope2x: 154, scope4x: 145, sniperScope: 89, freeLook: 135, fireButton: 52, year: 2023 },
+  'Xiaomi 14': { gen: 167, rd: 162, scope2x: 153, scope4x: 144, sniperScope: 90, freeLook: 135, fireButton: 52, year: 2024 },
+  'Xiaomi 14 Ultra': { gen: 169, rd: 164, scope2x: 155, scope4x: 146, sniperScope: 91, freeLook: 136, fireButton: 55, year: 2024 },
+  'Xiaomi 14T': { gen: 167, rd: 162, scope2x: 154, scope4x: 146, sniperScope: 90, freeLook: 136, fireButton: 53, year: 2024 },
+  'Xiaomi 14T Pro': { gen: 167, rd: 162, scope2x: 154, scope4x: 145, sniperScope: 89, freeLook: 135, fireButton: 52, year: 2024 },
+  'Xiaomi 15': { gen: 167, rd: 162, scope2x: 153, scope4x: 144, sniperScope: 89, freeLook: 134, fireButton: 52, year: 2025 },
+  'Xiaomi 15 Ultra': { gen: 169, rd: 164, scope2x: 155, scope4x: 146, sniperScope: 91, freeLook: 136, fireButton: 55, year: 2025 },
+  'Xiaomi 15T': { gen: 170, rd: 165, scope2x: 156, scope4x: 147, sniperScope: 92, freeLook: 138, fireButton: 54, year: 2025 },
+  'Xiaomi 15T Pro': { gen: 168, rd: 163, scope2x: 155, scope4x: 146, sniperScope: 90, freeLook: 136, fireButton: 53, year: 2025 },
+  'Xiaomi 17': { gen: 167, rd: 162, scope2x: 153, scope4x: 144, sniperScope: 89, freeLook: 134, fireButton: 51, year: 2026 },
+  'Xiaomi 17 Ultra': { gen: 170, rd: 165, scope2x: 156, scope4x: 147, sniperScope: 92, freeLook: 138, fireButton: 56, year: 2026 },
+  'Xiaomi 17T': { gen: 168, rd: 163, scope2x: 155, scope4x: 146, sniperScope: 90, freeLook: 136, fireButton: 53, year: 2026 },
+  'Xiaomi 17T Pro': { gen: 168, rd: 163, scope2x: 154, scope4x: 145, sniperScope: 89, freeLook: 135, fireButton: 52, year: 2026 },
+};
+
+Object.entries(EXPECTED_XIAOMI_VALUES).forEach(([modelName, expected]) => {
+  const phone = XIAOMI_PHONES.find(p => p.name === modelName);
+  assert(Boolean(phone), `Xiaomi model "${modelName}" is present in database`);
+  if (phone) {
+    const preset = phone.customSensitivityPreset;
+    assert(Boolean(preset), `Xiaomi "${modelName}" has customSensitivityPreset`);
+    assert(preset?.general === expected.gen, `Xiaomi "${modelName}" General === ${expected.gen} (Got: ${preset?.general})`);
+    assert(preset?.redDot === expected.rd, `Xiaomi "${modelName}" Red Dot === ${expected.rd} (Got: ${preset?.redDot})`);
+    assert(preset?.scope2x === expected.scope2x, `Xiaomi "${modelName}" 2x Scope === ${expected.scope2x} (Got: ${preset?.scope2x})`);
+    assert(preset?.scope4x === expected.scope4x, `Xiaomi "${modelName}" 4x Scope === ${expected.scope4x} (Got: ${preset?.scope4x})`);
+    assert(preset?.sniperScope === expected.sniperScope, `Xiaomi "${modelName}" Sniper Scope === ${expected.sniperScope} (Got: ${preset?.sniperScope})`);
+    assert(preset?.freeLook === expected.freeLook, `Xiaomi "${modelName}" Free Look === ${expected.freeLook} (Got: ${preset?.freeLook})`);
+    assert(phone.customFireButtonPreset === expected.fireButton, `Xiaomi "${modelName}" Fire Button === ${expected.fireButton}% (Got: ${phone.customFireButtonPreset}%)`);
+  }
+});
+
+// 4. Year-wise organization: older models first, 2023 models minimal (only 4)
+const modelsInOrder = getModelsForBrand('Xiaomi');
+assert(modelsInOrder[0].name === 'Mi 10', `First Xiaomi model in list is Mi 10 (2020)`);
+assert(modelsInOrder[1].name === 'Mi 10i', `Second Xiaomi model in list is Mi 10i (2020)`);
+assert(modelsInOrder[modelsInOrder.length - 1].name === 'Xiaomi 17T Pro', `Last Xiaomi model in list is Xiaomi 17T Pro (2026)`);
+
+// Check releaseYear ascending order
+let isYearAscending = true;
+for (let i = 0; i < modelsInOrder.length - 1; i++) {
+  const curYear = modelsInOrder[i].releaseYear || 2020;
+  const nextYear = modelsInOrder[i + 1].releaseYear || 2020;
+  if (curYear > nextYear) {
+    isYearAscending = false;
+    break;
+  }
+}
+assert(isYearAscending, 'Xiaomi models in getModelsForBrand are organized chronologically with older models first');
+
+// Check 2023 models are kept minimal
+const models2023 = modelsInOrder.filter(p => p.releaseYear === 2023);
+assert(models2023.length === 4, `2023 models are kept minimal (exactly 4 models: Xiaomi 13, 13 Pro, 13T, 13T Pro)`);
+
+// 5. DeviceSelector dropdown implements optgroup for Xiaomi
+assert(selectorCode.includes('selectedBrand === \'Xiaomi\''), 'DeviceSelector implements optgroup for Xiaomi models');
+assert(selectorCode.includes('2020 Era'), 'DeviceSelector includes 2020 Era optgroup for Xiaomi');
+
+// ==========================================
+// TEST GROUP 30: Complete Redmi Sensitivity Database & Model-Wise Chart Verification
+// ==========================================
+console.log('\n[TEST GROUP 30] Complete Redmi Sensitivity Database & Model-Wise Chart Verification');
+
+// 1. Exact 84 Redmi models present
+assert(REDMI_PHONES.length === 84, `Database includes exactly 84 Redmi models (Got: ${REDMI_PHONES.length})`);
+assert(brandRedmiModels.length === 84, `getModelsForBrand('Redmi') returns exactly 84 models (Got: ${brandRedmiModels.length})`);
+
+// 2. All 84 models have exact General and Red Dot values from the user prompt chart
+const EXPECTED_REDMI_VALUES: Record<string, { gen: number; rd: number; year: number }> = {
+  'Note 8 Pro (2019)': { gen: 177, rd: 172, year: 2019 },
+  'Note 8 (2019)': { gen: 181, rd: 175, year: 2019 },
+  'Note 7 (2019)': { gen: 184, rd: 178, year: 2019 },
+  'Note 9 Pro (2020)': { gen: 178, rd: 173, year: 2020 },
+  'Note 9 Pro Max (2020)': { gen: 176, rd: 170, year: 2020 },
+  'Note 9 (2020)': { gen: 185, rd: 179, year: 2020 },
+  'Redmi 9 Power (2020)': { gen: 182, rd: 176, year: 2020 },
+  'Redmi 9 (2020)': { gen: 185, rd: 179, year: 2020 },
+  'Redmi 9 Prime (2020)': { gen: 185, rd: 179, year: 2020 },
+  'Redmi 9C (2020)': { gen: 187, rd: 181, year: 2020 },
+  'Redmi 9A (2020)': { gen: 190, rd: 184, year: 2020 },
+  'Redmi 9i (2020)': { gen: 188, rd: 182, year: 2020 },
+  'Note 10 Pro (2021)': { gen: 172, rd: 166, year: 2021 },
+  'Note 10 Pro Max (2021)': { gen: 172, rd: 166, year: 2021 },
+  'Note 11T 5G (2021)': { gen: 173, rd: 168, year: 2021 },
+  'Note 10 5G (2021)': { gen: 177, rd: 171, year: 2021 },
+  'Note 10T 5G (2021)': { gen: 177, rd: 171, year: 2021 },
+  'Note 10S (2021)': { gen: 177, rd: 171, year: 2021 },
+  'Note 10 (2021)': { gen: 179, rd: 174, year: 2021 },
+  'Redmi 10 (2021)': { gen: 179, rd: 173, year: 2021 },
+  'Redmi 10 Prime (2021)': { gen: 179, rd: 173, year: 2021 },
+  'Redmi 9T (2021)': { gen: 182, rd: 176, year: 2021 },
+  'Note 12 Pro 5G (2022)': { gen: 169, rd: 164, year: 2022 },
+  'Note 11 Pro+ 5G (2022)': { gen: 169, rd: 164, year: 2022 },
+  'Note 11 Pro 5G (2022)': { gen: 172, rd: 166, year: 2022 },
+  'Redmi 11 Prime (2022)': { gen: 177, rd: 171, year: 2022 },
+  'Redmi 11 Prime 5G (2022)': { gen: 177, rd: 171, year: 2022 },
+  'Note 11 Pro (2022)': { gen: 174, rd: 168, year: 2022 },
+  'Note 11S (2022)': { gen: 175, rd: 169, year: 2022 },
+  'Note 11 (2022)': { gen: 177, rd: 172, year: 2022 },
+  'Redmi 10C (2022)': { gen: 184, rd: 178, year: 2022 },
+  'Redmi 10 Power (2022)': { gen: 178, rd: 173, year: 2022 },
+  'Redmi 10A (2022)': { gen: 188, rd: 182, year: 2022 },
+  'Redmi A1 (2022)': { gen: 193, rd: 186, year: 2022 },
+  'Note 13 Pro+ 5G (2023)': { gen: 169, rd: 164, year: 2023 },
+  'Note 13 Pro 5G (2023)': { gen: 169, rd: 164, year: 2023 },
+  'Note 13 5G (2023)': { gen: 173, rd: 167, year: 2023 },
+  'Redmi 13C 5G (2023)': { gen: 175, rd: 170, year: 2023 },
+  'Note 12 5G (2023)': { gen: 174, rd: 168, year: 2023 },
+  'Note 12 (2023)': { gen: 174, rd: 168, year: 2023 },
+  'Redmi 12 5G (2023)': { gen: 176, rd: 171, year: 2023 },
+  'Redmi Pad SE (2023)': { gen: 195, rd: 190, year: 2023 },
+  'Note 12S (2023)': { gen: 175, rd: 169, year: 2023 },
+  'Redmi 12 (2023)': { gen: 178, rd: 172, year: 2023 },
+  'Redmi 13C (2023)': { gen: 178, rd: 173, year: 2023 },
+  'Redmi 12C (2023)': { gen: 183, rd: 177, year: 2023 },
+  'Redmi A2 (2023)': { gen: 189, rd: 183, year: 2023 },
+  'Note 14 Pro+ 5G (2024)': { gen: 169, rd: 164, year: 2024 },
+  'Note 14 Pro 5G (2024)': { gen: 169, rd: 164, year: 2024 },
+  'Redmi Pad Pro (2024)': { gen: 188, rd: 183, year: 2024 },
+  'Note 14 5G (2024)': { gen: 172, rd: 166, year: 2024 },
+  'Note 13 Pro (2024)': { gen: 171, rd: 165, year: 2024 },
+  'Note 13 (2024)': { gen: 174, rd: 168, year: 2024 },
+  'Redmi 13 5G (2024)': { gen: 174, rd: 169, year: 2024 },
+  'Redmi 13 (2024)': { gen: 176, rd: 171, year: 2024 },
+  'Redmi A4 5G (2024)': { gen: 179, rd: 173, year: 2024 },
+  'Redmi 14C (2024)': { gen: 177, rd: 172, year: 2024 },
+  'Redmi A3 (2024)': { gen: 186, rd: 180, year: 2024 },
+  'Note 15 Pro+ 5G (2025)': { gen: 170, rd: 165, year: 2025 },
+  'Note 15 Pro 5G (2025)': { gen: 170, rd: 165, year: 2025 },
+  'Note 15 5G (2025)': { gen: 169, rd: 164, year: 2025 },
+  'Note 15 Pro (2025)': { gen: 170, rd: 165, year: 2025 },
+  'Redmi 15 5G (2025)': { gen: 171, rd: 165, year: 2025 },
+  'Note 14 Pro (2025)': { gen: 171, rd: 165, year: 2025 },
+  'Note 14 (2025)': { gen: 173, rd: 167, year: 2025 },
+  'Note 15 (2025)': { gen: 173, rd: 168, year: 2025 },
+  'Redmi 15C 5G (2025)': { gen: 174, rd: 169, year: 2025 },
+  'Note 14S (2025)': { gen: 171, rd: 165, year: 2025 },
+  'Redmi 15 4G (2025)': { gen: 173, rd: 168, year: 2025 },
+  'Redmi 14C 5G (2025)': { gen: 178, rd: 172, year: 2025 },
+  'Redmi 15C (2025)': { gen: 177, rd: 172, year: 2025 },
+  'Redmi A5 (2025)': { gen: 184, rd: 178, year: 2025 },
+  'Note 17 Pro Max (2026)': { gen: 170, rd: 165, year: 2026 },
+  'Note 17 Pro (2026)': { gen: 171, rd: 166, year: 2026 },
+  'Note 17 (2026)': { gen: 174, rd: 169, year: 2026 },
+  'Redmi 17C (2026)': { gen: 177, rd: 171, year: 2026 },
+  'Redmi 17 (2026)': { gen: 174, rd: 169, year: 2026 },
+  'Note 17 4G (2026)': { gen: 175, rd: 170, year: 2026 },
+  'Redmi 17 4G (2026)': { gen: 178, rd: 172, year: 2026 },
+  'Redmi A7 Pro (2026)': { gen: 179, rd: 173, year: 2026 },
+  'Redmi 15A (2026)': { gen: 179, rd: 173, year: 2026 },
+  'Redmi 17C 4G (2026)': { gen: 183, rd: 177, year: 2026 },
+  'Redmi A7 Pro 4G (2026)': { gen: 184, rd: 178, year: 2026 },
+  'Redmi A7 (2026)': { gen: 186, rd: 180, year: 2026 },
+};
+
+Object.entries(EXPECTED_REDMI_VALUES).forEach(([modelName, expected]) => {
+  const phone = REDMI_PHONES.find(p => p.name === modelName);
+  assert(Boolean(phone), `Redmi model "${modelName}" is present in database`);
+  if (phone) {
+    const preset = phone.customSensitivityPreset;
+    assert(Boolean(preset), `Redmi "${modelName}" has customSensitivityPreset`);
+    assert(preset?.general === expected.gen, `Redmi "${modelName}" General === ${expected.gen} (Got: ${preset?.general})`);
+    assert(preset?.redDot === expected.rd, `Redmi "${modelName}" Red Dot === ${expected.rd} (Got: ${preset?.redDot})`);
+    // Crucial requirement: only General and Red Dot. Do not invent unverified scopes!
+    assert(preset?.scope2x === undefined, `Redmi "${modelName}" scope2x is strictly undefined (not invented)`);
+    assert(preset?.scope4x === undefined, `Redmi "${modelName}" scope4x is strictly undefined (not invented)`);
+    assert(preset?.sniperScope === undefined, `Redmi "${modelName}" sniperScope is strictly undefined (not invented)`);
+    assert(preset?.freeLook === undefined, `Redmi "${modelName}" freeLook is strictly undefined (not invented)`);
+  }
+});
+
+// 3. Year-wise organization: older models first
+const redmiInOrder = getModelsForBrand('Redmi');
+assert(redmiInOrder[0].name === 'Note 8 Pro (2019)', 'First Redmi model is Note 8 Pro (2019)');
+assert(redmiInOrder[redmiInOrder.length - 1].name === 'Redmi A7 (2026)', 'Last Redmi model is Redmi A7 (2026)');
+
+let isRedmiYearAscending = true;
+for (let i = 0; i < redmiInOrder.length - 1; i++) {
+  const curYear = redmiInOrder[i].releaseYear || 2020;
+  const nextYear = redmiInOrder[i + 1].releaseYear || 2020;
+  if (curYear > nextYear) {
+    isRedmiYearAscending = false;
+    break;
+  }
+}
+assert(isRedmiYearAscending, 'Redmi models in getModelsForBrand are organized chronologically with older models first');
+
+// 4. 2023 models are fewer than 2022 and older models (13 < 34)
+const redmi2023Count = redmiInOrder.filter(p => (p.releaseYear || 0) === 2023).length;
+const redmi2022AndOlderCount = redmiInOrder.filter(p => (p.releaseYear || 0) <= 2022).length;
+assert(
+  redmi2023Count < redmi2022AndOlderCount,
+  `2023 Redmi models (${redmi2023Count}) are fewer than 2022 & older models (${redmi2022AndOlderCount})`
+);
+
+// 5. DeviceSelector dropdown implements optgroup for Redmi
+assert(selectorCode.includes('selectedBrand === \'Redmi\''), 'DeviceSelector implements optgroup for Redmi models');
+assert(selectorCode.includes('2019 Era'), 'DeviceSelector includes 2019 Era optgroup for Redmi');
+
+// ==========================================
+// TEST GROUP 31: Complete POCO Sensitivity Database & 7-Setting Profile Verification
+// ==========================================
+console.log('\n[TEST GROUP 31] Complete POCO Sensitivity Database & 7-Setting Profile Verification');
+
+import { POCO_PHONES } from '../src/data/phones/poco';
+
+// 1. Exact 63 POCO models present
+assert(POCO_PHONES.length === 63, `Database includes exactly 63 POCO models (Got: ${POCO_PHONES.length})`);
+const brandPocoModels = getModelsForBrand('POCO');
+assert(brandPocoModels.length === 63, `getModelsForBrand('POCO') returns exactly 63 models (Got: ${brandPocoModels.length})`);
+assert(brandPocoModels.every(p => p.brand === 'POCO'), 'All models under POCO have brand: "POCO"');
+
+// 2. All 63 models have exact values from prompt chart
+interface ExpectedPocoRow {
+  gen: number;
+  rd: number;
+  scope2x: number;
+  scope4x: number;
+  sniper: number;
+  freeLook: number;
+  fire: number;
+  year: number;
+}
+
+const EXPECTED_POCO_CHART: Record<string, ExpectedPocoRow> = {
+  'POCO F1': { gen: 168, rd: 158, scope2x: 172, scope4x: 162, sniper: 98, freeLook: 145, fire: 56, year: 2018 },
+  'POCO F2 Pro': { gen: 166, rd: 156, scope2x: 170, scope4x: 160, sniper: 96, freeLook: 143, fire: 55, year: 2020 },
+  'POCO X2': { gen: 168, rd: 156, scope2x: 172, scope4x: 162, sniper: 98, freeLook: 145, fire: 56, year: 2020 },
+  'POCO M2': { gen: 166, rd: 156, scope2x: 170, scope4x: 160, sniper: 96, freeLook: 143, fire: 55, year: 2020 },
+  'POCO M2 Pro': { gen: 165, rd: 155, scope2x: 170, scope4x: 160, sniper: 96, freeLook: 143, fire: 55, year: 2020 },
+  'POCO X3 NFC': { gen: 164, rd: 154, scope2x: 168, scope4x: 158, sniper: 95, freeLook: 141, fire: 54, year: 2020 },
+  'POCO X3 Pro': { gen: 163, rd: 153, scope2x: 167, scope4x: 157, sniper: 94, freeLook: 140, fire: 54, year: 2021 },
+  'POCO F3': { gen: 162, rd: 152, scope2x: 166, scope4x: 156, sniper: 94, freeLook: 140, fire: 53, year: 2021 },
+  'POCO M3': { gen: 165, rd: 155, scope2x: 170, scope4x: 160, sniper: 96, freeLook: 143, fire: 55, year: 2020 },
+  'POCO M3 Pro 5G': { gen: 164, rd: 154, scope2x: 168, scope4x: 158, sniper: 95, freeLook: 141, fire: 54, year: 2021 },
+  'POCO X3 GT': { gen: 162, rd: 152, scope2x: 166, scope4x: 156, sniper: 94, freeLook: 140, fire: 53, year: 2021 },
+  'POCO F3 GT': { gen: 161, rd: 151, scope2x: 165, scope4x: 155, sniper: 93, freeLook: 139, fire: 53, year: 2021 },
+  'POCO M4 Pro': { gen: 163, rd: 153, scope2x: 168, scope4x: 158, sniper: 95, freeLook: 141, fire: 54, year: 2022 },
+  'POCO M4 Pro 5G': { gen: 162, rd: 152, scope2x: 167, scope4x: 157, sniper: 94, freeLook: 140, fire: 54, year: 2021 },
+  'POCO M4 5G': { gen: 164, rd: 154, scope2x: 169, scope4x: 159, sniper: 95, freeLook: 142, fire: 55, year: 2022 },
+  'POCO X4 Pro 5G': { gen: 161, rd: 151, scope2x: 166, scope4x: 156, sniper: 94, freeLook: 140, fire: 53, year: 2022 },
+  'POCO X4 GT': { gen: 160, rd: 150, scope2x: 165, scope4x: 155, sniper: 93, freeLook: 139, fire: 53, year: 2022 },
+  'POCO F4': { gen: 160, rd: 152, scope2x: 164, scope4x: 154, sniper: 93, freeLook: 138, fire: 52, year: 2022 },
+  'POCO F4 GT': { gen: 160, rd: 148, scope2x: 163, scope4x: 153, sniper: 92, freeLook: 137, fire: 52, year: 2022 },
+  'POCO M5': { gen: 163, rd: 153, scope2x: 169, scope4x: 159, sniper: 95, freeLook: 142, fire: 55, year: 2022 },
+  'POCO M5s': { gen: 162, rd: 152, scope2x: 168, scope4x: 158, sniper: 95, freeLook: 141, fire: 54, year: 2022 },
+  'POCO X5 5G': { gen: 161, rd: 151, scope2x: 166, scope4x: 156, sniper: 94, freeLook: 140, fire: 53, year: 2023 },
+  'POCO X5 Pro 5G': { gen: 160, rd: 150, scope2x: 164, scope4x: 154, sniper: 93, freeLook: 138, fire: 52, year: 2023 },
+  'POCO F5': { gen: 160, rd: 152, scope2x: 163, scope4x: 153, sniper: 92, freeLook: 137, fire: 52, year: 2023 },
+  'POCO F5 Pro': { gen: 160, rd: 148, scope2x: 162, scope4x: 152, sniper: 92, freeLook: 137, fire: 52, year: 2023 },
+  'POCO M6': { gen: 158, rd: 148, scope2x: 162, scope4x: 152, sniper: 92, freeLook: 137, fire: 53, year: 2024 },
+  'POCO M6 Pro': { gen: 157, rd: 149, scope2x: 161, scope4x: 151, sniper: 91, freeLook: 136, fire: 52, year: 2024 },
+  'POCO M6 Pro 5G': { gen: 158, rd: 150, scope2x: 162, scope4x: 152, sniper: 92, freeLook: 137, fire: 53, year: 2023 },
+  'POCO M6 5G': { gen: 158, rd: 146, scope2x: 162, scope4x: 152, sniper: 92, freeLook: 137, fire: 53, year: 2023 },
+  'POCO C40': { gen: 165, rd: 155, scope2x: 166, scope4x: 156, sniper: 94, freeLook: 140, fire: 55, year: 2022 },
+  'POCO C50': { gen: 165, rd: 153, scope2x: 166, scope4x: 156, sniper: 94, freeLook: 140, fire: 55, year: 2023 },
+  'POCO C51': { gen: 164, rd: 154, scope2x: 165, scope4x: 155, sniper: 93, freeLook: 139, fire: 54, year: 2023 },
+  'POCO C55': { gen: 164, rd: 152, scope2x: 165, scope4x: 155, sniper: 93, freeLook: 139, fire: 54, year: 2023 },
+  'POCO C65': { gen: 163, rd: 153, scope2x: 164, scope4x: 154, sniper: 93, freeLook: 138, fire: 54, year: 2023 },
+  'POCO X6 5G': { gen: 155, rd: 145, scope2x: 160, scope4x: 150, sniper: 91, freeLook: 136, fire: 52, year: 2024 },
+  'POCO X6 Pro': { gen: 153, rd: 143, scope2x: 158, scope4x: 148, sniper: 90, freeLook: 135, fire: 51, year: 2024 },
+  'POCO X6 Neo': { gen: 155, rd: 147, scope2x: 160, scope4x: 150, sniper: 91, freeLook: 136, fire: 52, year: 2024 },
+  'POCO F6': { gen: 153, rd: 145, scope2x: 158, scope4x: 148, sniper: 90, freeLook: 135, fire: 51, year: 2024 },
+  'POCO F6 Pro': { gen: 152, rd: 140, scope2x: 157, scope4x: 147, sniper: 90, freeLook: 134, fire: 51, year: 2024 },
+  'POCO X7': { gen: 148, rd: 140, scope2x: 159, scope4x: 149, sniper: 90, freeLook: 135, fire: 52, year: 2025 },
+  'POCO X7 Pro': { gen: 147, rd: 137, scope2x: 157, scope4x: 147, sniper: 89, freeLook: 134, fire: 51, year: 2025 },
+  'POCO M7': { gen: 149, rd: 139, scope2x: 161, scope4x: 151, sniper: 91, freeLook: 136, fire: 53, year: 2025 },
+  'POCO M7 Pro 5G': { gen: 148, rd: 140, scope2x: 159, scope4x: 149, sniper: 90, freeLook: 135, fire: 52, year: 2025 },
+  'POCO M7 Plus 5G': { gen: 149, rd: 137, scope2x: 160, scope4x: 150, sniper: 91, freeLook: 136, fire: 52, year: 2025 },
+  'POCO F7': { gen: 146, rd: 138, scope2x: 156, scope4x: 146, sniper: 89, freeLook: 134, fire: 51, year: 2025 },
+  'POCO F7 Pro': { gen: 145, rd: 135, scope2x: 155, scope4x: 145, sniper: 88, freeLook: 133, fire: 51, year: 2025 },
+  'POCO F7 Ultra': { gen: 145, rd: 137, scope2x: 155, scope4x: 145, sniper: 88, freeLook: 133, fire: 51, year: 2025 },
+  'POCO C71': { gen: 150, rd: 140, scope2x: 163, scope4x: 153, sniper: 92, freeLook: 137, fire: 54, year: 2025 },
+  'POCO C75': { gen: 155, rd: 145, scope2x: 162, scope4x: 152, sniper: 91, freeLook: 136, fire: 53, year: 2024 },
+  'POCO C85': { gen: 149, rd: 139, scope2x: 161, scope4x: 151, sniper: 91, freeLook: 136, fire: 53, year: 2025 },
+  'POCO M8 5G': { gen: 145, rd: 137, scope2x: 158, scope4x: 148, sniper: 90, freeLook: 135, fire: 52, year: 2026 },
+  'POCO M8 Pro 5G': { gen: 145, rd: 135, scope2x: 156, scope4x: 146, sniper: 89, freeLook: 134, fire: 51, year: 2026 },
+  'POCO X8': { gen: 145, rd: 137, scope2x: 155, scope4x: 145, sniper: 88, freeLook: 133, fire: 51, year: 2026 },
+  'POCO X8 Pro': { gen: 144, rd: 134, scope2x: 154, scope4x: 144, sniper: 88, freeLook: 132, fire: 50, year: 2026 },
+  'POCO X8 Pro Max': { gen: 144, rd: 132, scope2x: 154, scope4x: 144, sniper: 88, freeLook: 132, fire: 50, year: 2026 },
+  'POCO F8 Pro': { gen: 144, rd: 136, scope2x: 154, scope4x: 144, sniper: 88, freeLook: 132, fire: 50, year: 2026 },
+  'POCO F8 Ultra': { gen: 143, rd: 133, scope2x: 153, scope4x: 143, sniper: 87, freeLook: 131, fire: 50, year: 2026 },
+  'POCO F9 Pro': { gen: 143, rd: 135, scope2x: 153, scope4x: 143, sniper: 87, freeLook: 131, fire: 50, year: 2026 },
+  'POCO F9 Ultra': { gen: 142, rd: 130, scope2x: 152, scope4x: 142, sniper: 87, freeLook: 130, fire: 50, year: 2026 },
+  'POCO M8s 5G': { gen: 145, rd: 137, scope2x: 156, scope4x: 146, sniper: 89, freeLook: 134, fire: 51, year: 2026 },
+  'POCO M8 Power 5G': { gen: 145, rd: 133, scope2x: 156, scope4x: 146, sniper: 89, freeLook: 134, fire: 51, year: 2026 },
+  'POCO C95 Pro': { gen: 147, rd: 137, scope2x: 158, scope4x: 148, sniper: 90, freeLook: 135, fire: 52, year: 2026 },
+  'POCO C81': { gen: 150, rd: 140, scope2x: 159, scope4x: 149, sniper: 90, freeLook: 135, fire: 52, year: 2026 },
+};
+
+const differencesSeen = new Set<number>();
+
+Object.entries(EXPECTED_POCO_CHART).forEach(([modelName, expected]) => {
+  const phone = POCO_PHONES.find(p => p.name === modelName);
+  assert(Boolean(phone), `POCO model "${modelName}" is present in database`);
+  if (phone) {
+    const preset = phone.customSensitivityPreset;
+    assert(Boolean(preset), `POCO "${modelName}" has customSensitivityPreset`);
+    assert(preset?.general === expected.gen, `POCO "${modelName}" General === ${expected.gen} (Got: ${preset?.general})`);
+    assert(preset?.redDot === expected.rd, `POCO "${modelName}" Red Dot === ${expected.rd} (Got: ${preset?.redDot})`);
+    
+    // Check difference rule: General - Red Dot is 8, 9, 10, or 12 points
+    const diff = expected.gen - expected.rd;
+    differencesSeen.add(diff);
+    assert([8, 9, 10, 12].includes(diff), `POCO "${modelName}" Red Dot diff (${diff}) is 8, 9, 10, or 12 points`);
+
+    assert(preset?.scope2x === expected.scope2x, `POCO "${modelName}" 2x === ${expected.scope2x} (Got: ${preset?.scope2x})`);
+    assert(preset?.scope4x === expected.scope4x, `POCO "${modelName}" 4x === ${expected.scope4x} (Got: ${preset?.scope4x})`);
+    assert(preset?.sniperScope === expected.sniper, `POCO "${modelName}" Sniper === ${expected.sniper} (Got: ${preset?.sniperScope})`);
+    assert(preset?.freeLook === expected.freeLook, `POCO "${modelName}" Free Look === ${expected.freeLook} (Got: ${preset?.freeLook})`);
+    assert(phone.customFireButtonPreset === expected.fire, `POCO "${modelName}" Fire Button === ${expected.fire}% (Got: ${phone.customFireButtonPreset}%)`);
+  }
+});
+
+// Verify differences vary model-wise
+assert(differencesSeen.size >= 3, `Red Dot differences model-wise vary (Found distinct diffs: ${Array.from(differencesSeen).join(', ')})`);
+
+// 3. Chronological sorting in getModelsForBrand('POCO')
+const pocoInOrder = getModelsForBrand('POCO');
+assert(pocoInOrder[0].name === 'POCO F1', 'First POCO model in getModelsForBrand is POCO F1 (2018)');
+assert(pocoInOrder[pocoInOrder.length - 1].releaseYear === 2026, 'Last POCO models are 2026 release year');
+
+// 4. DeviceSelector optgroup verification
+assert(selectorCode.includes('selectedBrand === \'POCO\''), 'DeviceSelector implements optgroup for POCO models');
+assert(selectorCode.includes('2018–2020 Era'), 'DeviceSelector includes 2018–2020 Era optgroup for POCO');
+
+// ----------------------------------------------------
+// TEST GROUP 32: Realme 108 Models Free Fire Sensitivity & 7-Setting Presets Validation
+// ----------------------------------------------------
+console.log('\n[TEST GROUP 32] Realme 108 Models Free Fire Sensitivity & 7-Setting Presets Validation');
+
+import { REALME_PHONES } from '../src/data/phones/realme';
+assert(REALME_PHONES.length === 108, `Database includes exactly 108 Realme models (Got: ${REALME_PHONES.length})`);
+
+const EXPECTED_REALME_CHART: Record<string, { gen: number; rd: number; series: string }> = {
+  // GT Series (14 models)
+  'GT 8 Pro': { gen: 174, rd: 166, series: 'Realme GT' },
+  'GT 8': { gen: 172, rd: 162, series: 'Realme GT' },
+  'GT 7 Pro': { gen: 172, rd: 162, series: 'Realme GT' },
+  'GT 7': { gen: 170, rd: 162, series: 'Realme GT' },
+  'GT 7T': { gen: 168, rd: 159, series: 'Realme GT' },
+  'GT 6': { gen: 180, rd: 170, series: 'Realme GT' },
+  'GT 6T': { gen: 178, rd: 169, series: 'Realme GT' },
+  'GT 5': { gen: 180, rd: 170, series: 'Realme GT' },
+  'GT 3': { gen: 190, rd: 180, series: 'Realme GT' },
+  'GT 2': { gen: 190, rd: 182, series: 'Realme GT' },
+  'GT Neo 5': { gen: 188, rd: 179, series: 'Realme GT Neo' },
+  'GT Neo 3': { gen: 190, rd: 180, series: 'Realme GT Neo' },
+  'GT Neo 2': { gen: 190, rd: 180, series: 'Realme GT Neo' },
+  'GT Neo': { gen: 190, rd: 182, series: 'Realme GT Neo' },
+
+  // Number Series (40 models)
+  'Realme 16 Pro+': { gen: 170, rd: 162, series: 'Realme Numbered' },
+  'Realme 16 Pro': { gen: 168, rd: 159, series: 'Realme Numbered' },
+  'Realme 16': { gen: 166, rd: 156, series: 'Realme Numbered' },
+  'Realme 16T': { gen: 164, rd: 152, series: 'Realme Numbered' },
+  'Realme 16x': { gen: 162, rd: 154, series: 'Realme Numbered' },
+  'Realme 15 Pro': { gen: 170, rd: 162, series: 'Realme Numbered' },
+  'Realme 15': { gen: 168, rd: 159, series: 'Realme Numbered' },
+  'Realme 15x': { gen: 166, rd: 156, series: 'Realme Numbered' },
+  'Realme 15T': { gen: 164, rd: 152, series: 'Realme Numbered' },
+  'Realme 15 Lite': { gen: 162, rd: 154, series: 'Realme Numbered' },
+  'Realme 14 Pro+': { gen: 166, rd: 156, series: 'Realme Numbered' },
+  'Realme 14 Pro': { gen: 164, rd: 155, series: 'Realme Numbered' },
+  'Realme 14 Pro Lite': { gen: 162, rd: 152, series: 'Realme Numbered' },
+  'Realme 14': { gen: 160, rd: 152, series: 'Realme Numbered' },
+  'Realme 14T': { gen: 162, rd: 154, series: 'Realme Numbered' },
+  'Realme 14x': { gen: 160, rd: 152, series: 'Realme Numbered' },
+  'Realme 13 Pro+': { gen: 180, rd: 172, series: 'Realme Numbered' },
+  'Realme 13 Pro': { gen: 178, rd: 169, series: 'Realme Numbered' },
+  'Realme 13+': { gen: 176, rd: 166, series: 'Realme Numbered' },
+  'Realme 13': { gen: 174, rd: 162, series: 'Realme Numbered' },
+  'Realme 12 Pro+': { gen: 180, rd: 170, series: 'Realme Numbered' },
+  'Realme 12 Pro': { gen: 178, rd: 169, series: 'Realme Numbered' },
+  'Realme 12+': { gen: 176, rd: 166, series: 'Realme Numbered' },
+  'Realme 12': { gen: 174, rd: 162, series: 'Realme Numbered' },
+  'Realme 12x': { gen: 172, rd: 164, series: 'Realme Numbered' },
+  'Realme 11 Pro+': { gen: 190, rd: 182, series: 'Realme Numbered' },
+  'Realme 11 Pro': { gen: 188, rd: 179, series: 'Realme Numbered' },
+  'Realme 11': { gen: 186, rd: 176, series: 'Realme Numbered' },
+  'Realme 11x': { gen: 184, rd: 172, series: 'Realme Numbered' },
+  'Realme 10 Pro+': { gen: 190, rd: 180, series: 'Realme Numbered' },
+  'Realme 10 Pro': { gen: 188, rd: 179, series: 'Realme Numbered' },
+  'Realme 10': { gen: 186, rd: 176, series: 'Realme Numbered' },
+  'Realme 10T': { gen: 186, rd: 176, series: 'Realme Numbered' },
+  'Realme 9 Pro+': { gen: 190, rd: 180, series: 'Realme Numbered' },
+  'Realme 9 Pro': { gen: 188, rd: 179, series: 'Realme Numbered' },
+  'Realme 9': { gen: 186, rd: 176, series: 'Realme Numbered' },
+  'Realme 9i': { gen: 184, rd: 174, series: 'Realme Numbered' },
+  'Realme 8 Pro': { gen: 190, rd: 180, series: 'Realme Numbered' },
+  'Realme 8': { gen: 186, rd: 176, series: 'Realme Numbered' },
+  'Realme 8i': { gen: 184, rd: 172, series: 'Realme Numbered' },
+
+  // P Series (13 models)
+  'Realme P4 Pro': { gen: 170, rd: 162, series: 'Realme P' },
+  'Realme P4': { gen: 168, rd: 158, series: 'Realme P' },
+  'Realme P4x': { gen: 166, rd: 156, series: 'Realme P' },
+  'Realme P4 Power': { gen: 164, rd: 155, series: 'Realme P' },
+  'Realme P4 Lite': { gen: 162, rd: 154, series: 'Realme P' },
+  'Realme P3 Ultra': { gen: 172, rd: 162, series: 'Realme P' },
+  'Realme P3 Pro': { gen: 170, rd: 162, series: 'Realme P' },
+  'Realme P3': { gen: 168, rd: 159, series: 'Realme P' },
+  'Realme P3x': { gen: 166, rd: 156, series: 'Realme P' },
+  'Realme P3 Lite': { gen: 164, rd: 152, series: 'Realme P' },
+  'Realme P1 Pro': { gen: 178, rd: 169, series: 'Realme P' },
+  'Realme P1': { gen: 176, rd: 166, series: 'Realme P' },
+  'Realme P1 Speed': { gen: 174, rd: 164, series: 'Realme P' },
+
+  // Narzo Series (20 models)
+  'Realme Narzo 100x': { gen: 166, rd: 156, series: 'Realme Narzo' },
+  'Realme Narzo 100 Lite': { gen: 164, rd: 154, series: 'Realme Narzo' },
+  'Realme Narzo Power': { gen: 162, rd: 152, series: 'Realme Narzo' },
+  'Realme Narzo 90': { gen: 168, rd: 159, series: 'Realme Narzo' },
+  'Realme Narzo 90x': { gen: 166, rd: 156, series: 'Realme Narzo' },
+  'Realme Narzo 80 Pro': { gen: 172, rd: 162, series: 'Realme Narzo' },
+  'Realme Narzo 80x': { gen: 170, rd: 162, series: 'Realme Narzo' },
+  'Realme Narzo 80 Lite': { gen: 168, rd: 159, series: 'Realme Narzo' },
+  'Realme Narzo 70 Pro': { gen: 178, rd: 169, series: 'Realme Narzo' },
+  'Realme Narzo 70': { gen: 176, rd: 166, series: 'Realme Narzo' },
+  'Realme Narzo 70x': { gen: 174, rd: 162, series: 'Realme Narzo' },
+  'Realme Narzo 60 Pro': { gen: 182, rd: 172, series: 'Realme Narzo' },
+  'Realme Narzo 60': { gen: 180, rd: 170, series: 'Realme Narzo' },
+  'Realme Narzo 60x': { gen: 178, rd: 169, series: 'Realme Narzo' },
+  'Realme Narzo 50 Pro': { gen: 186, rd: 176, series: 'Realme Narzo' },
+  'Realme Narzo 50': { gen: 184, rd: 174, series: 'Realme Narzo' },
+  'Realme Narzo 50x': { gen: 182, rd: 172, series: 'Realme Narzo' },
+  'Realme Narzo N65': { gen: 180, rd: 172, series: 'Realme Narzo' },
+  'Realme Narzo N55': { gen: 184, rd: 174, series: 'Realme Narzo' },
+  'Realme Narzo N53': { gen: 186, rd: 176, series: 'Realme Narzo' },
+
+  // C Series (21 models)
+  'Realme C100i': { gen: 170, rd: 162, series: 'Realme C' },
+  'Realme C100x': { gen: 168, rd: 159, series: 'Realme C' },
+  'Realme C85': { gen: 172, rd: 162, series: 'Realme C' },
+  'Realme C83': { gen: 170, rd: 162, series: 'Realme C' },
+  'Realme C75': { gen: 176, rd: 166, series: 'Realme C' },
+  'Realme C73': { gen: 174, rd: 164, series: 'Realme C' },
+  'Realme C71': { gen: 172, rd: 164, series: 'Realme C' },
+  'Realme C65': { gen: 180, rd: 170, series: 'Realme C' },
+  'Realme C63': { gen: 182, rd: 172, series: 'Realme C' },
+  'Realme C61': { gen: 184, rd: 174, series: 'Realme C' },
+  'Realme C55': { gen: 186, rd: 176, series: 'Realme C' },
+  'Realme C53': { gen: 188, rd: 179, series: 'Realme C' },
+  'Realme C51': { gen: 188, rd: 178, series: 'Realme C' },
+  'Realme C35': { gen: 190, rd: 180, series: 'Realme C' },
+  'Realme C33': { gen: 190, rd: 182, series: 'Realme C' },
+  'Realme C31': { gen: 192, rd: 182, series: 'Realme C' },
+  'Realme C30': { gen: 192, rd: 180, series: 'Realme C' },
+  'Realme C25': { gen: 194, rd: 184, series: 'Realme C' },
+  'Realme C21': { gen: 194, rd: 186, series: 'Realme C' },
+  'Realme C20': { gen: 196, rd: 186, series: 'Realme C' },
+  'Realme C11': { gen: 196, rd: 184, series: 'Realme C' },
+};
+
+const realmeDiffsSeen = new Set<number>();
+
+Object.entries(EXPECTED_REALME_CHART).forEach(([modelName, expected]) => {
+  const phone = REALME_PHONES.find(p => p.name === modelName);
+  assert(Boolean(phone), `Realme model "${modelName}" is present in database`);
+  if (phone) {
+    const preset = phone.customSensitivityPreset;
+    assert(Boolean(preset), `Realme "${modelName}" has customSensitivityPreset`);
+    assert(preset?.general === expected.gen, `Realme "${modelName}" General === ${expected.gen} (Got: ${preset?.general})`);
+    assert(preset?.redDot === expected.rd, `Realme "${modelName}" Red Dot === ${expected.rd} (Got: ${preset?.redDot})`);
+    
+    // Check difference rule: General - Red Dot is 8, 9, 10, or 12 points
+    const diff = expected.gen - expected.rd;
+    realmeDiffsSeen.add(diff);
+    assert([8, 9, 10, 12].includes(diff), `Realme "${modelName}" Red Dot diff (${diff}) is 8, 9, 10, or 12 points`);
+
+    assert(typeof preset?.scope2x === 'number' && preset.scope2x >= 140, `Realme "${modelName}" 2x Scope is valid (Got: ${preset?.scope2x})`);
+    assert(typeof preset?.scope4x === 'number' && preset.scope4x >= 130, `Realme "${modelName}" 4x Scope is valid (Got: ${preset?.scope4x})`);
+    assert(typeof preset?.sniperScope === 'number' && preset.sniperScope >= 84 && preset.sniperScope <= 98, `Realme "${modelName}" Sniper Scope is valid (Got: ${preset?.sniperScope})`);
+    assert(typeof preset?.freeLook === 'number' && preset.freeLook >= 130 && preset.freeLook <= 148, `Realme "${modelName}" Free Look is valid (Got: ${preset?.freeLook})`);
+    assert(typeof phone.customFireButtonPreset === 'number' && phone.customFireButtonPreset >= 48 && phone.customFireButtonPreset <= 56, `Realme "${modelName}" Fire Button is valid (Got: ${phone.customFireButtonPreset}%)`);
+  }
+});
+
+// Verify differences vary model-wise
+assert(realmeDiffsSeen.size >= 3, `Red Dot differences model-wise vary (Found distinct diffs: ${Array.from(realmeDiffsSeen).join(', ')})`);
+
+// 3. Sorting in getModelsForBrand('Realme')
+const realmeInOrder = getModelsForBrand('Realme');
+assert(realmeInOrder.length === 108, `getModelsForBrand('Realme') returns all 108 models (Got: ${realmeInOrder.length})`);
+assert(realmeInOrder[0].name === 'GT 8 Pro', 'First Realme model in getModelsForBrand is GT 8 Pro');
+assert(realmeInOrder[realmeInOrder.length - 1].name === 'Realme C11', 'Last Realme model in getModelsForBrand is Realme C11');
+
+// 4. DeviceSelector optgroup verification
+assert(selectorCode.includes('selectedBrand === \'Realme\''), 'DeviceSelector implements optgroup for Realme models');
+assert(selectorCode.includes('Realme GT Series'), 'DeviceSelector includes Realme GT Series optgroup');
+assert(selectorCode.includes('Realme Number Series'), 'DeviceSelector includes Realme Number Series optgroup');
+assert(selectorCode.includes('Realme P Series'), 'DeviceSelector includes Realme P Series optgroup');
+assert(selectorCode.includes('Realme Narzo Series'), 'DeviceSelector includes Realme Narzo Series optgroup');
+assert(selectorCode.includes('Realme C Series'), 'DeviceSelector includes Realme C Series optgroup');
+
+// ----------------------------------------------------
+// TEST GROUP 33: OnePlus 56 Models Free Fire Sensitivity & 7-Setting Presets Validation
+// ----------------------------------------------------
+console.log('\n[TEST GROUP 33] OnePlus 56 Models Free Fire Sensitivity & 7-Setting Presets Validation');
+
+import { ONEPLUS_PHONES } from '../src/data/phones/oneplus';
+assert(ONEPLUS_PHONES.length === 56, `Database includes exactly 56 OnePlus models (Got: ${ONEPLUS_PHONES.length})`);
+
+const EXPECTED_ONEPLUS_CHART: Record<string, { gen: number; rd: number; scope2x: number; scope4x: number; sniper: number; freeLook: number; fire: number }> = {
+  'OnePlus 15': { gen: 174, rd: 170, scope2x: 145, scope4x: 125, sniper: 85, freeLook: 150, fire: 48 },
+  'OnePlus 15R': { gen: 172, rd: 165, scope2x: 160, scope4x: 140, sniper: 95, freeLook: 146, fire: 52 },
+  'OnePlus 13': { gen: 178, rd: 174, scope2x: 135, scope4x: 155, sniper: 110, freeLook: 155, fire: 45 },
+  'OnePlus 13R': { gen: 176, rd: 169, scope2x: 155, scope4x: 130, sniper: 100, freeLook: 152, fire: 50 },
+  'OnePlus 13s': { gen: 174, rd: 167, scope2x: 170, scope4x: 145, sniper: 80, freeLook: 148, fire: 53 },
+  'OnePlus 12': { gen: 180, rd: 176, scope2x: 140, scope4x: 160, sniper: 105, freeLook: 158, fire: 47 },
+  'OnePlus 12R': { gen: 178, rd: 171, scope2x: 165, scope4x: 135, sniper: 90, freeLook: 153, fire: 51 },
+  'OnePlus Open': { gen: 176, rd: 172, scope2x: 150, scope4x: 120, sniper: 115, freeLook: 156, fire: 46 },
+  'OnePlus 11': { gen: 182, rd: 175, scope2x: 130, scope4x: 165, sniper: 100, freeLook: 160, fire: 49 },
+  'OnePlus 11R': { gen: 180, rd: 176, scope2x: 160, scope4x: 145, sniper: 85, freeLook: 154, fire: 54 },
+  'OnePlus 10 Pro': { gen: 184, rd: 180, scope2x: 145, scope4x: 125, sniper: 120, freeLook: 162, fire: 48 },
+  'OnePlus 10T': { gen: 182, rd: 173, scope2x: 170, scope4x: 150, sniper: 95, freeLook: 157, fire: 52 },
+  'OnePlus 10R': { gen: 180, rd: 171, scope2x: 135, scope4x: 155, sniper: 110, freeLook: 155, fire: 46 },
+  'OnePlus 9 Pro': { gen: 186, rd: 179, scope2x: 165, scope4x: 135, sniper: 90, freeLook: 165, fire: 50 },
+  'OnePlus 9': { gen: 184, rd: 177, scope2x: 150, scope4x: 160, sniper: 105, freeLook: 161, fire: 47 },
+  'OnePlus 9R': { gen: 182, rd: 173, scope2x: 140, scope4x: 125, sniper: 115, freeLook: 158, fire: 53 },
+  'OnePlus 9RT': { gen: 184, rd: 180, scope2x: 170, scope4x: 145, sniper: 85, freeLook: 163, fire: 49 },
+  'OnePlus 8 Pro': { gen: 188, rd: 184, scope2x: 135, scope4x: 165, sniper: 100, freeLook: 167, fire: 51 },
+  'OnePlus 8T': { gen: 186, rd: 179, scope2x: 160, scope4x: 130, sniper: 120, freeLook: 164, fire: 46 },
+  'OnePlus 8': { gen: 184, rd: 180, scope2x: 145, scope4x: 155, sniper: 95, freeLook: 160, fire: 54 },
+  'OnePlus 7T Pro': { gen: 190, rd: 186, scope2x: 170, scope4x: 125, sniper: 110, freeLook: 169, fire: 50 },
+  'OnePlus 7T': { gen: 188, rd: 181, scope2x: 140, scope4x: 160, sniper: 90, freeLook: 165, fire: 48 },
+  'OnePlus 7 Pro': { gen: 190, rd: 183, scope2x: 155, scope4x: 135, sniper: 115, freeLook: 168, fire: 52 },
+  'OnePlus 7': { gen: 188, rd: 184, scope2x: 165, scope4x: 150, sniper: 100, freeLook: 163, fire: 47 },
+  'OnePlus 6T': { gen: 192, rd: 185, scope2x: 135, scope4x: 160, sniper: 120, freeLook: 171, fire: 51 },
+  'OnePlus 6': { gen: 190, rd: 183, scope2x: 150, scope4x: 125, sniper: 105, freeLook: 166, fire: 49 },
+  'OnePlus 5T': { gen: 194, rd: 190, scope2x: 170, scope4x: 155, sniper: 95, freeLook: 173, fire: 53 },
+  'OnePlus 5': { gen: 192, rd: 185, scope2x: 140, scope4x: 135, sniper: 115, freeLook: 168, fire: 48 },
+  'OnePlus 3T': { gen: 194, rd: 187, scope2x: 160, scope4x: 165, sniper: 100, freeLook: 172, fire: 50 },
+  'OnePlus 3': { gen: 192, rd: 188, scope2x: 145, scope4x: 130, sniper: 120, freeLook: 167, fire: 46 },
+  'OnePlus 2': { gen: 194, rd: 190, scope2x: 170, scope4x: 150, sniper: 105, freeLook: 174, fire: 52 },
+  'OnePlus X': { gen: 192, rd: 185, scope2x: 135, scope4x: 160, sniper: 110, freeLook: 169, fire: 49 },
+  'OnePlus One': { gen: 194, rd: 187, scope2x: 155, scope4x: 125, sniper: 115, freeLook: 175, fire: 54 },
+  'Nord 6': { gen: 174, rd: 170, scope2x: 145, scope4x: 130, sniper: 90, freeLook: 147, fire: 48 },
+  'Nord 5': { gen: 176, rd: 169, scope2x: 160, scope4x: 150, sniper: 105, freeLook: 151, fire: 51 },
+  'Nord 4': { gen: 178, rd: 174, scope2x: 135, scope4x: 125, sniper: 115, freeLook: 154, fire: 46 },
+  'Nord 3': { gen: 180, rd: 173, scope2x: 165, scope4x: 155, sniper: 95, freeLook: 157, fire: 52 },
+  'Nord 2T': { gen: 182, rd: 178, scope2x: 145, scope4x: 135, sniper: 120, freeLook: 159, fire: 49 },
+  'Nord 2': { gen: 184, rd: 177, scope2x: 170, scope4x: 160, sniper: 100, freeLook: 162, fire: 53 },
+  'Nord': { gen: 186, rd: 182, scope2x: 140, scope4x: 130, sniper: 110, freeLook: 164, fire: 47 },
+  'Nord CE 6': { gen: 172, rd: 168, scope2x: 155, scope4x: 140, sniper: 85, freeLook: 145, fire: 50 },
+  'Nord CE 6 Lite': { gen: 170, rd: 163, scope2x: 135, scope4x: 125, sniper: 105, freeLook: 143, fire: 46 },
+  'Nord CE 5': { gen: 174, rd: 170, scope2x: 165, scope4x: 150, sniper: 95, freeLook: 149, fire: 52 },
+  'Nord CE 4': { gen: 176, rd: 167, scope2x: 145, scope4x: 135, sniper: 115, freeLook: 152, fire: 48 },
+  'Nord CE 4 Lite': { gen: 174, rd: 165, scope2x: 160, scope4x: 155, sniper: 90, freeLook: 147, fire: 53 },
+  'Nord CE 3': { gen: 178, rd: 171, scope2x: 135, scope4x: 125, sniper: 110, freeLook: 155, fire: 49 },
+  'Nord CE 3 Lite': { gen: 176, rd: 172, scope2x: 170, scope4x: 145, sniper: 100, freeLook: 150, fire: 51 },
+  'Nord CE 2': { gen: 180, rd: 173, scope2x: 150, scope4x: 160, sniper: 120, freeLook: 158, fire: 47 },
+  'Nord CE 2 Lite': { gen: 178, rd: 169, scope2x: 140, scope4x: 130, sniper: 95, freeLook: 153, fire: 54 },
+  'Nord CE': { gen: 182, rd: 175, scope2x: 165, scope4x: 155, sniper: 105, freeLook: 160, fire: 50 },
+  'Nord N30': { gen: 176, rd: 172, scope2x: 145, scope4x: 135, sniper: 115, freeLook: 151, fire: 48 },
+  'Nord N30 SE': { gen: 174, rd: 170, scope2x: 160, scope4x: 150, sniper: 90, freeLook: 148, fire: 52 },
+  'Nord N20': { gen: 180, rd: 176, scope2x: 135, scope4x: 125, sniper: 105, freeLook: 156, fire: 49 },
+  'Nord N20 SE': { gen: 178, rd: 171, scope2x: 170, scope4x: 160, sniper: 115, freeLook: 154, fire: 53 },
+  'Nord N200': { gen: 182, rd: 173, scope2x: 150, scope4x: 140, sniper: 95, freeLook: 159, fire: 47 },
+  'Nord N300': { gen: 180, rd: 176, scope2x: 165, scope4x: 155, sniper: 110, freeLook: 155, fire: 51 },
+};
+
+const oneplusDiffsSeen = new Set<number>();
+let nonUniformScopeFound = false;
+
+Object.entries(EXPECTED_ONEPLUS_CHART).forEach(([modelName, expected]) => {
+  const phone = ONEPLUS_PHONES.find(p => p.name === modelName);
+  assert(Boolean(phone), `OnePlus model "${modelName}" is present in database`);
+  if (phone) {
+    const preset = phone.customSensitivityPreset;
+    assert(Boolean(preset), `OnePlus "${modelName}" has customSensitivityPreset`);
+    assert(preset?.general === expected.gen, `OnePlus "${modelName}" General === ${expected.gen} (Got: ${preset?.general})`);
+    assert(preset?.redDot === expected.rd, `OnePlus "${modelName}" Red Dot === ${expected.rd} (Got: ${preset?.redDot})`);
+    
+    // Check difference rule: General - Red Dot is 4, 7, or 9 points
+    const diff = expected.gen - expected.rd;
+    oneplusDiffsSeen.add(diff);
+    assert([4, 7, 9].includes(diff), `OnePlus "${modelName}" Red Dot diff (${diff}) is 4, 7, or 9 points`);
+
+    assert(preset?.scope2x === expected.scope2x, `OnePlus "${modelName}" 2x Scope === ${expected.scope2x} (Got: ${preset?.scope2x})`);
+    assert(preset?.scope4x === expected.scope4x, `OnePlus "${modelName}" 4x Scope === ${expected.scope4x} (Got: ${preset?.scope4x})`);
+    assert(preset?.sniperScope === expected.sniper, `OnePlus "${modelName}" Sniper Scope === ${expected.sniper} (Got: ${preset?.sniperScope})`);
+    assert(preset?.freeLook === expected.freeLook, `OnePlus "${modelName}" Free Look === ${expected.freeLook} (Got: ${preset?.freeLook})`);
+    assert(phone.customFireButtonPreset === expected.fire, `OnePlus "${modelName}" Fire Button === ${expected.fire}% (Got: ${phone.customFireButtonPreset}%)`);
+
+    if (expected.scope4x > expected.scope2x) {
+      nonUniformScopeFound = true;
+    }
+  }
+});
+
+// Verify differences vary across models and include 4, 7, and 9
+assert(oneplusDiffsSeen.has(4), 'OnePlus Red Dot differences include 4 points');
+assert(oneplusDiffsSeen.has(7), 'OnePlus Red Dot differences include 7 points');
+assert(oneplusDiffsSeen.has(9), 'OnePlus Red Dot differences include 9 points');
+assert(oneplusDiffsSeen.size === 3, `Red Dot differences model-wise vary (Found distinct diffs: ${Array.from(oneplusDiffsSeen).join(', ')})`);
+assert(nonUniformScopeFound, 'OnePlus scope settings differ non-uniformly across models (does not follow Realme linear decrement pattern)');
+
+// 3. Sorting in getModelsForBrand('OnePlus')
+const oneplusInOrder = getModelsForBrand('OnePlus');
+assert(oneplusInOrder.length === 56, `getModelsForBrand('OnePlus') returns all 56 models (Got: ${oneplusInOrder.length})`);
+assert(oneplusInOrder[0].name === 'OnePlus 15', 'First OnePlus model in getModelsForBrand is OnePlus 15');
+assert(oneplusInOrder[oneplusInOrder.length - 1].name === 'Nord N300', 'Last OnePlus model in getModelsForBrand is Nord N300');
+
+// 4. DeviceSelector optgroup verification
+assert(selectorCode.includes('selectedBrand === \'OnePlus\''), 'DeviceSelector implements optgroup for OnePlus models');
+assert(selectorCode.includes('OnePlus Flagship & R Series'), 'DeviceSelector includes OnePlus Flagship & R Series optgroup');
+assert(selectorCode.includes('OnePlus Nord Series'), 'DeviceSelector includes OnePlus Nord Series optgroup');
+assert(selectorCode.includes('OnePlus Nord CE Series'), 'DeviceSelector includes OnePlus Nord CE Series optgroup');
+assert(selectorCode.includes('OnePlus Nord N Series'), 'DeviceSelector includes OnePlus Nord N Series optgroup');
 
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;

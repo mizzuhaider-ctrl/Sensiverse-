@@ -73,6 +73,17 @@ export interface PhoneModel {
   isDiscontinued?: boolean;
   popular?: boolean;
   auditNotes?: string;
+  customSensitivityPreset?: FreeFirePreset;
+  customFireButtonPreset?: number;
+}
+
+export interface FreeFirePreset {
+  general: number; // 0 - 200
+  redDot: number; // 0 - 200
+  scope2x?: number; // 0 - 200 (omitted when unverified)
+  scope4x?: number; // 0 - 200 (omitted when unverified)
+  sniperScope?: number; // 0 - 200 (omitted when unverified)
+  freeLook?: number; // 0 - 200 (omitted when unverified)
 }
 
 export interface FreeFireSensi {
@@ -201,6 +212,9 @@ export interface SavedPreset {
 
 export type IssueDiagnosticType = 
   | 'overshooting'
+  | 'chest_lock'
+  | 'recoil_bloom'
+  | 'shaky_sight'
   | 'slow_aim'
   | 'shaky_aim'
   | 'recoil_problems'

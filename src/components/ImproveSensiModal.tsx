@@ -48,12 +48,18 @@ export const ImproveSensiModal: React.FC<ImproveSensiModalProps> = ({
 
   if (!isOpen) return null;
 
-  const issues: { 
+  const isFreeFire = 
+    currentSensitivity.gameId === 'freefire' || 
+    currentSensitivity.gameId === 'freefire_max' || 
+    currentSensitivity.gameId === 'freefire_india';
+
+  const freeFireIssues: { 
     id: IssueDiagnosticType; 
     title: string; 
     description: string; 
     icon: string;
     commonIn: string;
+    vectorDesc: string;
   }[] = [
     {
       id: 'overshooting',
@@ -61,43 +67,80 @@ export const ImproveSensiModal: React.FC<ImproveSensiModalProps> = ({
       description: 'Thumb drag velocity is too high or sensitivity threshold is excessive, causing flicks to soar over the helmet hitbox.',
       icon: '🚀',
       commonIn: 'Free Fire / Free Fire MAX',
+      vectorDesc: 'Vector [-4,-3,-2,-2,0,0,+2%]',
+    },
+    {
+      id: 'chest_lock',
+      title: 'Chest Lock: Magnetic aim assist locks onto torso',
+      description: 'Your drag cannot break the torso magnet. Needs lower fire button positioning and higher Red Dot flick acceleration.',
+      icon: '🧲',
+      commonIn: 'Free Fire / Free Fire MAX',
+      vectorDesc: 'Vector [+4,+4,+3,+2,0,0,-2%]',
+    },
+    {
+      id: 'recoil_bloom',
+      title: 'Recoil Bloom: Bullet spread blooms or kicks excessively',
+      description: 'Automatic spray on SMGs or ARs kicks upward and spreads wider than thumb pull-down resistance can stabilize.',
+      icon: '🧗',
+      commonIn: 'Free Fire / Free Fire MAX',
+      vectorDesc: 'Vector [-2,-2,-4,-6,0,-3,+3%]',
+    },
+    {
+      id: 'shaky_sight',
+      title: 'Shaky Sight: Crosshair tremors or jitters while shooting',
+      description: 'High sensitivity is magnifying physical finger micro-tremors on high polling touch screens. Needs gradual damping.',
+      icon: '⚡',
+      commonIn: 'Free Fire / Free Fire MAX',
+      vectorDesc: 'Vector [-6,-5,-3,-2,0,-8,0%]',
+    },
+  ];
+
+  const standardIssues: { 
+    id: IssueDiagnosticType; 
+    title: string; 
+    description: string; 
+    icon: string;
+    commonIn: string;
+    vectorDesc?: string;
+  }[] = [
+    {
+      id: 'overshooting',
+      title: 'Overshooting: Crosshair drags above enemy head',
+      description: 'Thumb drag velocity is too high or sensitivity threshold is excessive.',
+      icon: '🚀',
+      commonIn: 'Shooter Games',
     },
     {
       id: 'slow_aim',
       title: 'Slow Aim: Dragging feels sluggish / hard to reach head',
-      description: 'Takes excessive thumb swiping to reach the head or perform 180° quick turns and emergency Gloo Wall deployments.',
+      description: 'Takes excessive thumb swiping to reach the head or perform 180° quick turns.',
       icon: '🐢',
-      commonIn: 'Free Fire / Free Fire MAX',
+      commonIn: 'Shooter Games',
     },
     {
       id: 'shaky_aim',
       title: 'Shaky Aim: Crosshair tremors or jitters while shooting',
-      description: 'High sensitivity is magnifying physical finger micro-tremors on high polling touch screens. Needs gradual damping.',
+      description: 'High sensitivity is magnifying physical finger micro-tremors on touch screens.',
       icon: '📳',
-      commonIn: 'High-Refresh Screen Drags',
+      commonIn: 'High-Refresh Screens',
     },
     {
       id: 'recoil_problems',
       title: 'Recoil Problems: Spray climbs out of control',
-      description: 'Automatic spray on SMGs or ARs kicks upward faster than thumb pull-down resistance can stabilize.',
+      description: 'Automatic spray kicks upward faster than thumb pull-down resistance can stabilize.',
       icon: '🧗',
-      commonIn: 'MP40 / UMP / AK / SCAR',
-    },
-    {
-      id: 'stick_to_chest',
-      title: 'Stick to Chest: Magnetic aim assist locks onto torso',
-      description: 'Your drag cannot break the torso magnet. Needs lower fire button positioning and higher Red Dot flick acceleration.',
-      icon: '🧲',
-      commonIn: 'Free Fire / Free Fire MAX',
+      commonIn: 'Automatic Weapons',
     },
     {
       id: 'sniper_missing',
       title: 'Sniper Missing: Scopes skip pixels or miss fast-switches',
-      description: 'Bolt action sniper scope is too sensitive for pixel-perfect headshot micro-adjustments with AWM & M82B.',
+      description: 'Sniper scope is too sensitive for pixel-perfect headshot micro-adjustments.',
       icon: '🎯',
-      commonIn: 'AWM / M82B / Kar98k',
+      commonIn: 'Sniper Rifles',
     },
   ];
+
+  const issues = isFreeFire ? freeFireIssues : standardIssues;
 
   const handleSelectIssue = (issue: IssueDiagnosticType) => {
     playCyberClick('tune');
@@ -251,7 +294,7 @@ export const ImproveSensiModal: React.FC<ImproveSensiModalProps> = ({
                     </div>
 
                     <div className="mt-2.5 pt-2 border-t border-zinc-900 flex items-center justify-between text-[10px] font-mono-code text-[#00FF66]">
-                      <span>Apply Controlled Step Fix</span>
+                      <span>{issue.vectorDesc || 'Apply Controlled Step Fix'}</span>
                       <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition-transform" />
                     </div>
                   </button>

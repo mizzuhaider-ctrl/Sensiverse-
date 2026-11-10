@@ -267,3 +267,133 @@ export function getUnifiedBrazilBaseline() {
     fireButtonSizePercent: Math.round(sums.fireButtonSizePercent / count),
   };
 }
+
+/**
+ * Phase 9G Approved Brazilian Profiles Specification:
+ * - Editorial profile: RANGE_BASED_SELECTION. Never called official or midpoint.
+ * - 120Hz and 60Hz profiles: INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE.
+ * - Strictly isolated from normal sensitivity calculation.
+ */
+export type Phase9BrazilianIntegrityTier = 
+  | 'RANGE_BASED_SELECTION' 
+  | 'INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE';
+
+export interface Phase9ApprovedBrazilianProfile {
+  id: string;
+  name: string;
+  tagline: string;
+  targetHardware: 'all_ios' | 'promotion_120hz' | 'standard_60hz';
+  integrityTier: Phase9BrazilianIntegrityTier;
+  badgeLabel: string;
+  sourceName: string;
+  sourceUrl: string;
+  transparencyDisclaimer: string;
+  publishedRanges?: {
+    general: string;
+    redDot: string;
+    scope2x: string;
+    scope4x: string;
+    sniperScope: string;
+    freeLook: string;
+    fireButton: string;
+  };
+  trueMidpoints?: {
+    general: number;
+    redDot: number;
+    scope2x: number;
+    scope4x: number;
+    sniperScope: number;
+    freeLook: number;
+    fireButtonSizePercent: number;
+  };
+  values: {
+    general: number;             // [0, 200]
+    redDot: number;              // [0, 200]
+    scope2x: number;             // [0, 200]
+    scope4x: number;             // [0, 200]
+    sniperScope: number;         // [0, 200]
+    freeLook: number;            // [0, 200]
+    fireButtonSizePercent: number; // [10, 100], in [42, 46, 50, 54]
+  };
+}
+
+export const PHASE9_BRAZILIAN_PROFILES: Phase9ApprovedBrazilianProfile[] = [
+  {
+    id: 'brazil-editorial-range-preset',
+    name: 'Brazilian Editorial Range Preset',
+    tagline: 'Selected values within published Brazilian editorial hardware ranges (not official or midpoint values)',
+    targetHardware: 'all_ios',
+    integrityTier: 'RANGE_BASED_SELECTION',
+    badgeLabel: 'Editorial Range Selection',
+    sourceName: 'Free Fire Mania (Guia de Sensibilidade)',
+    sourceUrl: 'https://www.freefiremania.com.br/noticia/sensibilidade-free-fire.html',
+    transparencyDisclaimer: 'These values are specific numbers selected from within Free Fire Mania\'s published hardware tier ranges. They are not direct laboratory measurements, official static combinations, or exact mathematical midpoints. Test in the Training Ground to adapt to your personal drag style.',
+    publishedRanges: {
+      general: '145 – 170',
+      redDot: '155 – 175',
+      scope2x: '145 – 165',
+      scope4x: '125 – 150',
+      sniperScope: '80 – 105',
+      freeLook: '55 – 80',
+      fireButton: '45% – 52%',
+    },
+    trueMidpoints: {
+      general: 158,
+      redDot: 165,
+      scope2x: 155,
+      scope4x: 138,
+      sniperScope: 93,
+      freeLook: 68,
+      fireButtonSizePercent: 49,
+    },
+    values: {
+      general: 168,
+      redDot: 172,
+      scope2x: 162,
+      scope4x: 145,
+      sniperScope: 95,
+      freeLook: 75,
+      fireButtonSizePercent: 46,
+    },
+  },
+  {
+    id: 'brazil-120hz-promotion-adaptation',
+    name: 'Brazilian 120Hz ProMotion Adaptation',
+    tagline: 'Internally estimated preset for 120Hz ProMotion displays with no verified community source',
+    targetHardware: 'promotion_120hz',
+    integrityTier: 'INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE',
+    badgeLabel: 'Internal Estimate',
+    sourceName: 'None (Internal Heuristic Adaptation)',
+    sourceUrl: 'https://www.freefiremania.com.br/noticia/sensibilidade-free-fire.html',
+    transparencyDisclaimer: 'Internally estimated preset with no verified community source. No verified model-specific laboratory data exists for 120Hz iPhones in Free Fire. These values reflect internal heuristic adaptations and serve purely as an optional starting baseline.',
+    values: {
+      general: 152,
+      redDot: 158,
+      scope2x: 150,
+      scope4x: 136,
+      sniperScope: 84,
+      freeLook: 68,
+      fireButtonSizePercent: 48,
+    },
+  },
+  {
+    id: 'brazil-60hz-standard-adaptation',
+    name: 'Brazilian 60Hz Standard Adaptation',
+    tagline: 'Internally estimated preset for standard 60Hz displays with no verified community source',
+    targetHardware: 'standard_60hz',
+    integrityTier: 'INTERNAL_ESTIMATE_NO_VERIFIED_SOURCE',
+    badgeLabel: 'Internal Estimate',
+    sourceName: 'None (Internal Heuristic Adaptation)',
+    sourceUrl: 'https://www.freefiremania.com.br',
+    transparencyDisclaimer: 'Internally estimated preset with no verified community source. No verified model-specific laboratory data exists for 60Hz iPhones in Free Fire. These values reflect internal heuristic adaptations and serve purely as an optional starting baseline.',
+    values: {
+      general: 172,
+      redDot: 176,
+      scope2x: 166,
+      scope4x: 148,
+      sniperScope: 96,
+      freeLook: 78,
+      fireButtonSizePercent: 46,
+    },
+  },
+];

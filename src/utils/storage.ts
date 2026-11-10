@@ -121,9 +121,12 @@ export function formatSensitivityForSharing(
     text += `• General: ${d.general}\n`;
     text += `• Red Dot: ${d.redDot}\n`;
     text += `• 2x Scope: ${d.scope2x}\n`;
-    text += `• 4x Scope: ${d.scope4x}\n`;
-    text += `• Sniper Scope: ${d.sniperScope}\n`;
-    text += `• Free Look: ${d.freeLook}\n`;
+    if (typeof d.sniperScope === 'number') {
+      text += `• Sniper Scope: ${d.sniperScope}\n`;
+    }
+    if (typeof d.freeLook === 'number') {
+      text += `• Free Look: ${d.freeLook}\n`;
+    }
   } else if (sensitivity.gameId === 'bgmi' || sensitivity.gameId === 'pubg') {
     const d = sensitivity.data;
     text += `--- ${gameName} Sensi ---\n`;

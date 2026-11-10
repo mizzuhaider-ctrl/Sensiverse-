@@ -29,6 +29,10 @@ interface SensitivityDisplayProps {
   weaponCategory?: WeaponCategory;
   playstyle?: Playstyle;
   fps?: number;
+  fireButtonSize?: number;
+  onOpenBrazilianSensi?: () => void;
+  onOpenIndonesianSensi?: () => void;
+  isIosDevice?: boolean;
 }
 
 export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
@@ -43,6 +47,10 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
   weaponCategory = 'smg',
   playstyle = 'onetap',
   fps = 60,
+  fireButtonSize = 48,
+  onOpenBrazilianSensi,
+  onOpenIndonesianSensi,
+  isIosDevice = false,
 }) => {
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
   const [isReferenceModalOpen, setIsReferenceModalOpen] = useState(false);
@@ -172,10 +180,10 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
         <div>
           <div className="flex items-center gap-2">
             <span className="w-6 h-6 rounded-md bg-[#00FF66]/10 border border-[#00FF66]/30 flex items-center justify-center text-[#00FF66] font-cyber text-xs font-bold">
-              06
+              05
             </span>
             <h2 className="text-lg sm:text-xl font-bold font-cyber text-white">
-              STEP 6: GENERATE SENSITIVITY & CALIBRATED PROFILE
+              STEP 5: GENERATE SENSITIVITY & CALIBRATED PROFILE
             </h2>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
@@ -195,6 +203,34 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
             >
               <RotateCcw className="w-3.5 h-3.5 text-[#00FF66]" />
               <span>Revert to Previous Sensi</span>
+            </button>
+          )}
+
+          {onOpenBrazilianSensi && (
+            <button
+              onClick={() => {
+                playCyberClick('click');
+                onOpenBrazilianSensi();
+              }}
+              className="text-[11px] font-mono-code text-amber-300 hover:text-white px-2.5 py-1 rounded bg-amber-400/10 border border-amber-400/30 hover:border-amber-400 flex items-center gap-1.5 transition-colors cursor-pointer min-h-[36px]"
+              title="Explore optional Brazilian sensitivity reference profiles"
+            >
+              <span>🇧🇷</span>
+              <span>Brazilian Meta</span>
+            </button>
+          )}
+
+          {onOpenIndonesianSensi && (
+            <button
+              onClick={() => {
+                playCyberClick('click');
+                onOpenIndonesianSensi();
+              }}
+              className="text-[11px] font-mono-code text-red-300 hover:text-white px-2.5 py-1 rounded bg-red-500/10 border border-red-500/30 hover:border-red-400 flex items-center gap-1.5 transition-colors cursor-pointer min-h-[36px]"
+              title="Explore optional Indonesian sensitivity reference profiles"
+            >
+              <span>🇮🇩</span>
+              <span>Indonesian Meta</span>
             </button>
           )}
 
@@ -250,15 +286,63 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
         </div>
       </div>
 
+      {/* Phase 5: 7-Axis Active Profile Quick Review Strip */}
+      {ffData && (
+        <div className="mt-3 p-3 rounded-xl bg-black/80 border border-zinc-800/90 space-y-2">
+          <div className="flex items-center justify-between text-[11px] font-mono-code text-zinc-400">
+            <span className="flex items-center gap-1.5 text-white font-bold font-cyber">
+              <span className="w-2 h-2 rounded-full bg-[#00FF66] animate-pulse" />
+              <span>CURRENT 7-AXIS CALIBRATION SNAPSHOT</span>
+            </span>
+            {hasPreviousSnapshot && onRevertToPrevious && (
+              <span className="text-[#00FF66] bg-[#00FF66]/10 px-2 py-0.5 rounded border border-[#00FF66]/30 font-bold">
+                ✓ 1 Undo Snapshot Available
+              </span>
+            )}
+          </div>
+
+          <div className="grid grid-cols-4 sm:grid-cols-7 gap-1.5 text-center text-xs font-mono-code">
+            <div className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-900">
+              <span className="text-[9px] text-zinc-500 block uppercase">General</span>
+              <span className="font-bold text-[#00FF66] text-sm">{ffData.general ?? 145}</span>
+            </div>
+            <div className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-900">
+              <span className="text-[9px] text-zinc-500 block uppercase">Red Dot</span>
+              <span className="font-bold text-white text-sm">{ffData.redDot ?? 135}</span>
+            </div>
+            <div className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-900">
+              <span className="text-[9px] text-zinc-500 block uppercase">2x Scope</span>
+              <span className="font-bold text-white text-sm">{ffData.scope2x ?? 120}</span>
+            </div>
+            <div className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-900">
+              <span className="text-[9px] text-zinc-500 block uppercase">4x Scope</span>
+              <span className="font-bold text-white text-sm">{ffData.scope4x ?? 105}</span>
+            </div>
+            <div className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-900">
+              <span className="text-[9px] text-zinc-500 block uppercase">Sniper</span>
+              <span className="font-bold text-white text-sm">{ffData.sniperScope !== undefined ? ffData.sniperScope : '—'}</span>
+            </div>
+            <div className="p-1.5 rounded-lg bg-zinc-950 border border-zinc-900">
+              <span className="text-[9px] text-zinc-500 block uppercase">Free Look</span>
+              <span className="font-bold text-white text-sm">{ffData.freeLook !== undefined ? ffData.freeLook : '—'}</span>
+            </div>
+            <div className="p-1.5 rounded-lg bg-[#00FF66]/10 border border-[#00FF66]/30 col-span-2 sm:col-span-1">
+              <span className="text-[9px] text-[#00FF66] block uppercase font-bold">Fire Button</span>
+              <span className="font-bold text-[#00FF66] text-sm">{fireButtonSize ?? 48}%</span>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Free Fire In-Game Architecture Explanatory Notice */}
       <div className="mt-3 p-3 rounded-xl bg-[#00FF66]/5 border border-[#00FF66]/20 text-xs text-zinc-300 leading-relaxed flex items-start gap-2.5">
         <span className="text-[#00FF66] text-base shrink-0 mt-0.5">⚙️</span>
         <div>
           <span className="font-bold text-white block mb-0.5">
-            Free Fire Global Sensitivity Architecture
+            Free Fire Calibration Setup: 6 Sensitivity Axes + Fire Button (7 Total Settings)
           </span>
           <span className="text-zinc-400">
-            Free Fire and Free Fire MAX use <strong>6 global sensitivity sliders</strong> (General, Red Dot, 2X, 4X, Sniper, Free Look) rather than separate per-gun settings. This profile balances these global sliders to maximize headshot runway and crosshair stability for <strong>{WEAPON_CATEGORIES[weaponCategory]?.name}</strong> ({WEAPON_CATEGORIES[weaponCategory]?.representativeGuns?.slice(0, 3).join(', ')}).
+            Free Fire and Free Fire MAX feature <strong>6 in-game sensitivity axes</strong> (General, Red Dot, 2X Scope, 4X Scope, Sniper Scope, and Free Look) paired with the <strong>Fire Button Size slider</strong>, establishing a complete <strong>7-setting calibrated profile</strong>. This setup balances camera velocity and upward swipe runway specifically for <strong>{WEAPON_CATEGORIES[weaponCategory]?.name}</strong> ({WEAPON_CATEGORIES[weaponCategory]?.representativeGuns?.slice(0, 3).join(', ')}).
           </span>
         </div>
       </div>
@@ -309,7 +393,7 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
               <button
                 type="button"
                 onClick={() => handleFeedback('overshooting')}
-                className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
+                className="px-2.5 py-2.5 min-h-[44px] rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer touch-manipulation"
                 title="Aim flies past enemy head into the sky"
               >
                 <span>🚀 Overshooting (-4)</span>
@@ -318,7 +402,7 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
               <button
                 type="button"
                 onClick={() => handleFeedback('chest_lock')}
-                className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
+                className="px-2.5 py-2.5 min-h-[44px] rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer touch-manipulation"
                 title="Crosshair sticks to chest or cannot drag upward"
               >
                 <span>🧲 Chest Lock (+4)</span>
@@ -327,7 +411,7 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
               <button
                 type="button"
                 onClick={() => handleFeedback('recoil_bloom')}
-                className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
+                className="px-2.5 py-2.5 min-h-[44px] rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer touch-manipulation"
                 title="Bullet spread blooms or kicks excessively during spray"
               >
                 <span>🧗 Recoil Bloom (-2)</span>
@@ -336,7 +420,7 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
               <button
                 type="button"
                 onClick={() => handleFeedback('shaky_sight')}
-                className="px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer"
+                className="px-2.5 py-2.5 min-h-[44px] rounded-lg bg-zinc-900 border border-zinc-700 hover:border-[#00FF66] hover:bg-[#00FF66]/10 text-[11px] font-mono-code font-bold text-zinc-200 hover:text-white transition-all flex items-center justify-center gap-1 cursor-pointer touch-manipulation"
                 title="Crosshair shakes or jitters during tracking"
               >
                 <span>⚡ Shaky Sight (-2)</span>

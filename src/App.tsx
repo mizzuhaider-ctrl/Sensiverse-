@@ -17,6 +17,7 @@ import {
   calculateSensitivity, 
   applySensitivityImprovement, 
   applySingleSensitivityFeedback,
+  applyPhase4Calibration,
   SensitivityFeedbackType,
   ImprovementResult,
   clampFireButtonSize,
@@ -37,7 +38,6 @@ import { WEAPON_CATEGORIES } from './data/weapons';
 
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
-import { GameSelector } from './components/GameSelector';
 import { DeviceSelector } from './components/DeviceSelector';
 import { PlaystyleSelector } from './components/PlaystyleSelector';
 import { WeaponSelector } from './components/WeaponSelector';
@@ -45,13 +45,18 @@ import { HeadshotOptionCard } from './components/HeadshotOptionCard';
 import { PrimaryActionBar } from './components/PrimaryActionBar';
 import { AimTelemetryCard } from './components/AimTelemetryCard';
 import { SensitivityDisplay } from './components/SensitivityDisplay';
+import { TrainingGroundCalibration } from './components/TrainingGroundCalibration';
 import { FireButtonHUDVisualizer } from './components/FireButtonHUDVisualizer';
 import { ImproveSensiModal } from './components/ImproveSensiModal';
+import { BrazilianSensiModal } from './components/BrazilianSensiModal';
+import { IndonesianSensiModal } from './components/IndonesianSensiModal';
 import { PreviousSensiDrawer } from './components/PreviousSensiDrawer';
 import { EthicalDisclaimer } from './components/EthicalDisclaimer';
 import { SEOGuideSection } from './components/SEOGuideSection';
 import { AdSenseUnit } from './components/AdSenseUnit';
 import { Footer } from './components/Footer';
+import { Phase9ApprovedBrazilianProfile } from './data/brazilSensiProfiles';
+import { ApprovedIndonesianProfile } from './data/indonesiaSensiProfiles';
 
 export default function App() {
   // Primary state: selected device (updated via dropdowns)
@@ -89,9 +94,77 @@ export default function App() {
   // UI state
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isImproveModalOpen, setIsImproveModalOpen] = useState(false);
+  const [isBrazilianModalOpen, setIsBrazilianModalOpen] = useState(false);
+  const [isIndonesianModalOpen, setIsIndonesianModalOpen] = useState(false);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
   const [savedPresets, setSavedPresets] = useState<SavedPreset[]>([]);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
+
+  // Apply optional Brazilian profile (stores snapshot for Revert to Previous Sensi)
+  const handleApplyBrazilianProfile = (profile: Phase9ApprovedBrazilianProfile) => {
+    // Preserve current profile snapshot for single-step Undo
+    setPreviousProfileSnapshot({
+      sensitivity: JSON.parse(JSON.stringify(sensitivity)) as SensitivityOutput,
+      fireButton: { ...fireButton }
+    });
+
+    // Update sensitivity data with Brazilian profile values
+    const updatedData = {
+      ...(sensitivity.data as any),
+      general: profile.values.general,
+      redDot: profile.values.redDot,
+      scope2x: profile.values.scope2x,
+      scope4x: profile.values.scope4x,
+      sniperScope: profile.values.sniperScope,
+      freeLook: profile.values.freeLook
+    };
+
+    setSensitivity({
+      gameId: sensitivity.gameId,
+      data: updatedData
+    } as SensitivityOutput);
+
+    setFireButton(prev => ({
+      ...prev,
+      sizePercent: profile.values.fireButtonSizePercent
+    }));
+
+    setToastMessage(`Applied ${profile.name}! Revert anytime.`);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
+
+  // Apply optional Indonesian profile (stores snapshot for Revert to Previous Sensi)
+  const handleApplyIndonesianProfile = (profile: ApprovedIndonesianProfile) => {
+    // Preserve current profile snapshot for single-step Undo
+    setPreviousProfileSnapshot({
+      sensitivity: JSON.parse(JSON.stringify(sensitivity)) as SensitivityOutput,
+      fireButton: { ...fireButton }
+    });
+
+    // Update sensitivity data with Indonesian profile values
+    const updatedData = {
+      ...(sensitivity.data as any),
+      general: profile.values.general,
+      redDot: profile.values.redDot,
+      scope2x: profile.values.scope2x,
+      scope4x: profile.values.scope4x,
+      sniperScope: profile.values.sniperScope,
+      freeLook: profile.values.freeLook
+    };
+
+    setSensitivity({
+      gameId: sensitivity.gameId,
+      data: updatedData
+    } as SensitivityOutput);
+
+    setFireButton(prev => ({
+      ...prev,
+      sizePercent: profile.values.fireButtonSizePercent
+    }));
+
+    setToastMessage(`Applied ${profile.name}! Revert anytime.`);
+    setTimeout(() => setToastMessage(null), 3500);
+  };
 
   const generatorRef = useRef<HTMLDivElement>(null);
 
@@ -163,6 +236,29 @@ export default function App() {
     variation: number = variationIndex
   ) => {
     setIsRecalculating(true);
+    if (phone.customSensitivityPreset) {
+      setSensitivity({
+        gameId: game,
+        data: {
+          general: phone.customSensitivityPreset.general,
+          redDot: phone.customSensitivityPreset.redDot,
+          scope2x: phone.customSensitivityPreset.scope2x ?? 120,
+          scope4x: phone.customSensitivityPreset.scope4x ?? 105,
+          sniperScope: phone.customSensitivityPreset.sniperScope ?? 65,
+          freeLook: phone.customSensitivityPreset.freeLook ?? 95,
+        }
+      } as SensitivityOutput);
+      if (typeof phone.customFireButtonPreset === 'number') {
+        setFireButton(prev => ({
+          ...prev,
+          sizePercent: phone.customFireButtonPreset!
+        }));
+      }
+      setTimeout(() => {
+        setIsRecalculating(false);
+      }, 300);
+      return;
+    }
     const result = calculateSensitivity(game, phone, grip, style, fps, 1.0, weapon, variation);
     setSensitivity(result.sensitivity);
     setFireButton(result.fireButton);
@@ -172,14 +268,37 @@ export default function App() {
     }, 300);
   };
 
-  // Handler: Selecting a brand or model updates ONLY selectedPhone and Active Profile.
-  // It does NOT modify or recalculate the currently displayed sensitivity or fire button!
+  // Handler: Selecting a brand or model updates selectedPhone and Active Profile.
   const handleSelectPhone = (phone: PhoneModel) => {
     setSelectedPhone(phone);
     const targetFps = getValidFpsForDevice(phone, selectedGame, selectedFps);
     setSelectedFps(targetFps);
 
-    // CRITICAL: Preserve existing sensitivity and fire button without recalculation.
+    // If model has a custom preset (e.g. approved 29 iPhone, 154 Samsung, 70 Motorola, or 29 Xiaomi presets), immediately display its exact values
+    if (phone.customSensitivityPreset) {
+      setCalibratedPhone(phone);
+      setSensitivity({
+        gameId: selectedGame,
+        data: {
+          general: phone.customSensitivityPreset.general,
+          redDot: phone.customSensitivityPreset.redDot,
+          scope2x: phone.customSensitivityPreset.scope2x ?? 120,
+          scope4x: phone.customSensitivityPreset.scope4x ?? 105,
+          sniperScope: phone.customSensitivityPreset.sniperScope ?? 65,
+          freeLook: phone.customSensitivityPreset.freeLook ?? 95,
+        },
+      } as SensitivityOutput);
+      if (typeof phone.customFireButtonPreset === 'number') {
+        setFireButton(prev => ({
+          ...prev,
+          sizePercent: phone.customFireButtonPreset!
+        }));
+      }
+      showToast(`Selected ${phone.name}. Preset sensitivity loaded.`);
+      return;
+    }
+
+    // CRITICAL: Preserve existing sensitivity and fire button without recalculation for normal models.
     if (phone.id !== calibratedPhone.id) {
       showToast(`Selected ${phone.name}. Press "TRY NEW SENSI" to generate settings.`);
     }
@@ -334,6 +453,13 @@ export default function App() {
     showToast('Preset deleted.');
   };
 
+  // Phase 5: Update a saved preset (notes, tags, rename)
+  const handleUpdatePreset = (updatedPreset: SavedPreset) => {
+    const updated = savePreset(updatedPreset);
+    setSavedPresets(updated);
+    showToast(`Updated preset "${updatedPreset.name}"`);
+  };
+
   // Copy formatted sensitivity with weapon category and share link
   const handleCopyAll = () => {
     const game = GAMES_DATA[selectedGame];
@@ -429,6 +555,39 @@ export default function App() {
       });
       setFeedbackCumulativeDeltas({});
       showToast('Restored previous calibration profile.');
+    }
+  };
+
+  // Phase 4: Training Ground Testing & Calibration Feedback Handler (Free Fire / Free Fire MAX)
+  const handleApplyPhase4Feedback = (
+    feedbackType: 'overshooting' | 'chest_lock' | 'recoil_bloom' | 'shaky_sight'
+  ) => {
+    // 1. Preserve previous profile snapshot before making changes
+    setPreviousProfileSnapshot({ sensitivity, fireButton });
+
+    // 2. Apply Phase 4 calibration with exact Phase 3 vectors & axis bounds
+    const res = applyPhase4Calibration(
+      sensitivity,
+      fireButton,
+      feedbackType,
+      feedbackCumulativeDeltas
+    );
+
+    setSensitivity(res.updatedSensitivity);
+    setFireButton(res.updatedFireButton);
+    setFeedbackCumulativeDeltas(res.newCumulativeDeltas);
+
+    const feedbackName = 
+      feedbackType === 'overshooting' ? 'Overshooting' :
+      feedbackType === 'chest_lock' ? 'Chest Lock' :
+      feedbackType === 'recoil_bloom' ? 'Recoil Bloom' : 'Shaky Sight';
+
+    if (res.atBound) {
+      showToast(`⚠️ ${feedbackName}: All affected parameters have reached their approved cumulative bounds!`);
+    } else if (res.isPartialStep) {
+      showToast(`🎯 Applied ${feedbackName} (partial final step to bound). Check comparison table below!`);
+    } else {
+      showToast(`🎯 Applied ${feedbackName} calibration vector. Check comparison table below!`);
     }
   };
 
@@ -568,16 +727,10 @@ export default function App() {
           <AdSenseUnit slot="7489201934" format="horizontal" label="ADVERTISEMENT — ESPORTS HARDWARE" />
         </div>
 
-        {/* Main Interactive Sensitivity Generator Container - Strict 6-Step Flow */}
+        {/* Main Interactive Sensitivity Generator Container - Streamlined Flow */}
         <div ref={generatorRef} className="w-full max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">
           
-          {/* STEP 1: Select Game (Free Fire India 🇮🇳 or Free Fire MAX 🔥) */}
-          <GameSelector
-            selectedGame={selectedGame}
-            onSelectGame={handleSelectGame}
-          />
-
-          {/* STEP 2: Select Phone (Choose phone brand and exact model) */}
+          {/* STEP 1: Select Phone (Choose phone brand and exact model) */}
           <DeviceSelector
             selectedPhone={selectedPhone}
             onSelectPhone={handleSelectPhone}
@@ -636,6 +789,24 @@ export default function App() {
               weaponCategory={weaponCategory}
               playstyle={playstyle}
               fps={selectedFps}
+              fireButtonSize={fireButton.sizePercent}
+              onOpenBrazilianSensi={() => setIsBrazilianModalOpen(true)}
+              onOpenIndonesianSensi={() => setIsIndonesianModalOpen(true)}
+              isIosDevice={(calibratedPhone.brand || '').trim().toLowerCase() === 'apple'}
+            />
+
+            {/* Phase 4: Practical Training Ground Testing & Calibration Lab (Free Fire / Free Fire MAX only) */}
+            <TrainingGroundCalibration
+              gameId={selectedGame}
+              phone={calibratedPhone}
+              weaponCategory={weaponCategory}
+              playstyle={playstyle}
+              currentSensitivity={sensitivity}
+              currentFireButton={fireButton}
+              previousSnapshot={previousProfileSnapshot}
+              onApplyFeedback={handleApplyPhase4Feedback}
+              onRevertToPrevious={handleRevertImprovement}
+              cumulativeDeltas={feedbackCumulativeDeltas}
             />
 
             {/* Aim Movement & Touch Telemetry */}
@@ -679,6 +850,23 @@ export default function App() {
         currentFireButton={fireButton}
       />
 
+      {/* Brazilian Sensi Reference Modal (Optional, isolated) */}
+      <BrazilianSensiModal
+        isOpen={isBrazilianModalOpen}
+        onClose={() => setIsBrazilianModalOpen(false)}
+        onApplyProfile={handleApplyBrazilianProfile}
+        currentDeviceName={calibratedPhone.name}
+        isIosDevice={(calibratedPhone.brand || '').trim().toLowerCase() === 'apple'}
+      />
+
+      {/* Indonesian Sensi Reference Modal (Optional, isolated) */}
+      <IndonesianSensiModal
+        isOpen={isIndonesianModalOpen}
+        onClose={() => setIsIndonesianModalOpen(false)}
+        onApplyProfile={handleApplyIndonesianProfile}
+        currentDeviceName={calibratedPhone.name}
+      />
+
       {/* My Previous Sensi History Drawer */}
       <PreviousSensiDrawer
         isOpen={isHistoryDrawerOpen}
@@ -687,7 +875,9 @@ export default function App() {
         onLoadPreset={handleLoadPreset}
         onDeletePreset={handleDeletePreset}
         onImportPresets={(newPresets) => setSavedPresets(newPresets)}
+        onUpdatePreset={handleUpdatePreset}
         currentSensitivity={sensitivity}
+        currentFireButton={fireButton}
         previousSnapshot={previousProfileSnapshot}
         onRestoreSnapshot={handleRevertImprovement}
       />

@@ -38,12 +38,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <LiveActivityCounter />
           </div>
 
-          <h1 className="text-2xl xs:text-3xl sm:text-5xl lg:text-6xl font-black font-cyber tracking-tight text-white leading-[1.1] w-full">
-            PERFECT <span className="text-[#00FF66] drop-shadow-[0_0_20px_rgba(0,255,102,0.6)]">SENSI</span> FOR YOUR PHONE.
+          <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-black font-cyber tracking-tight text-white leading-[1.05] w-full">
+            FREE FIRE<br />
+            <span className="text-[#00FF66] drop-shadow-[0_0_20px_rgba(0,255,102,0.6)]">SENSITIVITY</span>
           </h1>
 
           <p className="text-sm sm:text-base text-zinc-300 w-full max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-            Stop copying random pro settings that don’t match your screen. SensiVerse calculates mathematically balanced sensitivity, fire button sizing, and claw layouts calibrated specifically to your phone’s <span className="text-[#00FF66] font-semibold">refresh rate</span>, <span className="text-[#00FF66] font-semibold">touch sampling rate</span>, and screen dimensions.
+            Stop copying random sensitivity settings. SensiVerse brings you Brazilian 🇧🇷 and Indonesian 🇮🇩 sensitivity presets, researched and gameplay-tested.
           </p>
 
           {/* Key Metric Highlights - Fully responsive feature cards */}

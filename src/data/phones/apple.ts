@@ -37,7 +37,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111831",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Commercially released October 2026. ProMotion 120Hz display with dedicated 6-axis MEMS gyro."
+    "auditNotes": "Commercially released October 2026. ProMotion 120Hz display with dedicated 6-axis MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 114,
+      "redDot": 102,
+      "scope2x": 96,
+      "scope4x": 90,
+      "sniperScope": 61,
+      "freeLook": 84
+    }
   },
   {
     "id": "apple-17-pro",
@@ -75,12 +83,20 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111831",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Commercially released October 2026. ProMotion 120Hz display with dedicated 6-axis MEMS gyro."
+    "auditNotes": "Commercially released October 2026. ProMotion 120Hz display with dedicated 6-axis MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 116,
+      "redDot": 104,
+      "scope2x": 98,
+      "scope4x": 92,
+      "sniperScope": 62,
+      "freeLook": 85
+    }
   },
   {
     "id": "apple-17-air",
     "brand": "Apple",
-    "name": "iPhone Air",
+    "name": "iPhone 17 Air",
     "series": "iPhone 17",
     "releaseYear": 2026,
     "releaseDate": "2026-10",
@@ -113,7 +129,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111831",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Commercially released October 2026 ultra-slim profile. ProMotion 120Hz display with dedicated MEMS gyro."
+    "auditNotes": "Commercially released October 2026 ultra-slim profile. ProMotion 120Hz display with dedicated MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 118,
+      "redDot": 106,
+      "scope2x": 100,
+      "scope4x": 94,
+      "sniperScope": 63,
+      "freeLook": 86
+    }
   },
   {
     "id": "apple-17",
@@ -151,7 +175,60 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111831",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Commercially released October 2026. ProMotion 120Hz display with dedicated MEMS gyro."
+    "customSensitivityPreset": {
+      "general": 120,
+      "redDot": 108,
+      "scope2x": 102,
+      "scope4x": 96,
+      "sniperScope": 64,
+      "freeLook": 87
+    }
+  },
+  {
+    "id": "apple-17e",
+    "brand": "Apple",
+    "name": "iPhone 17e",
+    "series": "iPhone 17",
+    "releaseYear": 2026,
+    "releaseDate": "2026-03",
+    "releaseStatus": "commercially_released",
+    "screenSize": 6.1,
+    "resolution": "1170 x 2532",
+    "aspectRatio": "19.5:9",
+    "aspectRatioSource": "CALCULATED",
+    "refreshRate": 60,
+    "touchSamplingRate": null,
+    "touchSamplingRateVerified": false,
+    "chipset": "Apple A19",
+    "gpu": "Apple 5-core GPU",
+    "nativePpi": 460,
+    "ppiSource": "MANUFACTURER_PUBLISHED",
+    "ppiDerivation": {
+      "method": "PYTHAGOREAN_PPI",
+      "formula": "sqrt(w^2 + h^2) / diagonal",
+      "inputs": {
+        "width": 1170,
+        "height": 2532,
+        "diagonal": 6.1
+      }
+    },
+    "recommendedDpi": 460,
+    "hasHardwareGyro": true,
+    "gyroscopeType": "PHYSICAL_HARDWARE",
+    "category": "midrange",
+    "specsSource": "Apple Tech Specs",
+    "specsSourceUrl": "https://support.apple.com/en-us/111831",
+    "verificationStatus": "verified",
+    "popular": true,
+    "auditNotes": "6.1-inch Super Retina XDR OLED display, 60Hz refresh rate, Apple A19 chipset, 460 PPI, and dedicated 6-axis MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 122,
+      "redDot": 110,
+      "scope2x": 104,
+      "scope4x": 98,
+      "sniperScope": 63,
+      "freeLook": 86
+    }
   },
   {
     "id": "apple-16e",
@@ -189,7 +266,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111831",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Early 2025 entry flagship release with A18 and hardware gyro."
+    "auditNotes": "Early 2025 entry flagship release with A18 and hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 125,
+      "redDot": 113,
+      "scope2x": 107,
+      "scope4x": 101,
+      "sniperScope": 66,
+      "freeLook": 89
+    }
   },
   {
     "id": "apple-16-pm",
@@ -227,7 +312,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/120993",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Apple ProMotion 120Hz display with dedicated high-precision MEMS gyro."
+    "auditNotes": "Apple ProMotion 120Hz display with dedicated high-precision MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 117,
+      "redDot": 105,
+      "scope2x": 99,
+      "scope4x": 93,
+      "sniperScope": 62,
+      "freeLook": 85
+    }
   },
   {
     "id": "apple-16-pro",
@@ -265,7 +358,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/120993",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Apple ProMotion 120Hz display with dedicated 6-axis MEMS gyro."
+    "auditNotes": "Apple ProMotion 120Hz display with dedicated 6-axis MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 119,
+      "redDot": 107,
+      "scope2x": 101,
+      "scope4x": 95,
+      "sniperScope": 63,
+      "freeLook": 86
+    }
   },
   {
     "id": "apple-16-plus",
@@ -303,7 +404,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/120992",
     "verificationStatus": "verified",
     "popular": false,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 121,
+      "redDot": 109,
+      "scope2x": 103,
+      "scope4x": 97,
+      "sniperScope": 64,
+      "freeLook": 87
+    }
   },
   {
     "id": "apple-16",
@@ -341,7 +450,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/120992",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 123,
+      "redDot": 111,
+      "scope2x": 105,
+      "scope4x": 99,
+      "sniperScope": 65,
+      "freeLook": 88
+    }
   },
   {
     "id": "apple-15-pm",
@@ -379,7 +496,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111831",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro."
+    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 122,
+      "redDot": 110,
+      "scope2x": 104,
+      "scope4x": 98,
+      "sniperScope": 65,
+      "freeLook": 88
+    }
   },
   {
     "id": "apple-15-pro",
@@ -417,7 +542,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111831",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro."
+    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 124,
+      "redDot": 112,
+      "scope2x": 106,
+      "scope4x": 100,
+      "sniperScope": 66,
+      "freeLook": 89
+    }
   },
   {
     "id": "apple-15-plus",
@@ -455,7 +588,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111830",
     "verificationStatus": "verified",
     "popular": false,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 126,
+      "redDot": 114,
+      "scope2x": 108,
+      "scope4x": 102,
+      "sniperScope": 67,
+      "freeLook": 90
+    }
   },
   {
     "id": "apple-15",
@@ -493,7 +634,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111830",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 128,
+      "redDot": 116,
+      "scope2x": 110,
+      "scope4x": 104,
+      "sniperScope": 68,
+      "freeLook": 91
+    }
   },
   {
     "id": "apple-14-pm",
@@ -531,7 +680,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111849",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro."
+    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 125,
+      "redDot": 113,
+      "scope2x": 107,
+      "scope4x": 101,
+      "sniperScope": 67,
+      "freeLook": 90
+    }
   },
   {
     "id": "apple-14-pro",
@@ -569,7 +726,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111849",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro."
+    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 127,
+      "redDot": 115,
+      "scope2x": 109,
+      "scope4x": 103,
+      "sniperScope": 68,
+      "freeLook": 91
+    }
   },
   {
     "id": "apple-14-plus",
@@ -607,7 +772,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111848",
     "verificationStatus": "verified",
     "popular": false,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 129,
+      "redDot": 117,
+      "scope2x": 111,
+      "scope4x": 105,
+      "sniperScope": 69,
+      "freeLook": 92
+    }
   },
   {
     "id": "apple-14",
@@ -645,7 +818,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111848",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 131,
+      "redDot": 119,
+      "scope2x": 113,
+      "scope4x": 107,
+      "sniperScope": 70,
+      "freeLook": 93
+    }
   },
   {
     "id": "apple-se-3",
@@ -721,7 +902,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111874",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro."
+    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 128,
+      "redDot": 116,
+      "scope2x": 110,
+      "scope4x": 104,
+      "sniperScope": 69,
+      "freeLook": 92
+    }
   },
   {
     "id": "apple-13-pro",
@@ -759,7 +948,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111874",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro."
+    "auditNotes": "ProMotion 120Hz display with dedicated MEMS gyro.",
+    "customSensitivityPreset": {
+      "general": 130,
+      "redDot": 118,
+      "scope2x": 112,
+      "scope4x": 106,
+      "sniperScope": 70,
+      "freeLook": 93
+    }
   },
   {
     "id": "apple-13",
@@ -797,12 +994,20 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111873",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 132,
+      "redDot": 120,
+      "scope2x": 114,
+      "scope4x": 108,
+      "sniperScope": 71,
+      "freeLook": 94
+    }
   },
   {
     "id": "apple-13-mini",
     "brand": "Apple",
-    "name": "iPhone 13 mini",
+    "name": "iPhone 13 Mini",
     "series": "iPhone 13",
     "releaseYear": 2021,
     "releaseDate": "2021-09",
@@ -835,7 +1040,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111873",
     "verificationStatus": "verified",
     "popular": false,
-    "auditNotes": "Compact Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Compact Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 134,
+      "redDot": 122,
+      "scope2x": 116,
+      "scope4x": 110,
+      "sniperScope": 72,
+      "freeLook": 95
+    }
   },
   {
     "id": "apple-12-pm",
@@ -873,7 +1086,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111877",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 131,
+      "redDot": 119,
+      "scope2x": 113,
+      "scope4x": 107,
+      "sniperScope": 71,
+      "freeLook": 94
+    }
   },
   {
     "id": "apple-12-pro",
@@ -911,7 +1132,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111877",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 133,
+      "redDot": 121,
+      "scope2x": 115,
+      "scope4x": 109,
+      "sniperScope": 72,
+      "freeLook": 95
+    }
   },
   {
     "id": "apple-12",
@@ -949,12 +1178,20 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111876",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 135,
+      "redDot": 123,
+      "scope2x": 117,
+      "scope4x": 111,
+      "sniperScope": 73,
+      "freeLook": 96
+    }
   },
   {
     "id": "apple-12-mini",
     "brand": "Apple",
-    "name": "iPhone 12 mini",
+    "name": "iPhone 12 Mini",
     "series": "iPhone 12",
     "releaseYear": 2020,
     "releaseDate": "2020-11",
@@ -987,7 +1224,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://support.apple.com/en-us/111876",
     "verificationStatus": "verified",
     "popular": false,
-    "auditNotes": "Compact Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Compact Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 137,
+      "redDot": 125,
+      "scope2x": 119,
+      "scope4x": 113,
+      "sniperScope": 74,
+      "freeLook": 97
+    }
   },
   {
     "id": "apple-se-2",
@@ -1065,7 +1310,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "verificationStatus": "verified",
     "isDiscontinued": true,
     "popular": true,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 136,
+      "redDot": 124,
+      "scope2x": 118,
+      "scope4x": 112,
+      "sniperScope": 73,
+      "freeLook": 96
+    }
   },
   {
     "id": "apple-11-pro",
@@ -1104,7 +1357,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "verificationStatus": "verified",
     "isDiscontinued": true,
     "popular": true,
-    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro."
+    "auditNotes": "Super Retina XDR OLED 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 138,
+      "redDot": 126,
+      "scope2x": 120,
+      "scope4x": 114,
+      "sniperScope": 74,
+      "freeLook": 98
+    }
   },
   {
     "id": "apple-11",
@@ -1143,7 +1404,15 @@ export const APPLE_PHONES: PhoneModel[] = [
     "verificationStatus": "verified",
     "isDiscontinued": true,
     "popular": true,
-    "auditNotes": "Liquid Retina HD LCD 60Hz with dedicated hardware gyro."
+    "auditNotes": "Liquid Retina HD LCD 60Hz with dedicated hardware gyro.",
+    "customSensitivityPreset": {
+      "general": 140,
+      "redDot": 128,
+      "scope2x": 122,
+      "scope4x": 115,
+      "sniperScope": 75,
+      "freeLook": 100
+    }
   },
   {
     "id": "apple-xs-max",

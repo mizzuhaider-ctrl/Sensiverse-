@@ -283,24 +283,26 @@ export const FireButtonHUDVisualizer: React.FC<FireButtonHUDVisualizerProps> = (
             </div>
 
             {/* Quick Sizing Presets */}
-            <div className="flex items-center gap-1.5 pt-1">
-              <span className="text-[10px] font-mono-code text-zinc-400">Quick Scale:</span>
-              {[42, 46, 50, 54].map((s) => (
-                <button
-                  key={s}
-                  onClick={() => {
-                    playCyberClick('click');
-                    onChangeSize(clampFireButtonSize(s));
-                  }}
-                  className={`px-2 py-0.5 rounded text-[10px] font-mono-code transition-all ${
-                    config.sizePercent === s
-                      ? 'bg-[#00FF66] text-black font-bold'
-                      : 'bg-zinc-900 text-zinc-400 hover:text-white border border-zinc-800'
-                  }`}
-                >
-                  {s}%
-                </button>
-              ))}
+            <div className="flex items-center gap-1.5 pt-1 flex-wrap">
+              <span className="text-[10px] font-mono-code text-zinc-400 mr-1">Quick Scale:</span>
+              <div className="flex items-center gap-1.5 flex-1">
+                {[42, 46, 50, 54].map((s) => (
+                  <button
+                    key={s}
+                    onClick={() => {
+                      playCyberClick('click');
+                      onChangeSize(clampFireButtonSize(s));
+                    }}
+                    className={`flex-1 sm:flex-none px-3 py-1.5 min-h-[38px] rounded-lg text-xs font-mono-code font-bold transition-all cursor-pointer touch-manipulation flex items-center justify-center ${
+                      config.sizePercent === s
+                        ? 'bg-[#00FF66] text-black shadow-[0_0_8px_rgba(0,255,102,0.4)]'
+                        : 'bg-zinc-900 text-zinc-300 hover:text-white border border-zinc-800 hover:border-zinc-700'
+                    }`}
+                  >
+                    {s}%
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 

@@ -1034,6 +1034,7 @@ export function applySensitivityImprovement(
         coachingAdvice = 'Your thumb swipe speed was exceeding the target hitbox lock threshold. Applying approved Overshooting vector [-4,-3,-2,-2,0,0,+2%].';
         break;
 
+      case 'chest_lock':
       case 'stick_to_chest':
         data.general = clamp(data.general + 4, 0, 200);
         data.redDot = clamp(data.redDot + 4, 0, 200);
@@ -1046,6 +1047,7 @@ export function applySensitivityImprovement(
         coachingAdvice = 'Aim assist was anchoring onto enemy torso. Applying approved Chest Lock vector [+4,+4,+3,+2,0,0,-2%].';
         break;
 
+      case 'recoil_bloom':
       case 'recoil_problems':
       case 'recoil_climbing':
         data.general = clamp(data.general - 2, 0, 200);
@@ -1060,6 +1062,7 @@ export function applySensitivityImprovement(
         coachingAdvice = 'Mid-range spray was bouncing too high. Applying approved Recoil Bloom vector [-2,-2,-4,-6,0,-3,+3%].';
         break;
 
+      case 'shaky_sight':
       case 'shaky_aim':
       case 'gyro_jittery':
         data.general = clamp(data.general - 6, 0, 200);
@@ -1716,4 +1719,149 @@ export function applySingleSensitivityFeedback(
       summary: `Adjusted CODM ${mode.toUpperCase()} ${scopeLabel} from ${previousValue} to ${newValue} (${delta > 0 ? `+${delta}` : delta}) based on "${feedbackDesc}". Only this scope was modified.`,
     };
   }
+}
+
+export interface Phase4CalibrationResult {
+  updatedSensitivity: SensitivityOutput;
+  updatedFireButton: FireButtonConfig;
+  changesSummary: string[];
+  coachingAdvice: string;
+  newCumulativeDeltas: Record<string, number>;
+  axisDeltas: Record<string, number>;
+  isPartialStep: boolean;
+  atBound: boolean;
+}
+
+/**
+ * Phase 4 Training Ground Calibration:
+ * Applies one of the 4 approved feedback vectors across the 7 axes
+ * while enforcing the exact approved axis cumulative bounds and partial final steps.
+ * Affects Free Fire and Free Fire MAX only.
+ */
+export function applyPhase4Calibration(
+  currentSensi: SensitivityOutput,
+  currentFireButton: FireButtonConfig,
+  feedbackType: 'overshooting' | 'chest_lock' | 'recoil_bloom' | 'shaky_sight',
+  currentCumulativeDeltas: Record<string, number> = {}
+): Phase4CalibrationResult {
+  const isFreeFire = 
+    currentSensi.gameId === 'freefire' || 
+    currentSensi.gameId === 'freefire_max' || 
+    currentSensi.gameId === 'freefire_india';
+
+  if (!isFreeFire) {
+    const res = applySensitivityImprovement(currentSensi, currentFireButton, feedbackType as any);
+    return {
+      updatedSensitivity: res.updatedSensitivity,
+      updatedFireButton: res.updatedFireButton,
+      changesSummary: res.changesSummary,
+      coachingAdvice: res.coachingAdvice,
+      newCumulativeDeltas: currentCumulativeDeltas,
+      axisDeltas: {},
+      isPartialStep: false,
+      atBound: false,
+    };
+  }
+
+  const data = { ...currentSensi.data };
+  const newFireBtn: FireButtonConfig = { ...currentFireButton };
+  const vector7 = FEEDBACK_VECTORS_7AXIS[feedbackType];
+  const newCumulativeDeltas: Record<string, number> = { ...currentCumulativeDeltas };
+  const axisDeltas: Record<string, number> = {};
+  const changesSummary: string[] = [];
+  let isPartialStep = false;
+  let allAtBound = true;
+
+  const axes: ('general' | 'redDot' | 'scope2x' | 'scope4x' | 'sniperScope' | 'freeLook' | 'fireButton')[] = [
+    'general', 'redDot', 'scope2x', 'scope4x', 'sniperScope', 'freeLook', 'fireButton'
+  ];
+
+  for (const axis of axes) {
+    const axisConfig = vector7[axis];
+    const rawStep = axisConfig.step;
+    const axisBounds = AXIS_CUMULATIVE_BOUNDS[axis];
+    const currentCum = currentCumulativeDeltas[axis] || 0;
+
+    if (rawStep === 0) {
+      axisDeltas[axis] = 0;
+      continue;
+    }
+
+    const targetBound = rawStep < 0 ? axisBounds.min : axisBounds.max;
+
+    // 1. Bound margin check
+    let stepAfterBound = rawStep;
+    if (rawStep < 0) {
+      const remainingMargin = targetBound - currentCum;
+      if (remainingMargin >= 0) {
+        stepAfterBound = 0;
+      } else {
+        stepAfterBound = Math.max(rawStep, remainingMargin);
+      }
+    } else {
+      const remainingMargin = targetBound - currentCum;
+      if (remainingMargin <= 0) {
+        stepAfterBound = 0;
+      } else {
+        stepAfterBound = Math.min(rawStep, remainingMargin);
+      }
+    }
+
+    // 2. Hardware / in-game scale clamp
+    let appliedDelta = stepAfterBound;
+    if (axis === 'fireButton') {
+      const prevVal = newFireBtn.sizePercent;
+      const targetVal = clamp(prevVal + stepAfterBound, 10, 100);
+      appliedDelta = targetVal - prevVal;
+      newFireBtn.sizePercent = targetVal;
+    } else {
+      const prevVal = (data as any)[axis] ?? 100;
+      const targetVal = clamp(prevVal + stepAfterBound, 0, 200);
+      appliedDelta = targetVal - prevVal;
+      (data as any)[axis] = targetVal;
+    }
+
+    axisDeltas[axis] = appliedDelta;
+    newCumulativeDeltas[axis] = currentCum + appliedDelta;
+
+    if (Math.abs(appliedDelta) < Math.abs(rawStep) && appliedDelta !== 0) {
+      isPartialStep = true;
+    }
+    if (appliedDelta !== 0) {
+      allAtBound = false;
+    }
+
+    if (appliedDelta !== 0) {
+      const label = axis === 'fireButton' ? 'Fire Button Size' : getScopeFriendlyLabel(currentSensi.gameId, 'freefire', axis);
+      changesSummary.push(`${label}: ${appliedDelta > 0 ? `+${appliedDelta}` : appliedDelta}${axis === 'fireButton' ? '%' : ''}`);
+    }
+  }
+
+  // Coaching notes based on feedback type
+  let coachingAdvice = '';
+  switch (feedbackType) {
+    case 'overshooting':
+      coachingAdvice = 'Damped upward drag velocity and enlarged fire button slightly so crosshairs decelerate cleanly on enemy helmets.';
+      break;
+    case 'chest_lock':
+      coachingAdvice = 'Boosted General and Red Dot lift acceleration while lowering button size to provide extra swipe runway breaking torso lock.';
+      break;
+    case 'recoil_bloom':
+      coachingAdvice = 'Stabilized optical scopes and General rotation to tighten bullet grouping during mid-range spray tracking.';
+      break;
+    case 'shaky_sight':
+      coachingAdvice = 'Filtered micro-tremors across General, Red Dot, and Free Look to stabilize rapid tracking on high polling displays.';
+      break;
+  }
+
+  return {
+    updatedSensitivity: { gameId: currentSensi.gameId, data },
+    updatedFireButton: newFireBtn,
+    changesSummary,
+    coachingAdvice,
+    newCumulativeDeltas,
+    axisDeltas,
+    isPartialStep,
+    atBound: allAtBound,
+  };
 }
