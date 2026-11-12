@@ -82,7 +82,7 @@ export function buildShareableProfileUrl(
   weaponCategory = 'smg',
   fps = 60
 ): string {
-  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://sensiverse.ai.studio';
+  const origin = typeof window !== 'undefined' ? window.location.origin : 'https://sensiverse.vercel.app';
   const pathname = typeof window !== 'undefined' ? window.location.pathname : '/';
   const params = new URLSearchParams();
   params.set('game', gameId);

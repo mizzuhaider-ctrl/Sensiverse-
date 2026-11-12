@@ -587,6 +587,186 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
                         </optgroup>
                       ));
                   })()
+                ) : selectedBrand === 'Vivo' ? (
+                  (() => {
+                    const seriesOrder = [
+                      'Vivo X & X Fold Flagship Series',
+                      'Vivo V Series',
+                      'Vivo T Performance Series',
+                      'Vivo Y Series',
+                      'Vivo S Series',
+                    ];
+                    const groups: Record<string, PhoneModel[]> = {
+                      'Vivo X & X Fold Flagship Series': [],
+                      'Vivo V Series': [],
+                      'Vivo T Performance Series': [],
+                      'Vivo Y Series': [],
+                      'Vivo S Series': [],
+                    };
+                    availableModels.forEach((m) => {
+                      if (m.name.includes(' X ') || m.name.includes('X Fold') || m.name.startsWith('Vivo X')) {
+                        groups['Vivo X & X Fold Flagship Series'].push(m);
+                      } else if (m.name.includes(' V') || m.name.startsWith('Vivo V')) {
+                        groups['Vivo V Series'].push(m);
+                      } else if (m.name.includes(' T') || m.name.startsWith('Vivo T')) {
+                        groups['Vivo T Performance Series'].push(m);
+                      } else if (m.name.includes(' S') || m.name.startsWith('Vivo S')) {
+                        groups['Vivo S Series'].push(m);
+                      } else {
+                        groups['Vivo Y Series'].push(m);
+                      }
+                    });
+                    return seriesOrder
+                      .filter((s) => groups[s] && groups[s].length > 0)
+                      .map((seriesLabel) => (
+                        <optgroup key={seriesLabel} label={seriesLabel} className="bg-black text-[#00FF66] font-bold">
+                          {groups[seriesLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : selectedBrand === 'iQOO' ? (
+                  (() => {
+                    const seriesOrder = [
+                      'iQOO Flagship Number Series',
+                      'iQOO Neo Gaming Series',
+                      'iQOO Z Performance Series',
+                    ];
+                    const groups: Record<string, PhoneModel[]> = {
+                      'iQOO Flagship Number Series': [],
+                      'iQOO Neo Gaming Series': [],
+                      'iQOO Z Performance Series': [],
+                    };
+                    availableModels.forEach((m) => {
+                      if (m.name.includes('Neo') || m.series?.includes('Neo')) {
+                        groups['iQOO Neo Gaming Series'].push(m);
+                      } else if (m.name.includes(' Z') || m.name.includes('Z1') || m.series?.includes('Z')) {
+                        groups['iQOO Z Performance Series'].push(m);
+                      } else {
+                        groups['iQOO Flagship Number Series'].push(m);
+                      }
+                    });
+                    return seriesOrder
+                      .filter((s) => groups[s] && groups[s].length > 0)
+                      .map((seriesLabel) => (
+                        <optgroup key={seriesLabel} label={seriesLabel} className="bg-black text-[#00FF66] font-bold">
+                          {groups[seriesLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : selectedBrand === 'OPPO' ? (
+                  (() => {
+                    const seriesOrder = [
+                      'OPPO Find X Series',
+                      'OPPO Reno Series',
+                      'OPPO F Series',
+                      'OPPO K Series',
+                      'OPPO A Series',
+                    ];
+                    const groups: Record<string, PhoneModel[]> = {
+                      'OPPO Find X Series': [],
+                      'OPPO Reno Series': [],
+                      'OPPO F Series': [],
+                      'OPPO K Series': [],
+                      'OPPO A Series': [],
+                    };
+                    availableModels.forEach((m) => {
+                      if (m.name.includes('Find X') || m.series === 'Find X') {
+                        groups['OPPO Find X Series'].push(m);
+                      } else if (m.name.includes('Reno') || m.series === 'Reno') {
+                        groups['OPPO Reno Series'].push(m);
+                      } else if (m.name.includes(' F') || m.series === 'F Series') {
+                        groups['OPPO F Series'].push(m);
+                      } else if (m.name.includes(' K') || m.series === 'K Series') {
+                        groups['OPPO K Series'].push(m);
+                      } else {
+                        groups['OPPO A Series'].push(m);
+                      }
+                    });
+                    return seriesOrder
+                      .filter((s) => groups[s] && groups[s].length > 0)
+                      .map((seriesLabel) => (
+                        <optgroup key={seriesLabel} label={seriesLabel} className="bg-black text-[#00FF66] font-bold">
+                          {groups[seriesLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : selectedBrand === 'ASUS ROG' ? (
+                  (() => {
+                    const yearOrder = [
+                      '2025 ROG Series',
+                      '2024 ROG Series',
+                      '2023 ROG Series',
+                      '2022 ROG Series',
+                      '2021 ROG Series',
+                      '2018–2020 Classic ROG Series',
+                      'ASUS Zenfone Series',
+                    ];
+                    const groups: Record<string, PhoneModel[]> = {
+                      '2025 ROG Series': [],
+                      '2024 ROG Series': [],
+                      '2023 ROG Series': [],
+                      '2022 ROG Series': [],
+                      '2021 ROG Series': [],
+                      '2018–2020 Classic ROG Series': [],
+                      'ASUS Zenfone Series': [],
+                    };
+                    availableModels.forEach((m) => {
+                      if (m.name.includes('Zenfone') || m.series === 'Zenfone') {
+                        groups['ASUS Zenfone Series'].push(m);
+                      } else if (m.releaseYear === 2025) {
+                        groups['2025 ROG Series'].push(m);
+                      } else if (m.releaseYear === 2024) {
+                        groups['2024 ROG Series'].push(m);
+                      } else if (m.releaseYear === 2023) {
+                        groups['2023 ROG Series'].push(m);
+                      } else if (m.releaseYear === 2022) {
+                        groups['2022 ROG Series'].push(m);
+                      } else if (m.releaseYear === 2021) {
+                        groups['2021 ROG Series'].push(m);
+                      } else {
+                        groups['2018–2020 Classic ROG Series'].push(m);
+                      }
+                    });
+                    return yearOrder
+                      .filter((s) => groups[s] && groups[s].length > 0)
+                      .map((yearLabel) => (
+                        <optgroup key={yearLabel} label={yearLabel} className="bg-black text-[#00FF66] font-bold">
+                          {groups[yearLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
                 ) : (
                   availableModels.map((model) => (
                     <option 

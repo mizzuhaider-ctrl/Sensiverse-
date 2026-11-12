@@ -1,7 +1,7 @@
 # SensiVerse Robots.txt
-# https://sensiverse.ai.studio/
+# https://sensiverse.vercel.app/
 User-agent: *
 Allow: /
 
 # Sitemap Location
-Sitemap: https://sensiverse.ai.studio/sitemap.xml
+Sitemap: https://sensiverse.vercel.app/sitemap.xml

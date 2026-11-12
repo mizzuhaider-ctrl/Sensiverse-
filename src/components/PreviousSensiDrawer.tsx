@@ -58,6 +58,7 @@ export const PreviousSensiDrawer: React.FC<PreviousSensiDrawerProps> = ({
   const [gameFilter, setGameFilter] = useState<'all' | 'freefire_india' | 'freefire_max'>('all');
   const [editingNotesId, setEditingNotesId] = useState<string | null>(null);
   const [notesInput, setNotesInput] = useState('');
+  const [importStatus, setImportStatus] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   if (!isOpen) return null;
 
@@ -129,8 +130,11 @@ export const PreviousSensiDrawer: React.FC<PreviousSensiDrawerProps> = ({
         const imported = importPresetsFromJson(text);
         onImportPresets(imported);
         playCyberClick('success');
+        setImportStatus({ type: 'success', text: `Imported ${imported.length} preset${imported.length === 1 ? '' : 's'} successfully!` });
+        setTimeout(() => setImportStatus(null), 3000);
       } catch (err) {
-        alert('Could not import file. Please ensure it is a valid SensiVerse JSON backup.');
+        setImportStatus({ type: 'error', text: 'Could not import file. Please ensure it is a valid SensiVerse JSON backup.' });
+        setTimeout(() => setImportStatus(null), 4000);
       }
     };
     reader.readAsText(file);
@@ -357,6 +361,27 @@ export const PreviousSensiDrawer: React.FC<PreviousSensiDrawerProps> = ({
               </label>
             </div>
           </div>
+
+          {importStatus && (
+            <div
+              role="status"
+              className={`p-2.5 rounded-lg text-xs font-mono-code flex items-center justify-between gap-2 ${
+                importStatus.type === 'success'
+                  ? 'bg-[#00FF66]/10 border border-[#00FF66]/30 text-[#00FF66]'
+                  : 'bg-rose-500/10 border border-rose-500/30 text-rose-300'
+              }`}
+            >
+              <span>{importStatus.text}</span>
+              <button
+                type="button"
+                onClick={() => setImportStatus(null)}
+                className="text-zinc-400 hover:text-white text-xs px-1 cursor-pointer"
+                aria-label="Dismiss message"
+              >
+                ✕
+              </button>
+            </div>
+          )}
 
           {/* Quick Filter Chips */}
           <div className="flex items-center gap-1.5 text-[11px] font-mono-code flex-wrap">

@@ -1442,7 +1442,7 @@ assert(
   'Viewport meta tag exists for mobile indexability'
 );
 assert(
-  seoHtmlContent.includes('<link rel="canonical" href="https://sensiverse.ai.studio/" />'),
+  seoHtmlContent.includes('<link rel="canonical" href="https://sensiverse.vercel.app/" />'),
   'Canonical URL is present and configured'
 );
 assert(
@@ -1503,13 +1503,13 @@ const robotsTxtPath = path.resolve(process.cwd(), 'public/robots.txt');
 const robotsContent = fs.readFileSync(robotsTxtPath, 'utf-8');
 assert(robotsContent.includes('User-agent: *'), 'robots.txt includes wildcard user-agent');
 assert(robotsContent.includes('Allow: /'), 'robots.txt explicitly allows site crawling');
-assert(robotsContent.includes('Sitemap: https://sensiverse.ai.studio/sitemap.xml'), 'robots.txt links to sitemap.xml');
+assert(robotsContent.includes('Sitemap: https://sensiverse.vercel.app/sitemap.xml'), 'robots.txt links to sitemap.xml');
 
 const sitemapPath = path.resolve(process.cwd(), 'public/sitemap.xml');
 const sitemapContent = fs.readFileSync(sitemapPath, 'utf-8');
-assert(sitemapContent.includes('<loc>https://sensiverse.ai.studio/</loc>'), 'sitemap.xml contains home URL');
-assert(sitemapContent.includes('<loc>https://sensiverse.ai.studio/?game=freefire_india</loc>'), 'sitemap.xml contains Free Fire India URL');
-assert(sitemapContent.includes('<lastmod>2026-11-05</lastmod>'), 'sitemap.xml contains current lastmod date (2026-11-05)');
+assert(sitemapContent.includes('<loc>https://sensiverse.vercel.app/</loc>'), 'sitemap.xml contains home URL');
+assert(sitemapContent.includes('<loc>https://sensiverse.vercel.app/?game=freefire_india</loc>'), 'sitemap.xml contains Free Fire India URL');
+assert(sitemapContent.includes('<lastmod>2026-11-12</lastmod>'), 'sitemap.xml contains current lastmod date (2026-11-12)');
 
 // ==========================================
 // TEST GROUP 22: Phase 9A iPhone 17e Database Validation
@@ -2732,6 +2732,350 @@ assert(selectorCode.includes('OnePlus Flagship & R Series'), 'DeviceSelector inc
 assert(selectorCode.includes('OnePlus Nord Series'), 'DeviceSelector includes OnePlus Nord Series optgroup');
 assert(selectorCode.includes('OnePlus Nord CE Series'), 'DeviceSelector includes OnePlus Nord CE Series optgroup');
 assert(selectorCode.includes('OnePlus Nord N Series'), 'DeviceSelector includes OnePlus Nord N Series optgroup');
+
+// ----------------------------------------------------
+// TEST SUITE 34: Vivo Corrected Free Fire Sensitivity Database (104 Models)
+// ----------------------------------------------------
+console.log('\n[TEST GROUP 34] Vivo Corrected Free Fire Sensitivity Database (104 Models)');
+
+import { VIVO_PHONES } from '../src/data/phones/vivo';
+
+assert(VIVO_PHONES.length === 104, `Database includes exactly 104 Vivo models (Got: ${VIVO_PHONES.length})`);
+
+const vivoDiffsSeen = new Set<number>();
+let vivoNonUniformScopeFound = false;
+
+VIVO_PHONES.forEach((phone) => {
+  assert(Boolean(phone), `Vivo model "${phone.name}" is present in database`);
+  const preset = phone.customSensitivityPreset;
+  assert(Boolean(preset), `Vivo "${phone.name}" has customSensitivityPreset`);
+
+  if (preset) {
+    // 1. Generation-wise range check (based on assigned era from user chart)
+    const audit = phone.auditNotes || '';
+    if (audit.includes('Era: 2024–2026')) {
+      assert(preset.general >= 140 && preset.general <= 165, `Vivo "${phone.name}" (2024-2026) General in [140, 165] (Got: ${preset.general})`);
+    } else if (audit.includes('Era: 2020–2023')) {
+      assert(preset.general >= 155 && preset.general <= 180, `Vivo "${phone.name}" (2020-2023) General in [155, 180] (Got: ${preset.general})`);
+    } else if (audit.includes('Era: Before 2020')) {
+      assert(preset.general >= 130 && preset.general <= 150, `Vivo "${phone.name}" (Before 2020) General in [130, 150] (Got: ${preset.general})`);
+    }
+
+    // 2. Red Dot difference rule: strictly 4, 7, or 9
+    const diff = preset.general - preset.redDot;
+    vivoDiffsSeen.add(diff);
+    assert([4, 7, 9].includes(diff), `Vivo "${phone.name}" Red Dot diff (${diff}) is 4, 7, or 9 points`);
+
+    // 3. Non-uniform scope patterns
+    if (preset.scope4x && preset.scope2x && preset.scope4x > preset.scope2x) {
+      vivoNonUniformScopeFound = true;
+    }
+
+    // 4. Fire button
+    assert(typeof phone.customFireButtonPreset === 'number' && phone.customFireButtonPreset >= 40 && phone.customFireButtonPreset <= 55, `Vivo "${phone.name}" Fire Button within [40, 55]% (Got: ${phone.customFireButtonPreset}%)`);
+  }
+});
+
+// Differences vary model-wise and include 4, 7, and 9
+assert(vivoDiffsSeen.has(4), 'Vivo Red Dot differences include 4 points');
+assert(vivoDiffsSeen.has(7), 'Vivo Red Dot differences include 7 points');
+assert(vivoDiffsSeen.has(9), 'Vivo Red Dot differences include 9 points');
+assert(vivoDiffsSeen.size === 3, `Red Dot differences model-wise vary (Found distinct diffs: ${Array.from(vivoDiffsSeen).join(', ')})`);
+assert(vivoNonUniformScopeFound, 'Vivo scope settings differ non-uniformly across models (does not follow Realme or OnePlus linear patterns)');
+
+// Sorting in getModelsForBrand('Vivo')
+const vivoInOrder = getModelsForBrand('Vivo');
+assert(vivoInOrder.length === 104, `getModelsForBrand('Vivo') returns all 104 models (Got: ${vivoInOrder.length})`);
+assert(vivoInOrder[0].name === 'Vivo X300 Ultra', 'First Vivo model in getModelsForBrand is Vivo X300 Ultra');
+assert(vivoInOrder[vivoInOrder.length - 1].name === 'Vivo S1', 'Last Vivo model in getModelsForBrand is Vivo S1');
+
+// DeviceSelector optgroup verification
+assert(selectorCode.includes('selectedBrand === \'Vivo\''), 'DeviceSelector implements optgroup for Vivo models');
+assert(selectorCode.includes('Vivo X & X Fold Flagship Series'), 'DeviceSelector includes Vivo X & X Fold Flagship Series optgroup');
+assert(selectorCode.includes('Vivo V Series'), 'DeviceSelector includes Vivo V Series optgroup');
+assert(selectorCode.includes('Vivo T Performance Series'), 'DeviceSelector includes Vivo T Performance Series optgroup');
+assert(selectorCode.includes('Vivo Y Series'), 'DeviceSelector includes Vivo Y Series optgroup');
+assert(selectorCode.includes('Vivo S Series'), 'DeviceSelector includes Vivo S Series optgroup');
+
+// ----------------------------------------------------
+// TEST SUITE 35: iQOO Corrected Free Fire Sensitivity Database (39 Models)
+// ----------------------------------------------------
+console.log('\n[TEST GROUP 35] iQOO Corrected Free Fire Sensitivity Database (39 Models)');
+
+import { IQOO_PHONES } from '../src/data/phones/iqoo';
+
+assert(IQOO_PHONES.length === 39, `Database includes exactly 39 iQOO models (Got: ${IQOO_PHONES.length})`);
+
+const iqooDiffsSeen = new Set<number>();
+let iqooNonUniformScopeFound = false;
+
+// Track 2020 maximums to verify that models launched 2021 onward have lower General & Red Dot values
+const iqoo2020Model = IQOO_PHONES.find(p => p.name === 'iQOO 3 5G');
+assert(Boolean(iqoo2020Model), 'iQOO 3 5G (2020) is present in database');
+const iqoo2020General = iqoo2020Model?.customSensitivityPreset?.general ?? 170;
+const iqoo2020RedDot = iqoo2020Model?.customSensitivityPreset?.redDot ?? 163;
+
+IQOO_PHONES.forEach((phone) => {
+  assert(Boolean(phone), `iQOO model "${phone.name}" is present in database`);
+  const preset = phone.customSensitivityPreset;
+  assert(Boolean(preset), `iQOO "${phone.name}" has customSensitivityPreset`);
+
+  if (preset) {
+    const audit = phone.auditNotes || '';
+
+    // 1. Generation-wise range check
+    if (audit.includes('Era: 2024–2026')) {
+      assert(preset.general >= 140 && preset.general <= 160, `iQOO "${phone.name}" (2024-2026) General in [140, 160] (Got: ${preset.general})`);
+      assert(preset.general < iqoo2020General, `iQOO "${phone.name}" General (${preset.general}) is lower than 2020 model (${iqoo2020General})`);
+      assert(preset.redDot < iqoo2020RedDot, `iQOO "${phone.name}" Red Dot (${preset.redDot}) is lower than 2020 model (${iqoo2020RedDot})`);
+    } else if (audit.includes('Era: 2021–2023')) {
+      assert(preset.general >= 145 && preset.general <= 160, `iQOO "${phone.name}" (2021-2023) General in [145, 160] (Got: ${preset.general})`);
+      assert(preset.general < iqoo2020General, `iQOO "${phone.name}" General (${preset.general}) is lower than 2020 model (${iqoo2020General})`);
+      assert(preset.redDot < iqoo2020RedDot, `iQOO "${phone.name}" Red Dot (${preset.redDot}) is lower than 2020 model (${iqoo2020RedDot})`);
+    } else if (audit.includes('Era: 2020')) {
+      assert(preset.general >= 160 && preset.general <= 175, `iQOO "${phone.name}" (2020) General in [160, 175] (Got: ${preset.general})`);
+    }
+
+    // 2. Red Dot difference rule: strictly 4, 7, or 9
+    const diff = preset.general - preset.redDot;
+    iqooDiffsSeen.add(diff);
+    assert([4, 7, 9].includes(diff), `iQOO "${phone.name}" Red Dot diff (${diff}) is 4, 7, or 9 points`);
+
+    // 3. Non-uniform scope patterns
+    if (preset.scope4x && preset.scope2x && preset.scope4x > preset.scope2x) {
+      iqooNonUniformScopeFound = true;
+    }
+
+    // 4. Fire button
+    assert(typeof phone.customFireButtonPreset === 'number' && phone.customFireButtonPreset >= 40 && phone.customFireButtonPreset <= 55, `iQOO "${phone.name}" Fire Button within [40, 55]% (Got: ${phone.customFireButtonPreset}%)`);
+  }
+});
+
+// Differences vary model-wise and include 4, 7, and 9
+assert(iqooDiffsSeen.has(4), 'iQOO Red Dot differences include 4 points');
+assert(iqooDiffsSeen.has(7), 'iQOO Red Dot differences include 7 points');
+assert(iqooDiffsSeen.has(9), 'iQOO Red Dot differences include 9 points');
+assert(iqooDiffsSeen.size === 3, `Red Dot differences model-wise vary (Found distinct diffs: ${Array.from(iqooDiffsSeen).join(', ')})`);
+assert(iqooNonUniformScopeFound, 'iQOO scope settings differ non-uniformly across models');
+
+// Sorting in getModelsForBrand('iQOO')
+const iqooInOrder = getModelsForBrand('iQOO');
+assert(iqooInOrder.length === 39, `getModelsForBrand('iQOO') returns all 39 models (Got: ${iqooInOrder.length})`);
+assert(iqooInOrder[0].name === 'iQOO 15', 'First iQOO model in getModelsForBrand is iQOO 15');
+assert(iqooInOrder[iqooInOrder.length - 1].name === 'iQOO 3 5G', 'Last iQOO model in getModelsForBrand is iQOO 3 5G');
+
+// DeviceSelector optgroup verification
+assert(selectorCode.includes('selectedBrand === \'iQOO\''), 'DeviceSelector implements optgroup for iQOO models');
+assert(selectorCode.includes('iQOO Flagship Number Series'), 'DeviceSelector includes iQOO Flagship Number Series optgroup');
+assert(selectorCode.includes('iQOO Neo Gaming Series'), 'DeviceSelector includes iQOO Neo Gaming Series optgroup');
+assert(selectorCode.includes('iQOO Z Performance Series'), 'DeviceSelector includes iQOO Z Performance Series optgroup');
+
+// ----------------------------------------------------
+// TEST SUITE 36: OPPO Corrected Free Fire Sensitivity Database (55 Models)
+// ----------------------------------------------------
+console.log('\n[TEST GROUP 36] OPPO Corrected Free Fire Sensitivity Database (55 Models)');
+
+import { OPPO_PHONES } from '../src/data/phones/oppo';
+
+assert(OPPO_PHONES.length === 55, `Database includes exactly 55 OPPO models (Got: ${OPPO_PHONES.length})`);
+
+const oppoDiffsSeen = new Set<number>();
+let oppoScopeDeltaChecked = false;
+
+OPPO_PHONES.forEach((phone) => {
+  assert(Boolean(phone), `OPPO model "${phone.name}" is present in database`);
+  const preset = phone.customSensitivityPreset;
+  assert(Boolean(preset), `OPPO "${phone.name}" has customSensitivityPreset`);
+
+  if (preset) {
+    // 1. General range [135, 168]
+    assert(preset.general >= 135 && preset.general <= 168, `OPPO "${phone.name}" General within [135, 168] (Got: ${preset.general})`);
+
+    // 2. Red Dot difference rule: strictly 4 or 7 points below General
+    const diff = preset.general - preset.redDot;
+    oppoDiffsSeen.add(diff);
+    assert([4, 7].includes(diff), `OPPO "${phone.name}" Red Dot diff (${diff}) is 4 or 7 points`);
+
+    // 3. 2x and 4x Scopes
+    assert(Boolean(preset.scope2x && preset.scope4x && preset.scope2x > preset.scope4x), `OPPO "${phone.name}" 2x Scope > 4x Scope`);
+    const scopeDelta = (preset.scope2x || 0) - (preset.scope4x || 0);
+    assert(scopeDelta >= 11 && scopeDelta <= 14, `OPPO "${phone.name}" Scope delta is between 11 and 14 (Got: ${scopeDelta})`);
+    oppoScopeDeltaChecked = true;
+
+    // 4. Sniper Scope [59, 98]
+    assert(typeof preset.sniperScope === 'number' && preset.sniperScope >= 59 && preset.sniperScope <= 98, `OPPO "${phone.name}" Sniper Scope within [59, 98] (Got: ${preset.sniperScope})`);
+
+    // 5. Free Look [112, 165]
+    assert(typeof preset.freeLook === 'number' && preset.freeLook >= 112 && preset.freeLook <= 165, `OPPO "${phone.name}" Free Look within [112, 165] (Got: ${preset.freeLook})`);
+
+    // 6. Fire Button [40, 56]%
+    assert(typeof phone.customFireButtonPreset === 'number' && phone.customFireButtonPreset >= 40 && phone.customFireButtonPreset <= 56, `OPPO "${phone.name}" Fire Button within [40, 56]% (Got: ${phone.customFireButtonPreset}%)`);
+
+    // 7. Starter disclaimer audit notes
+    assert(Boolean(phone.auditNotes?.includes('Recommended starter settings for Free Fire (not official or device-tested values)')), `OPPO "${phone.name}" audit notes indicate recommended starter settings disclaimer`);
+  }
+});
+
+// Differences include both 4 and 7 points
+assert(oppoDiffsSeen.has(4), 'OPPO Red Dot differences include 4 points');
+assert(oppoDiffsSeen.has(7), 'OPPO Red Dot differences include 7 points');
+assert(oppoDiffsSeen.size === 2, `OPPO Red Dot differences vary model-wise between 4 and 7 points (Found: ${Array.from(oppoDiffsSeen).join(', ')})`);
+assert(oppoScopeDeltaChecked, 'OPPO scope deltas verified across all models');
+
+// Key reference anchor models
+const findX2 = OPPO_PHONES.find(p => p.name.includes('Find X2'));
+assert(Boolean(findX2), 'Find X2 exists in database');
+assert(findX2?.customSensitivityPreset?.general === 168, 'Find X2 General is 168');
+assert(findX2?.customSensitivityPreset?.sniperScope === 98, 'Find X2 Sniper is 98');
+assert(findX2?.customSensitivityPreset?.freeLook === 165, 'Find X2 Free Look is 165');
+assert(findX2?.customFireButtonPreset === 56, 'Find X2 Fire Button is 56%');
+
+const a3x = OPPO_PHONES.find(p => p.name.includes('A3x 5G'));
+assert(Boolean(a3x), 'A3x 5G exists in database');
+assert(a3x?.customSensitivityPreset?.general === 135, 'A3x 5G General is 135');
+assert(a3x?.customSensitivityPreset?.sniperScope === 59, 'A3x 5G Sniper is 59');
+assert(a3x?.customSensitivityPreset?.freeLook === 112, 'A3x 5G Free Look is 112');
+assert(a3x?.customFireButtonPreset === 40, 'A3x 5G Fire Button is 40%');
+
+const a38 = OPPO_PHONES.find(p => p.name.includes('A38'));
+assert(Boolean(a38), 'A38 exists in database');
+assert(a38?.customSensitivityPreset?.general === 135, 'A38 General is 135');
+
+const reno8Pro = OPPO_PHONES.find(p => p.name.includes('Reno8 Pro 5G'));
+assert(Boolean(reno8Pro), 'Reno8 Pro 5G exists in database');
+assert(reno8Pro?.customSensitivityPreset?.general === 160, 'Reno8 Pro 5G General is 160');
+
+const reno6Pro = OPPO_PHONES.find(p => p.name.includes('Reno6 Pro 5G'));
+assert(Boolean(reno6Pro), 'Reno6 Pro 5G exists in database');
+assert(reno6Pro?.customSensitivityPreset?.general === 162, 'Reno6 Pro 5G General is 162');
+
+const reno4Pro = OPPO_PHONES.find(p => p.name.includes('Reno4 Pro 5G'));
+assert(Boolean(reno4Pro), 'Reno4 Pro 5G exists in database');
+assert(reno4Pro?.customSensitivityPreset?.general === 165, 'Reno4 Pro 5G General is 165');
+
+const k13TurboPro = OPPO_PHONES.find(p => p.name.includes('K13 Turbo Pro 5G'));
+assert(Boolean(k13TurboPro), 'K13 Turbo Pro 5G exists in database');
+assert(k13TurboPro?.customSensitivityPreset?.general === 155, 'K13 Turbo Pro 5G General is 155');
+
+// Sorting in getModelsForBrand('OPPO')
+const oppoInOrder = getModelsForBrand('OPPO');
+assert(oppoInOrder.length === 55, `getModelsForBrand('OPPO') returns all 55 models (Got: ${oppoInOrder.length})`);
+assert(oppoInOrder[0].name === 'OPPO Find X10 Pro Max', `First OPPO model in getModelsForBrand is OPPO Find X10 Pro Max (Got: ${oppoInOrder[0].name})`);
+assert(oppoInOrder[oppoInOrder.length - 1].name === 'OPPO A53', `Last OPPO model in getModelsForBrand is OPPO A53 (Got: ${oppoInOrder[oppoInOrder.length - 1].name})`);
+
+// DeviceSelector optgroup verification
+assert(selectorCode.includes('selectedBrand === \'OPPO\''), 'DeviceSelector implements optgroup for OPPO models');
+assert(selectorCode.includes('OPPO Find X Series'), 'DeviceSelector includes OPPO Find X Series optgroup');
+assert(selectorCode.includes('OPPO Reno Series'), 'DeviceSelector includes OPPO Reno Series optgroup');
+assert(selectorCode.includes('OPPO F Series'), 'DeviceSelector includes OPPO F Series optgroup');
+assert(selectorCode.includes('OPPO K Series'), 'DeviceSelector includes OPPO K Series optgroup');
+assert(selectorCode.includes('OPPO A Series'), 'DeviceSelector includes OPPO A Series optgroup');
+
+// ----------------------------------------------------
+// TEST SUITE 37: ASUS ROG Corrected Free Fire Sensitivity Database (21 ROG Models)
+// ----------------------------------------------------
+console.log('\n[TEST GROUP 37] ASUS ROG Corrected Free Fire Sensitivity Database (21 ROG Models)');
+
+import { ASUS_PHONES } from '../src/data/phones/asus';
+
+const rogModels = ASUS_PHONES.filter(p => p.name.includes('ROG Phone'));
+assert(rogModels.length === 21, `Database includes exactly 21 ASUS ROG Phone models (Got: ${rogModels.length})`);
+assert(ASUS_PHONES.length === 24, `Total ASUS models in database is 24 including 3 Zenfones (Got: ${ASUS_PHONES.length})`);
+
+const asusDiffsSeen = new Set<number>();
+let asusScopeDeltaChecked = false;
+
+// 2020 Anchor reference
+const rog3 = rogModels.find(p => p.name === 'ROG Phone 3');
+assert(Boolean(rog3), 'ROG Phone 3 exists in database');
+const rog3Gen = rog3?.customSensitivityPreset?.general ?? 170;
+const rog3Rd = rog3?.customSensitivityPreset?.redDot ?? 163;
+
+rogModels.forEach((phone) => {
+  assert(Boolean(phone), `ASUS ROG model "${phone.name}" is present in database`);
+  const preset = phone.customSensitivityPreset;
+  assert(Boolean(preset), `ASUS ROG "${phone.name}" has customSensitivityPreset`);
+
+  if (preset) {
+    // 1. General range check and reduction rule
+    if ((phone.releaseYear ?? 2020) >= 2021) {
+      assert(preset.general >= 141 && preset.general <= 159, `ASUS ROG "${phone.name}" (2021-2025) General within [141, 159] (Got: ${preset.general})`);
+      assert(preset.general < rog3Gen, `ASUS ROG "${phone.name}" General (${preset.general}) is reduced compared to 2020 ROG Phone 3 (${rog3Gen})`);
+      assert(preset.redDot < rog3Rd, `ASUS ROG "${phone.name}" Red Dot (${preset.redDot}) is reduced compared to 2020 ROG Phone 3 (${rog3Rd})`);
+    } else {
+      assert(preset.general >= 168 && preset.general <= 174, `ASUS ROG "${phone.name}" (<=2020) General within [168, 174] (Got: ${preset.general})`);
+    }
+
+    // 2. Red Dot difference rule: strictly 4 or 7 points below General
+    const diff = preset.general - preset.redDot;
+    asusDiffsSeen.add(diff);
+    assert([4, 7].includes(diff), `ASUS ROG "${phone.name}" Red Dot diff (${diff}) is 4 or 7 points`);
+
+    // 3. 2x and 4x Scopes: delta strictly 13
+    assert(Boolean(preset.scope2x && preset.scope4x && preset.scope2x > preset.scope4x), `ASUS ROG "${phone.name}" 2x Scope > 4x Scope`);
+    const scopeDelta = (preset.scope2x || 0) - (preset.scope4x || 0);
+    assert(scopeDelta === 13, `ASUS ROG "${phone.name}" Scope delta is strictly 13 (Got: ${scopeDelta})`);
+    asusScopeDeltaChecked = true;
+
+    // 4. Sniper Scope [75, 99]
+    assert(typeof preset.sniperScope === 'number' && preset.sniperScope >= 75 && preset.sniperScope <= 99, `ASUS ROG "${phone.name}" Sniper Scope within [75, 99] (Got: ${preset.sniperScope})`);
+
+    // 5. Free Look [139, 168]
+    assert(typeof preset.freeLook === 'number' && preset.freeLook >= 139 && preset.freeLook <= 168, `ASUS ROG "${phone.name}" Free Look within [139, 168] (Got: ${preset.freeLook})`);
+
+    // 6. Fire Button [47, 58]%
+    assert(typeof phone.customFireButtonPreset === 'number' && phone.customFireButtonPreset >= 47 && phone.customFireButtonPreset <= 58, `ASUS ROG "${phone.name}" Fire Button within [47, 58]% (Got: ${phone.customFireButtonPreset}%)`);
+
+    // 7. Starter disclaimer audit notes
+    assert(Boolean(phone.auditNotes?.includes('Recommended starter settings — not official or device-tested values')), `ASUS ROG "${phone.name}" audit notes indicate starter settings disclaimer`);
+  }
+});
+
+// Differences include both 4 and 7 points
+assert(asusDiffsSeen.has(4), 'ASUS ROG Red Dot differences include 4 points');
+assert(asusDiffsSeen.has(7), 'ASUS ROG Red Dot differences include 7 points');
+assert(asusDiffsSeen.size === 2, `ASUS ROG Red Dot differences vary model-wise between 4 and 7 points (Found: ${Array.from(asusDiffsSeen).join(', ')})`);
+assert(asusScopeDeltaChecked, 'ASUS ROG scope deltas strictly 13 verified across all models');
+
+// Key anchor models verification
+const rog9FE = rogModels.find(p => p.name === 'ROG Phone 9 FE');
+assert(Boolean(rog9FE), 'ROG Phone 9 FE exists in database');
+assert(rog9FE?.customSensitivityPreset?.general === 146, 'ROG Phone 9 FE General is 146');
+assert(rog9FE?.customSensitivityPreset?.redDot === 139, 'ROG Phone 9 FE Red Dot is 139');
+assert(rog9FE?.customSensitivityPreset?.scope2x === 134, 'ROG Phone 9 FE 2x is 134');
+assert(rog9FE?.customSensitivityPreset?.scope4x === 121, 'ROG Phone 9 FE 4x is 121');
+assert(rog9FE?.customSensitivityPreset?.sniperScope === 76, 'ROG Phone 9 FE Sniper is 76');
+assert(rog9FE?.customSensitivityPreset?.freeLook === 140, 'ROG Phone 9 FE Free Look is 140');
+assert(rog9FE?.customFireButtonPreset === 48, 'ROG Phone 9 FE Fire Button is 48%');
+
+const rog9Standard = rogModels.find(p => p.name === 'ROG Phone 9');
+assert(Boolean(rog9Standard), 'ROG Phone 9 exists in database');
+assert(rog9Standard?.customSensitivityPreset?.general === 145, 'ROG Phone 9 General is 145');
+assert(rog9Standard?.customSensitivityPreset?.redDot === 141, 'ROG Phone 9 Red Dot is 141');
+
+const rog2 = rogModels.find(p => p.name === 'ROG Phone II');
+assert(Boolean(rog2), 'ROG Phone II exists in database');
+assert(rog2?.customSensitivityPreset?.general === 174, 'ROG Phone II General is 174');
+assert(rog2?.customSensitivityPreset?.redDot === 167, 'ROG Phone II Red Dot is 167');
+assert(rog2?.customSensitivityPreset?.sniperScope === 99, 'ROG Phone II Sniper is 99');
+assert(rog2?.customSensitivityPreset?.freeLook === 168, 'ROG Phone II Free Look is 168');
+assert(rog2?.customFireButtonPreset === 58, 'ROG Phone II Fire Button is 58%');
+
+// Sorting in getModelsForBrand('ASUS ROG')
+const asusInOrder = getModelsForBrand('ASUS ROG');
+assert(asusInOrder.length === 24, `getModelsForBrand('ASUS ROG') returns all 24 models (Got: ${asusInOrder.length})`);
+assert(asusInOrder[0].name === 'ROG Phone 9 FE', `First ASUS ROG model in getModelsForBrand is ROG Phone 9 FE (Got: ${asusInOrder[0].name})`);
+assert(asusInOrder[20].name === 'ROG Phone', `21st ASUS ROG model in getModelsForBrand is ROG Phone (Got: ${asusInOrder[20].name})`);
+
+// DeviceSelector optgroup verification
+assert(selectorCode.includes('selectedBrand === \'ASUS ROG\''), 'DeviceSelector implements optgroup for ASUS ROG models');
+assert(selectorCode.includes('2025 ROG Series'), 'DeviceSelector includes 2025 ROG Series optgroup');
+assert(selectorCode.includes('2024 ROG Series'), 'DeviceSelector includes 2024 ROG Series optgroup');
+assert(selectorCode.includes('2023 ROG Series'), 'DeviceSelector includes 2023 ROG Series optgroup');
+assert(selectorCode.includes('2022 ROG Series'), 'DeviceSelector includes 2022 ROG Series optgroup');
+assert(selectorCode.includes('2021 ROG Series'), 'DeviceSelector includes 2021 ROG Series optgroup');
+assert(selectorCode.includes('2018–2020 Classic ROG Series'), 'DeviceSelector includes 2018–2020 Classic ROG Series optgroup');
+assert(selectorCode.includes('ASUS Zenfone Series'), 'DeviceSelector includes ASUS Zenfone Series optgroup');
 
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;

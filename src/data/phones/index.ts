@@ -664,6 +664,318 @@ export function getModelsForBrand(brand: string, categoryFilter?: 'all' | 'gamin
     });
   }
 
+  if (brand === 'Vivo') {
+    const VIVO_MODEL_ORDER = [
+      // 2024–2026 Models
+      'Vivo X300 Ultra',
+      'Vivo X300 Pro',
+      'Vivo X300 FE',
+      'Vivo X300',
+      'Vivo X Fold6',
+      'Vivo X Fold5',
+      'Vivo X Fold 3 Pro',
+      'Vivo X200 Pro',
+      'Vivo X200',
+      'Vivo X200T',
+      'Vivo X200 FE',
+      'Vivo X100 Pro',
+      'Vivo X100',
+      'Vivo V80',
+      'Vivo V70',
+      'Vivo V70 Elite',
+      'Vivo V60',
+      'Vivo V60e',
+      'Vivo V50',
+      'Vivo V50e',
+      'Vivo V40 Pro',
+      'Vivo V40',
+      'Vivo V40e',
+      'Vivo V30 Pro',
+      'Vivo V30',
+      'Vivo V30e',
+      'Vivo T5',
+      'Vivo T5x',
+      'Vivo T5e',
+      'Vivo T4 Ultra',
+      'Vivo T4 Pro',
+      'Vivo T4',
+      'Vivo T3 Ultra',
+      'Vivo T3 Pro',
+      'Vivo T3',
+      'Vivo T3x',
+      'Vivo T3 Lite',
+      'Vivo Y400',
+      'Vivo Y300',
+      'Vivo Y200 Pro',
+      'Vivo Y58',
+      'Vivo Y28',
+      // 2020–2023 Models
+      'Vivo X90 Pro',
+      'Vivo X90',
+      'Vivo X80 Pro',
+      'Vivo X80',
+      'Vivo X70 Pro+',
+      'Vivo X70 Pro',
+      'Vivo X70',
+      'Vivo X60 Pro+',
+      'Vivo X60 Pro',
+      'Vivo X60',
+      'Vivo X50 Pro',
+      'Vivo V29 Pro',
+      'Vivo V29',
+      'Vivo V29e',
+      'Vivo V27 Pro',
+      'Vivo V27',
+      'Vivo V25 Pro',
+      'Vivo V25',
+      'Vivo V23 Pro',
+      'Vivo V23',
+      'Vivo V21',
+      'Vivo V20 Pro',
+      'Vivo V20',
+      'Vivo V19',
+      'Vivo T2 Pro',
+      'Vivo T2',
+      'Vivo T2x',
+      'Vivo T1 Pro',
+      'Vivo T1',
+      'Vivo Y200',
+      'Vivo Y100',
+      'Vivo Y78',
+      'Vivo Y77',
+      'Vivo Y76',
+      'Vivo Y75',
+      'Vivo Y72',
+      'Vivo Y56',
+      'Vivo Y55',
+      'Vivo Y51',
+      'Vivo Y36',
+      'Vivo Y35',
+      'Vivo Y33s',
+      'Vivo Y31',
+      'Vivo Y30',
+      'Vivo Y20',
+      'Vivo Y03',
+      'Vivo Y02',
+      // Before 2020 Models
+      'Vivo V17 Pro',
+      'Vivo V17',
+      'Vivo V15 Pro',
+      'Vivo V15',
+      'Vivo V11',
+      'Vivo V9',
+      'Vivo Y19',
+      'Vivo Y17',
+      'Vivo Y16',
+      'Vivo Y15',
+      'Vivo Y12',
+      'Vivo Y11',
+      'Vivo Y05',
+      'Vivo S1 Pro',
+      'Vivo S1',
+    ];
+
+    return filtered.sort((a, b) => {
+      const idxA = VIVO_MODEL_ORDER.indexOf(a.name);
+      const idxB = VIVO_MODEL_ORDER.indexOf(b.name);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      const yearA = a.releaseYear || 2020;
+      const yearB = b.releaseYear || 2020;
+      if (yearA !== yearB) return yearA - yearB;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  if (brand === 'iQOO') {
+    const IQOO_MODEL_ORDER = [
+      // 2024–2026 Models
+      'iQOO 15',
+      'iQOO 15R',
+      'iQOO 13',
+      'iQOO Neo 10',
+      'iQOO Neo 10R',
+      'iQOO Neo 9 Pro',
+      'iQOO Z11',
+      'iQOO Z11x',
+      'iQOO Z11 Lite',
+      'iQOO Z10',
+      'iQOO Z10x',
+      'iQOO Z10 Lite',
+      'iQOO Z10R',
+      'iQOO Z9',
+      'iQOO Z9x',
+      'iQOO Z9 Lite',
+      'iQOO Z9s',
+      'iQOO Z9s Pro',
+      // 2021–2023 Models
+      'iQOO 12',
+      'iQOO 11',
+      'iQOO 9T',
+      'iQOO 9 Pro',
+      'iQOO 9',
+      'iQOO 9 SE',
+      'iQOO 7 Legend',
+      'iQOO 7',
+      'iQOO Neo 7 Pro',
+      'iQOO Neo 7',
+      'iQOO Neo 6',
+      'iQOO Z7 Pro',
+      'iQOO Z7s',
+      'iQOO Z7',
+      'iQOO Z6 Pro',
+      'iQOO Z6 5G',
+      'iQOO Z6 44W',
+      'iQOO Z6 Lite',
+      'iQOO Z5',
+      'iQOO Z3',
+      // 2020 Models
+      'iQOO 3 5G',
+    ];
+
+    return filtered.sort((a, b) => {
+      const idxA = IQOO_MODEL_ORDER.indexOf(a.name);
+      const idxB = IQOO_MODEL_ORDER.indexOf(b.name);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      const yearA = a.releaseYear || 2020;
+      const yearB = b.releaseYear || 2020;
+      if (yearA !== yearB) return yearA - yearB;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  if (brand === 'OPPO') {
+    const OPPO_MODEL_ORDER = [
+      // 2026 Models
+      'OPPO Find X10 Pro Max',
+      'OPPO Find X10',
+      'OPPO Reno16 5G',
+      'OPPO Reno16c 5G',
+      'OPPO F35 Pro 5G',
+      'OPPO F35 5G',
+      // 2025 Models
+      'OPPO Find X9 Pro',
+      'OPPO Find X9',
+      'OPPO Find X8 Pro',
+      'OPPO Find X8',
+      'OPPO Reno15 Pro 5G',
+      'OPPO Reno15 5G',
+      'OPPO F31 Pro+ 5G',
+      'OPPO F31 Pro 5G',
+      'OPPO F31 5G',
+      'OPPO K13 Turbo Pro 5G',
+      'OPPO K13 Turbo 5G',
+      'OPPO K13 5G',
+      // 2024 Models
+      'OPPO Reno12 Pro 5G',
+      'OPPO Reno12 5G',
+      'OPPO F27 Pro+ 5G',
+      'OPPO F27 5G',
+      'OPPO A3 Pro 5G',
+      'OPPO A3 5G',
+      'OPPO A3x 5G',
+      'OPPO K12x 5G',
+      // 2023 Models
+      'OPPO Reno10 Pro+ 5G',
+      'OPPO Reno10 Pro 5G',
+      'OPPO Reno10 5G',
+      'OPPO F23 5G',
+      'OPPO A79 5G',
+      'OPPO A78 5G',
+      'OPPO A58 4G',
+      'OPPO A38',
+      // 2022 Models
+      'OPPO Reno8 Pro 5G',
+      'OPPO Reno8 5G',
+      'OPPO Reno8 T 5G',
+      'OPPO F21 Pro 5G',
+      'OPPO F21s Pro 5G',
+      'OPPO F21s Pro',
+      'OPPO A77s',
+      'OPPO A17',
+      // 2021 Models
+      'OPPO Reno6 Pro 5G',
+      'OPPO Reno6 5G',
+      'OPPO F19 Pro+ 5G',
+      'OPPO F19 Pro',
+      'OPPO F19',
+      'OPPO A54',
+      // 2020 Models
+      'OPPO Find X2',
+      'OPPO Reno4 Pro 5G',
+      'OPPO F17 Pro',
+      'OPPO F17',
+      'OPPO A92',
+      'OPPO A52',
+      'OPPO A53',
+    ];
+
+    return filtered.sort((a, b) => {
+      const idxA = OPPO_MODEL_ORDER.findIndex(o => o === a.name || o === a.name.replace(/^OPPO\s+/, ''));
+      const idxB = OPPO_MODEL_ORDER.findIndex(o => o === b.name || o === b.name.replace(/^OPPO\s+/, ''));
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      const yearA = a.releaseYear || 2020;
+      const yearB = b.releaseYear || 2020;
+      if (yearA !== yearB) return yearB - yearA;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  if (brand === 'ASUS ROG') {
+    const ASUS_ROG_MODEL_ORDER = [
+      // 2025
+      'ROG Phone 9 FE',
+      // 2024
+      'ROG Phone 9 Pro Edition',
+      'ROG Phone 9 Pro',
+      'ROG Phone 9',
+      'ROG Phone 8 Pro Edition',
+      'ROG Phone 8 Pro',
+      'ROG Phone 8',
+      // 2023
+      'ROG Phone 7 Ultimate',
+      'ROG Phone 7',
+      // 2022
+      'ROG Phone 6D Ultimate',
+      'ROG Phone 6D',
+      'ROG Phone 6 Pro',
+      'ROG Phone 6',
+      // 2021
+      'ROG Phone 5s Pro',
+      'ROG Phone 5s',
+      'ROG Phone 5 Ultimate',
+      'ROG Phone 5 Pro',
+      'ROG Phone 5',
+      // 2020
+      'ROG Phone 3',
+      // 2019
+      'ROG Phone II',
+      // 2018
+      'ROG Phone',
+      // Zenfone companion models
+      'ASUS Zenfone 11 Ultra',
+      'ASUS Zenfone 10',
+      'ASUS Zenfone 9',
+    ];
+
+    return filtered.sort((a, b) => {
+      const idxA = ASUS_ROG_MODEL_ORDER.findIndex(o => o === a.name || o === a.name.replace(/^ASUS\s+/, '') || ('ASUS ' + o) === a.name);
+      const idxB = ASUS_ROG_MODEL_ORDER.findIndex(o => o === b.name || o === b.name.replace(/^ASUS\s+/, '') || ('ASUS ' + o) === b.name);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      const yearA = a.releaseYear || 2020;
+      const yearB = b.releaseYear || 2020;
+      if (yearA !== yearB) return yearB - yearA;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
   return filtered.sort((a, b) => {
     // Popular models at top
     if (a.popular && !b.popular) return -1;

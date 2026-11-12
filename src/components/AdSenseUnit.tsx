@@ -52,12 +52,14 @@ export const AdSenseUnit: React.FC<AdSenseUnitProps> = ({
             <span className="text-[10px] uppercase font-mono-code px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[#00FF66]">
               Verified Partner
             </span>
-            <button
-              onClick={() => window.open('https://support.google.com/adsense', '_blank')}
-              className="text-xs px-3 py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-[#00FF66]/30 text-zinc-200 transition-colors"
+            <a
+              href="https://support.google.com/adsense"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-xs px-3 py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-[#00FF66]/30 text-zinc-200 transition-colors inline-block"
             >
               Learn More
-            </button>
+            </a>
           </div>
         </div>
 
