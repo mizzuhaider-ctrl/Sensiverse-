@@ -12,9 +12,13 @@ import {
   IssueDiagnosticType
 } from './types';
 import { PHONE_DATABASE } from './data/phones';
+import { ALL_BRANDS } from './data/phones/index';
 import { GAMES_DATA } from './data/games';
 import { 
   calculateSensitivity, 
+  calculatePresetVariation,
+  generateNextCalibration,
+  getCalibrationSignature,
   applySensitivityImprovement, 
   applySingleSensitivityFeedback,
   applyPhase4Calibration,
@@ -28,6 +32,9 @@ import {
 import { 
   getSavedPresets, 
   savePreset, 
+  saveAutoPreviousPreset,
+  getDeviceGenerationState,
+  recordDeviceGeneration,
   deletePreset, 
   formatSensitivityForSharing,
   buildShareableProfileUrl
@@ -167,6 +174,7 @@ export default function App() {
   };
 
   const generatorRef = useRef<HTMLDivElement>(null);
+  const hasGeneratedCurrentRef = useRef<boolean>(false);
 
   // Load saved presets and handle URL parameters (share links) on mount
   useEffect(() => {
@@ -225,6 +233,92 @@ export default function App() {
     setTimeout(() => setToastMessage(null), 3200);
   };
 
+  // Build exclusion set of previously generated / saved signatures for a device + game
+  const buildExcludedSignatures = (
+    phone: PhoneModel,
+    game: GameId,
+    fps: number,
+    includeLiveDisplayed = true
+  ): Set<string> => {
+    const excluded = new Set<string>();
+    const history = getDeviceGenerationState(phone.brand, phone.name, game);
+    history.recentSignatures.forEach((s) => excluded.add(s));
+
+    const normBrand = (phone.brand || '').trim().toLowerCase();
+    const normModel = (phone.name || '').trim().toLowerCase();
+    savedPresets.forEach((p) => {
+      if (
+        p.gameId === game &&
+        (p.phoneBrand || '').trim().toLowerCase() === normBrand &&
+        (p.phoneModel || '').trim().toLowerCase() === normModel
+      ) {
+        excluded.add(getCalibrationSignature(p.sensitivity, p.fireButton?.sizePercent ?? 50));
+      }
+    });
+
+    if (
+      includeLiveDisplayed &&
+      (calibratedPhone.brand || '').trim().toLowerCase() === normBrand &&
+      (calibratedPhone.name || '').trim().toLowerCase() === normModel &&
+      sensitivity.gameId === game
+    ) {
+      excluded.add(getCalibrationSignature(sensitivity, fireButton.sizePercent));
+    }
+
+    // Never repeat the static step-0 baseline on subsequent Generate clicks
+    const baseline = phone.customSensitivityPreset
+      ? calculatePresetVariation(game, phone, gripStyle, playstyle, fps, weaponCategory, 0)
+      : calculateSensitivity(game, phone, gripStyle, playstyle, fps, 1.0, weaponCategory, 0);
+    excluded.add(getCalibrationSignature(baseline.sensitivity, baseline.fireButton.sizePercent));
+
+    return excluded;
+  };
+
+  // Persist a calibrated profile into My Previous Sensi so users can restore it anytime
+  const persistPreviousToHistory = (
+    phoneSnapshot: PhoneModel,
+    sensiSnapshot: SensitivityOutput,
+    fireSnapshot: FireButtonConfig,
+    telemetrySnapshot: AimTelemetry,
+    variantTag?: string
+  ) => {
+    const gameName = GAMES_DATA[sensiSnapshot.gameId]?.name || 'Free Fire';
+    const weaponName = WEAPON_CATEGORIES[weaponCategory]?.name || 'SMG';
+    const suffix = variantTag ? ` (${variantTag})` : '';
+    const validatedFireButton: FireButtonConfig = {
+      ...fireSnapshot,
+      sizePercent: clampFireButtonSize(fireSnapshot.sizePercent),
+      recommendedRange: { min: FIRE_BUTTON_MIN, max: FIRE_BUTTON_MAX },
+    };
+
+    const autoEntry: SavedPreset = {
+      id: `auto-${Date.now()}-${variationIndex}-${savedPresets.length}`,
+      name: `${phoneSnapshot.name} - ${gameName} [${weaponName}]${suffix}`,
+      timestamp: Date.now(),
+      gameId: sensiSnapshot.gameId,
+      phoneBrand: phoneSnapshot.brand,
+      phoneModel: phoneSnapshot.name,
+      refreshRate: phoneSnapshot.refreshRate,
+      touchSamplingRate: phoneSnapshot.touchSamplingRate,
+      gripStyle,
+      playstyle,
+      weaponCategory,
+      selectedFps,
+      sensitivity: JSON.parse(JSON.stringify(sensiSnapshot)) as SensitivityOutput,
+      fireButton: validatedFireButton,
+      telemetry: telemetrySnapshot ? { ...telemetrySnapshot } : undefined,
+      releaseYear: phoneSnapshot.releaseYear,
+      ramGb: phoneSnapshot.ramGb,
+      screenSize: phoneSnapshot.screenSize,
+      verificationStatus: phoneSnapshot.verificationStatus,
+      customModeSource: phoneSnapshot.customModeSource,
+      isAutoSaved: true,
+    };
+
+    const updated = saveAutoPreviousPreset(autoEntry);
+    setSavedPresets(updated);
+  };
+
   // Recalculate sensitivity only when explicitly triggered (Try New Sensi, game change, or preset load)
   const runCalibration = (
     game: GameId = selectedGame,
@@ -236,30 +330,9 @@ export default function App() {
     variation: number = variationIndex
   ) => {
     setIsRecalculating(true);
-    if (phone.customSensitivityPreset) {
-      setSensitivity({
-        gameId: game,
-        data: {
-          general: phone.customSensitivityPreset.general,
-          redDot: phone.customSensitivityPreset.redDot,
-          scope2x: phone.customSensitivityPreset.scope2x ?? 120,
-          scope4x: phone.customSensitivityPreset.scope4x ?? 105,
-          sniperScope: phone.customSensitivityPreset.sniperScope ?? 65,
-          freeLook: phone.customSensitivityPreset.freeLook ?? 95,
-        }
-      } as SensitivityOutput);
-      if (typeof phone.customFireButtonPreset === 'number') {
-        setFireButton(prev => ({
-          ...prev,
-          sizePercent: phone.customFireButtonPreset!
-        }));
-      }
-      setTimeout(() => {
-        setIsRecalculating(false);
-      }, 300);
-      return;
-    }
-    const result = calculateSensitivity(game, phone, grip, style, fps, 1.0, weapon, variation);
+    const result = phone.customSensitivityPreset
+      ? calculatePresetVariation(game, phone, grip, style, fps, weapon, variation)
+      : calculateSensitivity(game, phone, grip, style, fps, 1.0, weapon, variation);
     setSensitivity(result.sensitivity);
     setFireButton(result.fireButton);
     setTelemetry(result.telemetry);
@@ -270,36 +343,92 @@ export default function App() {
 
   // Handler: Selecting a brand or model updates selectedPhone and Active Profile.
   const handleSelectPhone = (phone: PhoneModel) => {
+    // Save previously generated profile to My Previous Sensi before switching/re-applying
+    if (hasGeneratedCurrentRef.current) {
+      persistPreviousToHistory(
+        calibratedPhone,
+        sensitivity,
+        fireButton,
+        telemetry,
+        variationIndex > 0 ? `Variant #${variationIndex}` : 'Generated'
+      );
+    }
+
     setSelectedPhone(phone);
+
+    // Custom Brand / Custom Model devices immediately calibrate and display personalized results
+    if (phone.verificationStatus === 'custom') {
+      const preferredFps = phone.customTargetFps ?? selectedFps;
+      const targetFps = getValidFpsForDevice(phone, selectedGame, preferredFps);
+      setSelectedFps(targetFps);
+      setFeedbackCumulativeDeltas({});
+
+      const history = getDeviceGenerationState(phone.brand, phone.name, selectedGame);
+      if (history.recentSignatures.length > 0) {
+        // User applied the same Custom Brand + Model again: generate a new non-repeating valid combination
+        const excluded = buildExcludedSignatures(phone, selectedGame, targetFps, true);
+        const nextOut = generateNextCalibration({
+          gameId: selectedGame,
+          phone,
+          grip: gripStyle,
+          playstyle,
+          selectedFps: targetFps,
+          weaponCategory,
+          variationStep: Math.max(1, history.step + 1),
+          excludedSignatures: excluded,
+        });
+        setSensitivity(nextOut.result.sensitivity);
+        setFireButton(nextOut.result.fireButton);
+        setTelemetry(nextOut.result.telemetry);
+        setVariationIndex(nextOut.usedStep);
+        setCalibratedPhone(phone);
+        hasGeneratedCurrentRef.current = true;
+        recordDeviceGeneration(phone.brand, phone.name, selectedGame, nextOut.usedStep, nextOut.signature);
+        showToast(`⚡ Generated new settings (${nextOut.variationInfo.name}) for ${phone.brand} ${phone.name}!`);
+      } else {
+        setVariationIndex(0);
+        setCalibratedPhone(phone);
+        const baseRes = calculateSensitivity(selectedGame, phone, gripStyle, playstyle, targetFps, 1.0, weaponCategory, 0);
+        setSensitivity(baseRes.sensitivity);
+        setFireButton(baseRes.fireButton);
+        setTelemetry(baseRes.telemetry);
+        hasGeneratedCurrentRef.current = true;
+        recordDeviceGeneration(
+          phone.brand,
+          phone.name,
+          selectedGame,
+          0,
+          getCalibrationSignature(baseRes.sensitivity, baseRes.fireButton.sizePercent)
+        );
+        showToast(`⚡ Calibrated ${phone.brand} ${phone.name} (${phone.releaseYear ?? 2024}, ${phone.ramGb ?? 8}GB RAM, ${targetFps} FPS)!`);
+      }
+      return;
+    }
+
     const targetFps = getValidFpsForDevice(phone, selectedGame, selectedFps);
     setSelectedFps(targetFps);
 
-    // If model has a custom preset (e.g. approved 29 iPhone, 154 Samsung, 70 Motorola, or 29 Xiaomi presets), immediately display its exact values
+    // Re-selecting the exact same device after already generating -> advance cleanly instead of repeating old result
+    if (phone.id === calibratedPhone.id && hasGeneratedCurrentRef.current) {
+      handleTryNewSensiForPhone(phone, targetFps);
+      return;
+    }
+
+    // If model has a custom preset (e.g. approved iPhone, Samsung, Pixel, Nothing, Infinix, etc.), display its exact values cleanly
     if (phone.customSensitivityPreset) {
+      hasGeneratedCurrentRef.current = false;
+      setVariationIndex(0);
+      setFeedbackCumulativeDeltas({});
       setCalibratedPhone(phone);
-      setSensitivity({
-        gameId: selectedGame,
-        data: {
-          general: phone.customSensitivityPreset.general,
-          redDot: phone.customSensitivityPreset.redDot,
-          scope2x: phone.customSensitivityPreset.scope2x ?? 120,
-          scope4x: phone.customSensitivityPreset.scope4x ?? 105,
-          sniperScope: phone.customSensitivityPreset.sniperScope ?? 65,
-          freeLook: phone.customSensitivityPreset.freeLook ?? 95,
-        },
-      } as SensitivityOutput);
-      if (typeof phone.customFireButtonPreset === 'number') {
-        setFireButton(prev => ({
-          ...prev,
-          sizePercent: phone.customFireButtonPreset!
-        }));
-      }
+      runCalibration(selectedGame, phone, gripStyle, playstyle, targetFps, weaponCategory, 0);
       showToast(`Selected ${phone.name}. Preset sensitivity loaded.`);
       return;
     }
 
-    // CRITICAL: Preserve existing sensitivity and fire button without recalculation for normal models.
+    // Preserve existing sensitivity and fire button until user clicks Generate / Try New Sensi
     if (phone.id !== calibratedPhone.id) {
+      hasGeneratedCurrentRef.current = false;
+      setVariationIndex(0);
       showToast(`Selected ${phone.name}. Press "TRY NEW SENSI" to generate settings.`);
     }
   };
@@ -343,25 +472,70 @@ export default function App() {
     setSelectedFps(fps);
   };
 
-  // Button 1: Try New Sensi
-  // Generates new recommendations with meaningful, gradual variations for exploration
-  const handleTryNewSensi = () => {
-    // Preserve current setup into snapshot before generating new
+  // Core non-repeating calibration generator helper
+  const handleTryNewSensiForPhone = (targetPhone: PhoneModel, targetFps: number) => {
+    // 1. Preserve current displayed profile into Undo snapshot AND My Previous Sensi
     setPreviousProfileSnapshot({ sensitivity, fireButton });
+    persistPreviousToHistory(
+      calibratedPhone,
+      sensitivity,
+      fireButton,
+      telemetry,
+      variationIndex > 0 ? `Variant #${variationIndex}` : 'Baseline'
+    );
 
-    // Cycle to next meaningful gradual variation (0: Baseline -> 1: High-Drag Speed -> 2: Anchored Precision -> 3: Dynamic Drag Ramp)
-    const nextVariation = (variationIndex + 1) % 4;
-    setVariationIndex(nextVariation);
+    // 2. Gather device history and all excluded signatures so we never repeat recent combinations
+    const history = getDeviceGenerationState(targetPhone.brand, targetPhone.name, selectedGame);
+    const excluded = buildExcludedSignatures(targetPhone, selectedGame, targetFps, true);
+    const startingStep =
+      calibratedPhone.id === targetPhone.id
+        ? Math.max(variationIndex + 1, history.step + 1, 1)
+        : Math.max(history.step + 1, 1);
+
+    setIsRecalculating(true);
+    const nextOut = generateNextCalibration({
+      gameId: selectedGame,
+      phone: targetPhone,
+      grip: gripStyle,
+      playstyle,
+      selectedFps: targetFps,
+      weaponCategory,
+      variationStep: startingStep,
+      excludedSignatures: excluded,
+    });
+
+    setSensitivity(nextOut.result.sensitivity);
+    setFireButton(nextOut.result.fireButton);
+    setTelemetry(nextOut.result.telemetry);
+    setVariationIndex(nextOut.usedStep);
     setFeedbackCumulativeDeltas({});
+    setCalibratedPhone(targetPhone);
+    hasGeneratedCurrentRef.current = true;
 
-    runCalibration(selectedGame, selectedPhone, gripStyle, playstyle, selectedFps, weaponCategory, nextVariation);
-    setCalibratedPhone(selectedPhone);
+    recordDeviceGeneration(
+      targetPhone.brand,
+      targetPhone.name,
+      selectedGame,
+      nextOut.usedStep,
+      nextOut.signature
+    );
 
-    const variationMeta = CALIBRATION_VARIATIONS[nextVariation] || CALIBRATION_VARIATIONS[0];
-    showToast(`🚀 Generated ${variationMeta.name} for ${selectedPhone.name} (${WEAPON_CATEGORIES[weaponCategory]?.name || 'SMG'})! Test in Training Ground.`);
+    setTimeout(() => {
+      setIsRecalculating(false);
+    }, 300);
+
+    showToast(
+      `🚀 Generated ${nextOut.variationInfo.name} for ${targetPhone.name} (${WEAPON_CATEGORIES[weaponCategory]?.name || 'SMG'})! Previous saved in My Previous Sensi.`
+    );
     setTimeout(() => {
       document.getElementById('step-6-results')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 150);
+  };
+
+  // Button 1: Try New Sensi / Generate Sensitivity Profile
+  // Generates a new non-repeating valid sensitivity combination and saves previous results in My Previous Sensi
+  const handleTryNewSensi = () => {
+    handleTryNewSensiForPhone(selectedPhone, selectedFps);
   };
 
   // Button 2: Improve My Sensi (Diagnostic Workflow)
@@ -399,6 +573,11 @@ export default function App() {
       sensitivity,
       fireButton: validatedFireButton,
       telemetry,
+      releaseYear: calibratedPhone.releaseYear,
+      ramGb: calibratedPhone.ramGb,
+      screenSize: calibratedPhone.screenSize,
+      verificationStatus: calibratedPhone.verificationStatus,
+      customModeSource: calibratedPhone.customModeSource,
     };
 
     const updated = savePreset(newPreset);
@@ -428,20 +607,38 @@ export default function App() {
       setTelemetry(preset.telemetry);
     }
 
-    // Restore device profile
-    const foundPhone = PHONE_DATABASE.find(p => p.name === preset.phoneModel) || {
-      id: `loaded-${Date.now()}`,
+    // Restore device profile (preserving full specs for custom devices)
+    const isCustomPreset = preset.verificationStatus === 'custom';
+    const matchedDbPhone = !isCustomPreset
+      ? PHONE_DATABASE.find(p => p.name === preset.phoneModel && p.brand === preset.phoneBrand) ||
+        PHONE_DATABASE.find(p => p.name === preset.phoneModel)
+      : undefined;
+
+    const foundPhone: PhoneModel = matchedDbPhone || {
+      id: isCustomPreset ? `custom-loaded-${preset.id}` : `loaded-${Date.now()}`,
       brand: preset.phoneBrand,
       name: preset.phoneModel,
-      refreshRate: preset.refreshRate,
-      touchSamplingRate: preset.touchSamplingRate,
-      screenSize: 6.67,
+      series: isCustomPreset ? 'Custom Device' : undefined,
+      releaseYear: preset.releaseYear ?? 2024,
+      ramGb: preset.ramGb ?? 8,
+      customTargetFps: preset.selectedFps ?? 60,
+      customModeSource:
+        preset.customModeSource ??
+        (ALL_BRANDS.includes(preset.phoneBrand as (typeof ALL_BRANDS)[number]) && preset.phoneBrand !== 'Other / Custom'
+          ? 'custom_model'
+          : 'custom_brand'),
+      refreshRate: preset.refreshRate ?? 120,
+      touchSamplingRate: preset.touchSamplingRate ?? 240,
+      screenSize: preset.screenSize ?? 6.67,
       recommendedDpi: 420,
-      category: 'midrange' as const,
-      verificationStatus: 'partially_verified' as const,
+      category: 'midrange',
+      verificationStatus: isCustomPreset ? 'custom' : 'partially_verified',
       specsSource: 'Saved Preset History',
     };
 
+    hasGeneratedCurrentRef.current = false;
+    setVariationIndex(getDeviceGenerationState(foundPhone.brand, foundPhone.name, preset.gameId).step);
+    setFeedbackCumulativeDeltas({});
     setSelectedPhone(foundPhone);
     setCalibratedPhone(foundPhone);
     showToast(`Loaded preset "${preset.name}"!`);

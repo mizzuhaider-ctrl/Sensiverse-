@@ -75,6 +75,9 @@ export interface PhoneModel {
   auditNotes?: string;
   customSensitivityPreset?: FreeFirePreset;
   customFireButtonPreset?: number;
+  ramGb?: number;
+  customTargetFps?: number;
+  customModeSource?: 'custom_brand' | 'custom_model';
 }
 
 export interface FreeFirePreset {
@@ -208,6 +211,12 @@ export interface SavedPreset {
   fireButton: FireButtonConfig;
   telemetry?: AimTelemetry;
   notes?: string;
+  releaseYear?: number | null;
+  ramGb?: number;
+  screenSize?: number | null;
+  verificationStatus?: VerificationStatus;
+  customModeSource?: 'custom_brand' | 'custom_model';
+  isAutoSaved?: boolean;
 }
 
 export type IssueDiagnosticType = 

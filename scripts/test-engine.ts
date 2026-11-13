@@ -1,6 +1,11 @@
 import { ALL_VERIFIED_PHONES, ALL_BRANDS, getModelsForBrand, getDatabaseStatistics } from '../src/data/phones/index';
 import { 
   calculateSensitivity, 
+  calculateCustomDeviceSensitivity,
+  calculatePresetVariation,
+  getAllowedRedDotDiffsForPreset,
+  generateNextCalibration,
+  getCalibrationSignature,
   applySensitivityImprovement, 
   applySingleSensitivityFeedback,
   getScopeFriendlyLabel 
@@ -8,7 +13,15 @@ import {
 import { getDeviceFpsCapability, getValidFpsForDevice } from '../src/utils/fpsEngine';
 import { PhoneModel, WeaponCategory, GameId, SensitivityOutput, FireButtonConfig, Playstyle } from '../src/types';
 import { WEAPON_CATEGORIES } from '../src/data/weapons';
-import { buildShareableProfileUrl } from '../src/utils/storage';
+import { 
+  buildShareableProfileUrl,
+  getSavedPresets,
+  savePreset,
+  saveAutoPreviousPreset,
+  getDeviceGenerationState,
+  recordDeviceGeneration,
+  deletePreset
+} from '../src/utils/storage';
 import { 
   VERIFIED_BRAZILIAN_PROFILES, 
   getUnifiedBrazilBaseline, 
@@ -3075,7 +3088,823 @@ assert(selectorCode.includes('2023 ROG Series'), 'DeviceSelector includes 2023 R
 assert(selectorCode.includes('2022 ROG Series'), 'DeviceSelector includes 2022 ROG Series optgroup');
 assert(selectorCode.includes('2021 ROG Series'), 'DeviceSelector includes 2021 ROG Series optgroup');
 assert(selectorCode.includes('2018–2020 Classic ROG Series'), 'DeviceSelector includes 2018–2020 Classic ROG Series optgroup');
-assert(selectorCode.includes('ASUS Zenfone Series'), 'DeviceSelector includes ASUS Zenfone Series optgroup');
+// ==========================================
+// TEST GROUP 40: Google Pixel Complete Sensitivity Chart
+// ==========================================
+console.log('\n[TEST GROUP 40] Google Pixel Complete Sensitivity Chart Verification');
+
+const pixelExpectedModels = [
+  { name: 'Pixel 11 Pro', year: 2026, gen: 139, redDot: 132, s2x: 133, s4x: 119, snip: 74, fl: 138, fire: 47 },
+  { name: 'Pixel 11 Pro Fold', year: 2026, gen: 136, redDot: 129, s2x: 128, s4x: 115, snip: 70, fl: 133, fire: 45 },
+  { name: 'Pixel 11', year: 2026, gen: 134, redDot: 130, s2x: 125, s4x: 112, snip: 68, fl: 130, fire: 44 },
+  { name: 'Pixel 10 Pro XL', year: 2025, gen: 146, redDot: 139, s2x: 143, s4x: 130, snip: 82, fl: 148, fire: 51 },
+  { name: 'Pixel 10 Pro', year: 2025, gen: 143, redDot: 136, s2x: 138, s4x: 125, snip: 79, fl: 144, fire: 49 },
+  { name: 'Pixel 10 Pro Fold', year: 2025, gen: 138, redDot: 131, s2x: 132, s4x: 119, snip: 74, fl: 138, fire: 47 },
+  { name: 'Pixel 10', year: 2025, gen: 140, redDot: 133, s2x: 135, s4x: 122, snip: 77, fl: 141, fire: 48 },
+  { name: 'Pixel 10a', year: 2026, gen: 132, redDot: 125, s2x: 123, s4x: 110, snip: 66, fl: 128, fire: 43 },
+  { name: 'Pixel 9a', year: 2025, gen: 135, redDot: 128, s2x: 127, s4x: 114, snip: 69, fl: 132, fire: 45 },
+  { name: 'Pixel 9 Pro Fold', year: 2024, gen: 141, redDot: 134, s2x: 137, s4x: 124, snip: 78, fl: 143, fire: 49 },
+  { name: 'Pixel 9 Pro XL', year: 2024, gen: 148, redDot: 141, s2x: 145, s4x: 132, snip: 84, fl: 150, fire: 52 },
+  { name: 'Pixel 9 Pro', year: 2024, gen: 145, redDot: 138, s2x: 141, s4x: 128, snip: 81, fl: 147, fire: 50 },
+  { name: 'Pixel 9', year: 2024, gen: 142, redDot: 135, s2x: 136, s4x: 123, snip: 76, fl: 142, fire: 48 },
+  { name: 'Pixel 8a', year: 2024, gen: 137, redDot: 130, s2x: 130, s4x: 117, snip: 72, fl: 135, fire: 46 },
+  { name: 'Pixel 8 Pro', year: 2023, gen: 150, redDot: 143, s2x: 148, s4x: 135, snip: 87, fl: 153, fire: 53 },
+  { name: 'Pixel 8', year: 2023, gen: 146, redDot: 139, s2x: 141, s4x: 128, snip: 82, fl: 148, fire: 50 },
+  { name: 'Pixel 7a', year: 2023, gen: 139, redDot: 132, s2x: 133, s4x: 120, snip: 75, fl: 139, fire: 47 },
+  { name: 'Pixel 7 Pro', year: 2022, gen: 153, redDot: 146, s2x: 151, s4x: 138, snip: 90, fl: 156, fire: 54 },
+  { name: 'Pixel 7', year: 2022, gen: 149, redDot: 142, s2x: 145, s4x: 132, snip: 85, fl: 151, fire: 52 },
+  { name: 'Pixel 6a', year: 2022, gen: 141, redDot: 134, s2x: 135, s4x: 122, snip: 77, fl: 141, fire: 48 },
+  { name: 'Pixel 6 Pro', year: 2021, gen: 156, redDot: 149, s2x: 154, s4x: 141, snip: 93, fl: 159, fire: 55 },
+  { name: 'Pixel 6', year: 2021, gen: 152, redDot: 145, s2x: 147, s4x: 134, snip: 87, fl: 154, fire: 53 },
+  { name: 'Pixel 5a', year: 2021, gen: 146, redDot: 139, s2x: 141, s4x: 128, snip: 82, fl: 148, fire: 50 },
+  { name: 'Pixel 5', year: 2020, gen: 157, redDot: 150, s2x: 155, s4x: 142, snip: 94, fl: 160, fire: 55 },
+  { name: 'Pixel 4a 5G', year: 2020, gen: 151, redDot: 144, s2x: 148, s4x: 135, snip: 88, fl: 154, fire: 52 },
+  { name: 'Pixel 4a', year: 2020, gen: 147, redDot: 140, s2x: 142, s4x: 129, snip: 83, fl: 149, fire: 50 },
+  { name: 'Pixel 4 XL', year: 2019, gen: 159, redDot: 152, s2x: 157, s4x: 144, snip: 96, fl: 163, fire: 56 },
+  { name: 'Pixel 4', year: 2019, gen: 155, redDot: 148, s2x: 150, s4x: 137, snip: 90, fl: 157, fire: 54 },
+  { name: 'Pixel 3a XL', year: 2019, gen: 148, redDot: 141, s2x: 143, s4x: 130, snip: 84, fl: 150, fire: 51 },
+  { name: 'Pixel 3a', year: 2019, gen: 144, redDot: 137, s2x: 138, s4x: 125, snip: 80, fl: 145, fire: 49 },
+  { name: 'Pixel 3 XL', year: 2018, gen: 161, redDot: 154, s2x: 159, s4x: 146, snip: 98, fl: 165, fire: 57 },
+  { name: 'Pixel 3', year: 2018, gen: 157, redDot: 150, s2x: 152, s4x: 139, snip: 92, fl: 159, fire: 55 },
+  { name: 'Pixel 2 XL', year: 2017, gen: 163, redDot: 156, s2x: 161, s4x: 148, snip: 99, fl: 167, fire: 58 },
+  { name: 'Pixel 2', year: 2017, gen: 159, redDot: 152, s2x: 154, s4x: 141, snip: 94, fl: 162, fire: 56 },
+  { name: 'Pixel XL', year: 2016, gen: 162, redDot: 155, s2x: 158, s4x: 145, snip: 97, fl: 165, fire: 57 },
+  { name: 'Pixel', year: 2016, gen: 158, redDot: 151, s2x: 153, s4x: 140, snip: 91, fl: 160, fire: 55 },
+];
+
+const pixelModels = ALL_VERIFIED_PHONES.filter(p => p.brand === 'Google Pixel');
+assert(pixelModels.length === 36, `Google Pixel brand contains exactly 36 models (Got: ${pixelModels.length})`);
+
+// Deduplication check
+const pixelIds = new Set(pixelModels.map(p => p.id));
+assert(pixelIds.size === 36, `Google Pixel models have unique IDs with 0 duplicates (Found ${pixelIds.size}/36)`);
+
+// Model by model verification
+pixelExpectedModels.forEach(m => {
+  const found = pixelModels.find(p => p.name === m.name || p.name === `Google ${m.name}`);
+  assert(Boolean(found), `Google Pixel model "${m.name}" is present in database`);
+  if (!found) return;
+
+  assert(Boolean(found.customSensitivityPreset), `Pixel "${m.name}" has customSensitivityPreset`);
+  assert(found.customSensitivityPreset?.general === m.gen, `Pixel "${m.name}" General matches chart (${m.gen}) (Got: ${found.customSensitivityPreset?.general})`);
+  assert(found.customSensitivityPreset?.redDot === m.redDot, `Pixel "${m.name}" Red Dot matches chart (${m.redDot}) (Got: ${found.customSensitivityPreset?.redDot})`);
+  assert(found.customSensitivityPreset?.scope2x === m.s2x, `Pixel "${m.name}" 2x matches chart (${m.s2x}) (Got: ${found.customSensitivityPreset?.scope2x})`);
+  assert(found.customSensitivityPreset?.scope4x === m.s4x, `Pixel "${m.name}" 4x matches chart (${m.s4x}) (Got: ${found.customSensitivityPreset?.scope4x})`);
+  assert(found.customSensitivityPreset?.sniperScope === m.snip, `Pixel "${m.name}" Sniper matches chart (${m.snip}) (Got: ${found.customSensitivityPreset?.sniperScope})`);
+  assert(found.customSensitivityPreset?.freeLook === m.fl, `Pixel "${m.name}" Free Look matches chart (${m.fl}) (Got: ${found.customSensitivityPreset?.freeLook})`);
+  assert(found.customFireButtonPreset === m.fire, `Pixel "${m.name}" Fire Button matches chart (${m.fire}%) (Got: ${found.customFireButtonPreset}%)`);
+  assert(Boolean(found.auditNotes?.includes('Recommended starter settings')), `Pixel "${m.name}" audit notes indicate starter settings disclaimer`);
+});
+
+const pixelInOrder = getModelsForBrand('Google Pixel');
+assert(pixelInOrder.length === 36, `getModelsForBrand('Google Pixel') returns all 36 models (Got: ${pixelInOrder.length})`);
+assert(pixelInOrder[0].name === 'Pixel 11 Pro', `First Google Pixel model in getModelsForBrand is Pixel 11 Pro (Got: ${pixelInOrder[0].name})`);
+assert(pixelInOrder[pixelInOrder.length - 1].name === 'Pixel', `Last Google Pixel model in getModelsForBrand is Pixel (Got: ${pixelInOrder[pixelInOrder.length - 1].name})`);
+
+// DeviceSelector optgroup verification
+assert(selectorCode.includes('selectedBrand === \'Google Pixel\''), 'DeviceSelector implements optgroup for Google Pixel models');
+assert(selectorCode.includes('2026 Pixel Series'), 'DeviceSelector includes 2026 Pixel Series optgroup');
+assert(selectorCode.includes('2025 Pixel Series'), 'DeviceSelector includes 2025 Pixel Series optgroup');
+assert(selectorCode.includes('2024 Pixel 9 & 8a Series'), 'DeviceSelector includes 2024 Pixel 9 & 8a Series optgroup');
+assert(selectorCode.includes('2016–2018 Classic Pixel Series'), 'DeviceSelector includes 2016–2018 Classic Pixel Series optgroup');
+
+// ==========================================
+// TEST GROUP 41: Nothing Phone Complete Sensitivity Chart
+// ==========================================
+console.log('\n[TEST GROUP 41] Nothing Phone Complete Sensitivity Chart Verification');
+
+const nothingExpectedModels = [
+  { name: 'Nothing Phone (4b)', year: 2026, gen: 140, redDot: 133, s2x: 126, s4x: 114, snip: 72, fl: 132, fire: 46 },
+  { name: 'Nothing Phone (4a) Pro', year: 2026, gen: 145, redDot: 141, s2x: 134, s4x: 121, snip: 78, fl: 139, fire: 49 },
+  { name: 'Nothing Phone (4a)', year: 2026, gen: 138, redDot: 134, s2x: 128, s4x: 116, snip: 70, fl: 130, fire: 45 },
+  { name: 'Nothing Phone (3)', year: 2025, gen: 150, redDot: 143, s2x: 142, s4x: 129, snip: 83, fl: 147, fire: 51 },
+  { name: 'Nothing Phone (3a) Pro', year: 2025, gen: 144, redDot: 137, s2x: 131, s4x: 118, snip: 76, fl: 138, fire: 48 },
+  { name: 'Nothing Phone (3a)', year: 2025, gen: 139, redDot: 132, s2x: 127, s4x: 115, snip: 71, fl: 133, fire: 46 },
+  { name: 'Nothing Phone (3a) Lite', year: 2025, gen: 134, redDot: 130, s2x: 123, s4x: 111, snip: 67, fl: 127, fire: 44 },
+  { name: 'Nothing Phone (2a) Plus', year: 2024, gen: 148, redDot: 139, s2x: 137, s4x: 124, snip: 80, fl: 143, fire: 50 },
+  { name: 'Nothing Phone (2a)', year: 2024, gen: 142, redDot: 135, s2x: 129, s4x: 117, snip: 73, fl: 136, fire: 47 },
+  { name: 'Nothing Phone (2)', year: 2023, gen: 154, redDot: 145, s2x: 146, s4x: 133, snip: 88, fl: 151, fire: 53 },
+  { name: 'Nothing Phone (1)', year: 2022, gen: 146, redDot: 137, s2x: 135, s4x: 122, snip: 79, fl: 142, fire: 49 },
+];
+
+const nothingModels = ALL_VERIFIED_PHONES.filter(p => p.brand === 'Nothing');
+assert(nothingModels.length === 11, `Nothing brand contains exactly 11 models (Got: ${nothingModels.length})`);
+
+const nothingIds = new Set(nothingModels.map(p => p.id));
+assert(nothingIds.size === 11, `Nothing models have unique IDs with 0 duplicates (Found ${nothingIds.size}/11)`);
+
+// Check no Special Edition or Community Edition duplicates
+assert(
+  !nothingModels.some(p => /special|community/i.test(p.name)),
+  'Nothing brand has 0 Special Edition or Community Edition duplicate entries'
+);
+
+// CMF untouched check
+const cmfModels = ALL_VERIFIED_PHONES.filter(p => p.brand === 'CMF');
+assert(cmfModels.length === 2, `CMF brand remains untouched with 2 models (Got: ${cmfModels.length})`);
+
+const redDotDiffsNothing = new Set<number>();
+const settingSignatures = new Set<string>();
+
+nothingExpectedModels.forEach(m => {
+  const found = nothingModels.find(p => p.name === m.name);
+  assert(Boolean(found), `Nothing model "${m.name}" is present in database`);
+  if (!found) return;
+
+  assert(found.releaseYear === m.year, `Nothing "${m.name}" releaseYear is ${m.year} (Got: ${found.releaseYear})`);
+  assert(Boolean(found.customSensitivityPreset), `Nothing "${m.name}" has customSensitivityPreset`);
+
+  const gen = found.customSensitivityPreset!.general;
+  const rd = found.customSensitivityPreset!.redDot;
+  const diff = gen - rd;
+  redDotDiffsNothing.add(diff);
+
+  assert([4, 7, 9].includes(diff), `Nothing "${m.name}" Red Dot diff (${diff}) is 4, 7, or 9 points below General`);
+  assert(gen === m.gen, `Nothing "${m.name}" General matches chart (${m.gen}) (Got: ${gen})`);
+  assert(rd === m.redDot, `Nothing "${m.name}" Red Dot matches chart (${m.redDot}) (Got: ${rd})`);
+  assert(found.customSensitivityPreset?.scope2x === m.s2x, `Nothing "${m.name}" 2x matches chart (${m.s2x}) (Got: ${found.customSensitivityPreset?.scope2x})`);
+  assert(found.customSensitivityPreset?.scope4x === m.s4x, `Nothing "${m.name}" 4x matches chart (${m.s4x}) (Got: ${found.customSensitivityPreset?.scope4x})`);
+  assert(found.customSensitivityPreset?.sniperScope === m.snip, `Nothing "${m.name}" Sniper matches chart (${m.snip}) (Got: ${found.customSensitivityPreset?.sniperScope})`);
+  assert(found.customSensitivityPreset?.freeLook === m.fl, `Nothing "${m.name}" Free Look matches chart (${m.fl}) (Got: ${found.customSensitivityPreset?.freeLook})`);
+  assert(found.customFireButtonPreset === m.fire, `Nothing "${m.name}" Fire Button matches chart (${m.fire}%) (Got: ${found.customFireButtonPreset}%)`);
+  assert(Boolean(found.auditNotes?.includes('Recommended starter settings')), `Nothing "${m.name}" audit notes indicate starter settings disclaimer`);
+
+  const sig = `${m.s2x}-${m.s4x}-${m.snip}-${m.fl}-${m.fire}`;
+  settingSignatures.add(sig);
+});
+
+assert(settingSignatures.size === 11, `All 11 Nothing models have unique scope/fire combinations (Got: ${settingSignatures.size}/11)`);
+assert(redDotDiffsNothing.has(4) && redDotDiffsNothing.has(7) && redDotDiffsNothing.has(9), 'Nothing Red Dot differences span 4, 7, and 9 points across models');
+
+const nothingInOrder = getModelsForBrand('Nothing');
+assert(nothingInOrder.length === 11, `getModelsForBrand('Nothing') returns all 11 models (Got: ${nothingInOrder.length})`);
+assert(nothingInOrder[0].name === 'Nothing Phone (4b)', `First Nothing model in getModelsForBrand is Nothing Phone (4b) (Got: ${nothingInOrder[0].name})`);
+assert(nothingInOrder[nothingInOrder.length - 1].name === 'Nothing Phone (1)', `Last Nothing model in getModelsForBrand is Nothing Phone (1) (Got: ${nothingInOrder[nothingInOrder.length - 1].name})`);
+
+assert(selectorCode.includes("selectedBrand === 'Nothing'"), 'DeviceSelector implements optgroup for Nothing models');
+assert(selectorCode.includes('2026 Nothing Phone (4) Series'), 'DeviceSelector includes 2026 Nothing Phone (4) Series optgroup');
+assert(selectorCode.includes('2025 Nothing Phone (3) Series'), 'DeviceSelector includes 2025 Nothing Phone (3) Series optgroup');
+assert(selectorCode.includes('2024 Nothing Phone (2a) Series'), 'DeviceSelector includes 2024 Nothing Phone (2a) Series optgroup');
+assert(selectorCode.includes('2022–2023 Nothing Flagship Series'), 'DeviceSelector includes 2022–2023 Nothing Flagship Series optgroup');
+
+// ==========================================
+// TEST GROUP 42: Other / Custom Brand & Custom Model Calibration
+// ==========================================
+console.log('\n[TEST GROUP 42] Other / Custom Brand & Custom Model Functional Calibration');
+
+const makeCustomTestPhone = (overrides: Partial<PhoneModel>): PhoneModel => ({
+  id: `custom-test-${overrides.brand || 'custom'}-${overrides.name || 'model'}-${overrides.releaseYear || 2024}-${overrides.ramGb || 8}-${overrides.customTargetFps || 60}`,
+  brand: 'Infinix',
+  name: 'GT 20 Pro',
+  series: 'Custom Brand Device',
+  releaseYear: 2024,
+  ramGb: 8,
+  customTargetFps: 60,
+  customModeSource: 'custom_brand',
+  screenSize: 6.67,
+  aspectRatio: '20:9',
+  refreshRate: 120,
+  touchSamplingRate: 240,
+  recommendedDpi: 420,
+  category: 'midrange',
+  verificationStatus: 'custom',
+  ...overrides,
+});
+
+// 1. UI Form controls present for both Other / Custom Brand and Custom Model
+assert(selectorCode.includes('id="custom-brand-input"'), 'DeviceSelector includes Phone Brand input');
+assert(selectorCode.includes('id="custom-model-input"'), 'DeviceSelector includes Exact Model Name input');
+assert(selectorCode.includes('id="custom-year-select"'), 'DeviceSelector includes Launch Year selector');
+assert(selectorCode.includes('id="custom-ram-select"'), 'DeviceSelector includes RAM selector');
+assert(selectorCode.includes('id="custom-fps-select"'), 'DeviceSelector includes Target FPS selector');
+assert(selectorCode.includes('value="Other / Custom"'), 'DeviceSelector supports Other / Custom brand option');
+assert(selectorCode.includes('value="custom-mode-trigger"'), 'DeviceSelector supports + Custom Specs... custom model option');
+
+// 2. Launch-Year Rule across Pre-2022 (<2022), 2022 (=2022), and Post-2022 (>2022)
+const yearsToTest = [2018, 2020, 2021, 2022, 2023, 2024, 2025, 2026];
+const ramsToTest = [4, 8, 12];
+const fpsToTest = [30, 60, 90, 120];
+
+const pre2022Gens: number[] = [];
+const pre2022Rds: number[] = [];
+const y2022Gens: number[] = [];
+const y2022Rds: number[] = [];
+const post2022Gens: number[] = [];
+const post2022Rds: number[] = [];
+
+for (const yr of yearsToTest) {
+  for (const ram of ramsToTest) {
+    for (const fps of fpsToTest) {
+      const p = makeCustomTestPhone({
+        brand: yr % 2 === 0 ? 'Lava' : 'Samsung',
+        name: `TestModel ${yr}`,
+        customModeSource: yr % 2 === 0 ? 'custom_brand' : 'custom_model',
+        releaseYear: yr,
+        ramGb: ram,
+        customTargetFps: fps,
+      });
+      const res = calculateSensitivity('freefire_max', p, '2finger', 'onetap', fps, 1.0, 'smg', 0);
+      assert(res.sensitivity.gameId === 'freefire_max', `Custom phone (${yr}, ${ram}GB, ${fps}FPS) returns freefire_max schema`);
+      if (res.sensitivity.gameId === 'freefire_max') {
+        const d = res.sensitivity.data;
+        const rdDiff = d.general - d.redDot;
+        assert(
+          [4, 7, 9].includes(rdDiff),
+          `Custom device (${yr}, ${ram}GB, ${fps}FPS) Red Dot diff (${rdDiff}) is strictly 4, 7, or 9 below General (${d.general} -> ${d.redDot})`
+        );
+        assert(
+          res.fireButton.sizePercent >= 40 && res.fireButton.sizePercent <= 55,
+          `Custom device (${yr}, ${ram}GB, ${fps}FPS) Fire Button (${res.fireButton.sizePercent}%) in valid [40, 55]% range`
+        );
+        if (yr < 2022) {
+          pre2022Gens.push(d.general);
+          pre2022Rds.push(d.redDot);
+        } else if (yr === 2022) {
+          y2022Gens.push(d.general);
+          y2022Rds.push(d.redDot);
+        } else {
+          post2022Gens.push(d.general);
+          post2022Rds.push(d.redDot);
+        }
+      }
+    }
+  }
+}
+
+const minPreGen = Math.min(...pre2022Gens);
+const max2022Gen = Math.max(...y2022Gens);
+const min2022Gen = Math.min(...y2022Gens);
+const maxPostGen = Math.max(...post2022Gens);
+const minPreRd = Math.min(...pre2022Rds);
+const max2022Rd = Math.max(...y2022Rds);
+const min2022Rd = Math.min(...y2022Rds);
+const maxPostRd = Math.max(...post2022Rds);
+
+assert(minPreGen > max2022Gen, `Launch-Year Rule: Min pre-2022 General (${minPreGen}) > Max 2022 General (${max2022Gen})`);
+assert(min2022Gen > maxPostGen, `Launch-Year Rule: Min 2022 General (${min2022Gen}) > Max post-2022 General (${maxPostGen})`);
+assert(minPreRd > max2022Rd, `Launch-Year Rule: Min pre-2022 Red Dot (${minPreRd}) > Max 2022 Red Dot (${max2022Rd})`);
+assert(min2022Rd > maxPostRd, `Launch-Year Rule: Min 2022 Red Dot (${min2022Rd}) > Max post-2022 Red Dot (${maxPostRd})`);
+
+// 3. Determinism (never random) & non-identical outputs when brand/model/RAM/FPS/year differ
+const customA = makeCustomTestPhone({ brand: 'Lava', name: 'Agni 3 5G', releaseYear: 2024, ramGb: 8, customTargetFps: 60, customModeSource: 'custom_brand' });
+const resA1 = calculateCustomDeviceSensitivity('freefire_india', customA, '2finger', 'onetap', 60, 1.0, 'smg', 0);
+const resA2 = calculateCustomDeviceSensitivity('freefire_india', customA, '2finger', 'onetap', 60, 1.0, 'smg', 0);
+assert(
+  JSON.stringify(resA1.sensitivity.data) === JSON.stringify(resA2.sensitivity.data) &&
+  resA1.fireButton.sizePercent === resA2.fireButton.sizePercent,
+  'Custom device calibration is 100% deterministic (never returns random values)'
+);
+
+const customDiffBrand = makeCustomTestPhone({ brand: 'Infinix', name: 'Agni 3 5G', releaseYear: 2024, ramGb: 8, customTargetFps: 60, customModeSource: 'custom_brand' });
+const customDiffModel = makeCustomTestPhone({ brand: 'Samsung', name: 'Galaxy M55s 5G', releaseYear: 2024, ramGb: 8, customTargetFps: 60, customModeSource: 'custom_model' });
+const customDiffModel2 = makeCustomTestPhone({ brand: 'Samsung', name: 'Galaxy F55 5G', releaseYear: 2024, ramGb: 8, customTargetFps: 60, customModeSource: 'custom_model' });
+const customDiffRam = makeCustomTestPhone({ brand: 'Lava', name: 'Agni 3 5G', releaseYear: 2024, ramGb: 4, customTargetFps: 60, customModeSource: 'custom_brand' });
+const customDiffFps = makeCustomTestPhone({ brand: 'Lava', name: 'Agni 3 5G', releaseYear: 2024, ramGb: 8, customTargetFps: 120, customModeSource: 'custom_brand' });
+
+const sig = (r: ReturnType<typeof calculateSensitivity>) => {
+  const d = (r.sensitivity as any).data;
+  return `${d.general}-${d.redDot}-${d.scope2x}-${d.scope4x}-${d.sniperScope}-${d.freeLook}-${r.fireButton.sizePercent}`;
+};
+
+const sigA = sig(resA1);
+const sigDiffBrand = sig(calculateSensitivity('freefire_india', customDiffBrand, '2finger', 'onetap', 60, 1.0, 'smg', 0));
+const sigDiffModel = sig(calculateSensitivity('freefire_india', customDiffModel, '2finger', 'onetap', 60, 1.0, 'smg', 0));
+const sigDiffModel2 = sig(calculateSensitivity('freefire_india', customDiffModel2, '2finger', 'onetap', 60, 1.0, 'smg', 0));
+const sigDiffRam = sig(calculateSensitivity('freefire_india', customDiffRam, '2finger', 'onetap', 60, 1.0, 'smg', 0));
+const sigDiffFps = sig(calculateSensitivity('freefire_india', customDiffFps, '2finger', 'onetap', 120, 1.0, 'smg', 0));
+
+assert(sigA !== sigDiffBrand, `Changing custom Brand produces non-identical settings (${sigA} vs ${sigDiffBrand})`);
+assert(sigDiffModel !== sigDiffModel2, `Changing custom Model Name produces non-identical settings (${sigDiffModel} vs ${sigDiffModel2})`);
+assert(sigA !== sigDiffRam, `Changing custom RAM (8GB vs 4GB) produces personalized non-identical settings (${sigA} vs ${sigDiffRam})`);
+assert(sigA !== sigDiffFps, `Changing custom FPS (60 vs 120) produces personalized non-identical settings (${sigA} vs ${sigDiffFps})`);
+
+// 4. FPS Engine honors custom FPS selection
+assert(getValidFpsForDevice(customDiffFps, 'freefire_india', 120) === 120, 'FPS Engine honors custom 120 FPS in Free Fire India');
+assert(getValidFpsForDevice(makeCustomTestPhone({ customTargetFps: 30 }), 'freefire_max', 30) === 30, 'FPS Engine honors custom 30 FPS in Free Fire MAX');
+
+// 5. Try New Sensi variations, Improve My Sensi, and Phase 4 Calibration support
+const var0 = calculateSensitivity('freefire_max', customDiffModel, '2finger', 'onetap', 60, 1.0, 'smg', 0);
+const var1 = calculateSensitivity('freefire_max', customDiffModel, '2finger', 'onetap', 60, 1.0, 'smg', 1);
+assert(sig(var0) !== sig(var1), `Try New Sensi variation changes custom device profile (${sig(var0)} vs ${sig(var1)})`);
+
+const improvedCustom = applySensitivityImprovement(resA1.sensitivity, resA1.fireButton, 'overshooting');
+assert(
+  (improvedCustom.updatedSensitivity.data as any).general < (resA1.sensitivity.data as any).general,
+  'Improve My Sensi (overshooting) adjusts custom device sensitivity cleanly'
+);
+
+const phase4Custom = applyPhase4Calibration(resA1.sensitivity, resA1.fireButton, 'chest_lock', {});
+assert(
+  (phase4Custom.updatedSensitivity.data as any).general > (resA1.sensitivity.data as any).general,
+  'Training Ground Phase 4 feedback (chest_lock) adjusts custom device sensitivity cleanly'
+);
+
+// ==========================================
+// TEST GROUP 43: Infinix Complete 91-Model Sensitivity Chart
+// ==========================================
+console.log('\n[TEST GROUP 43] Infinix Complete 91-Model Sensitivity Chart Verification');
+
+const infinixExpectedModels = [
+  // 2026 (8)
+  { name: 'Infinix GT 50 Pro', year: 2026, gen: 140, redDot: 133, s2x: 130, s4x: 116, snip: 72, fl: 132, fire: 46 },
+  { name: 'Infinix Hot 70 Pro', year: 2026, gen: 136, redDot: 132, s2x: 125, s4x: 112, snip: 69, fl: 128, fire: 45 },
+  { name: 'Infinix Note 60 Pro', year: 2026, gen: 143, redDot: 136, s2x: 134, s4x: 121, snip: 77, fl: 139, fire: 49 },
+  { name: 'Infinix Note 60', year: 2026, gen: 138, redDot: 131, s2x: 127, s4x: 114, snip: 71, fl: 132, fire: 46 },
+  { name: 'Infinix Note 60 Ultra', year: 2026, gen: 145, redDot: 138, s2x: 136, s4x: 123, snip: 80, fl: 142, fire: 50 },
+  { name: 'Infinix Note Edge', year: 2026, gen: 139, redDot: 135, s2x: 129, s4x: 117, snip: 73, fl: 134, fire: 47 },
+  { name: 'Infinix Smart 20', year: 2026, gen: 130, redDot: 126, s2x: 119, s4x: 107, snip: 64, fl: 122, fire: 43 },
+  { name: 'Infinix Smart 20 HD', year: 2026, gen: 127, redDot: 120, s2x: 115, s4x: 103, snip: 61, fl: 118, fire: 42 },
+  // 2025 (15)
+  { name: 'Infinix GT 30 Pro', year: 2025, gen: 145, redDot: 138, s2x: 137, s4x: 124, snip: 79, fl: 142, fire: 50 },
+  { name: 'Infinix GT 30', year: 2025, gen: 141, redDot: 137, s2x: 130, s4x: 117, snip: 73, fl: 135, fire: 47 },
+  { name: 'Infinix Note 50 Pro+', year: 2025, gen: 146, redDot: 139, s2x: 140, s4x: 127, snip: 82, fl: 145, fire: 51 },
+  { name: 'Infinix Note 50 Pro', year: 2025, gen: 142, redDot: 135, s2x: 134, s4x: 121, snip: 77, fl: 139, fire: 49 },
+  { name: 'Infinix Note 50', year: 2025, gen: 137, redDot: 130, s2x: 127, s4x: 114, snip: 70, fl: 132, fire: 46 },
+  { name: 'Infinix Note 50X 5G', year: 2025, gen: 135, redDot: 131, s2x: 124, s4x: 111, snip: 68, fl: 129, fire: 45 },
+  { name: 'Infinix Note 50s 5G+', year: 2025, gen: 140, redDot: 133, s2x: 131, s4x: 118, snip: 74, fl: 136, fire: 47 },
+  { name: 'Infinix Hot 60 Pro', year: 2025, gen: 139, redDot: 132, s2x: 130, s4x: 117, snip: 73, fl: 134, fire: 47 },
+  { name: 'Infinix Hot 60', year: 2025, gen: 134, redDot: 130, s2x: 123, s4x: 110, snip: 66, fl: 127, fire: 44 },
+  { name: 'Infinix Hot 60i', year: 2025, gen: 130, redDot: 123, s2x: 118, s4x: 105, snip: 63, fl: 122, fire: 43 },
+  { name: 'Infinix Hot 60i 5G', year: 2025, gen: 133, redDot: 129, s2x: 121, s4x: 109, snip: 65, fl: 125, fire: 44 },
+  { name: 'Infinix Hot 60 5G+', year: 2025, gen: 137, redDot: 130, s2x: 127, s4x: 114, snip: 70, fl: 131, fire: 46 },
+  { name: 'Infinix Smart 10', year: 2025, gen: 128, redDot: 124, s2x: 116, s4x: 104, snip: 62, fl: 120, fire: 42 },
+  { name: 'Infinix Smart 10 Plus', year: 2025, gen: 131, redDot: 124, s2x: 119, s4x: 107, snip: 65, fl: 123, fire: 43 },
+  { name: 'Infinix Smart 9 HD', year: 2025, gen: 126, redDot: 119, s2x: 113, s4x: 101, snip: 60, fl: 117, fire: 41 },
+  // 2024 (14)
+  { name: 'Infinix GT 20 Pro', year: 2024, gen: 148, redDot: 141, s2x: 141, s4x: 128, snip: 83, fl: 146, fire: 51 },
+  { name: 'Infinix Note 40 Pro+ 5G', year: 2024, gen: 145, redDot: 138, s2x: 137, s4x: 124, snip: 80, fl: 142, fire: 50 },
+  { name: 'Infinix Note 40 Pro 5G', year: 2024, gen: 141, redDot: 134, s2x: 132, s4x: 119, snip: 76, fl: 138, fire: 48 },
+  { name: 'Infinix Note 40 5G', year: 2024, gen: 138, redDot: 134, s2x: 128, s4x: 115, snip: 72, fl: 134, fire: 47 },
+  { name: 'Infinix Note 40 Pro 4G', year: 2024, gen: 143, redDot: 136, s2x: 135, s4x: 122, snip: 78, fl: 140, fire: 49 },
+  { name: 'Infinix Note 40', year: 2024, gen: 136, redDot: 129, s2x: 125, s4x: 112, snip: 68, fl: 130, fire: 45 },
+  { name: 'Infinix Note 40X 5G', year: 2024, gen: 134, redDot: 130, s2x: 122, s4x: 110, snip: 66, fl: 127, fire: 44 },
+  { name: 'Infinix Zero 40 5G', year: 2024, gen: 147, redDot: 140, s2x: 140, s4x: 127, snip: 82, fl: 145, fire: 51 },
+  { name: 'Infinix Zero 40 4G', year: 2024, gen: 141, redDot: 137, s2x: 133, s4x: 120, snip: 75, fl: 138, fire: 48 },
+  { name: 'Infinix Zero Flip', year: 2024, gen: 144, redDot: 137, s2x: 136, s4x: 123, snip: 79, fl: 141, fire: 50 },
+  { name: 'Infinix Hot 50 Pro+', year: 2024, gen: 139, redDot: 132, s2x: 130, s4x: 117, snip: 72, fl: 134, fire: 47 },
+  { name: 'Infinix Hot 50 Pro', year: 2024, gen: 136, redDot: 132, s2x: 126, s4x: 113, snip: 69, fl: 130, fire: 45 },
+  { name: 'Infinix Hot 50', year: 2024, gen: 132, redDot: 125, s2x: 120, s4x: 108, snip: 65, fl: 125, fire: 44 },
+  { name: 'Infinix Hot 50i', year: 2024, gen: 129, redDot: 125, s2x: 117, s4x: 105, snip: 62, fl: 121, fire: 42 },
+  // 2023 (17)
+  { name: 'Infinix GT 10 Pro', year: 2023, gen: 151, redDot: 144, s2x: 145, s4x: 132, snip: 86, fl: 149, fire: 52 },
+  { name: 'Infinix Zero 30 5G', year: 2023, gen: 146, redDot: 139, s2x: 138, s4x: 125, snip: 80, fl: 143, fire: 50 },
+  { name: 'Infinix Zero 30 4G', year: 2023, gen: 140, redDot: 136, s2x: 131, s4x: 118, snip: 74, fl: 136, fire: 47 },
+  { name: 'Infinix Note 30 VIP', year: 2023, gen: 143, redDot: 136, s2x: 135, s4x: 122, snip: 78, fl: 140, fire: 49 },
+  { name: 'Infinix Note 30 Pro', year: 2023, gen: 139, redDot: 132, s2x: 129, s4x: 116, snip: 72, fl: 134, fire: 47 },
+  { name: 'Infinix Note 30 5G', year: 2023, gen: 136, redDot: 132, s2x: 126, s4x: 113, snip: 70, fl: 131, fire: 46 },
+  { name: 'Infinix Note 30', year: 2023, gen: 133, redDot: 126, s2x: 121, s4x: 109, snip: 66, fl: 126, fire: 44 },
+  { name: 'Infinix Note 30i', year: 2023, gen: 130, redDot: 126, s2x: 118, s4x: 106, snip: 63, fl: 122, fire: 43 },
+  { name: 'Infinix Hot 40 Pro', year: 2023, gen: 137, redDot: 130, s2x: 128, s4x: 115, snip: 71, fl: 132, fire: 46 },
+  { name: 'Infinix Hot 40', year: 2023, gen: 132, redDot: 125, s2x: 121, s4x: 108, snip: 66, fl: 126, fire: 44 },
+  { name: 'Infinix Hot 40i', year: 2023, gen: 128, redDot: 124, s2x: 116, s4x: 104, snip: 62, fl: 121, fire: 42 },
+  { name: 'Infinix Hot 30 5G', year: 2023, gen: 135, redDot: 128, s2x: 124, s4x: 111, snip: 68, fl: 130, fire: 45 },
+  { name: 'Infinix Hot 30', year: 2023, gen: 131, redDot: 124, s2x: 119, s4x: 107, snip: 64, fl: 125, fire: 43 },
+  { name: 'Infinix Hot 30i', year: 2023, gen: 127, redDot: 123, s2x: 114, s4x: 102, snip: 61, fl: 119, fire: 42 },
+  { name: 'Infinix Smart 8', year: 2023, gen: 125, redDot: 118, s2x: 112, s4x: 100, snip: 59, fl: 116, fire: 41 },
+  { name: 'Infinix Smart 8 HD', year: 2023, gen: 123, redDot: 119, s2x: 110, s4x: 98, snip: 57, fl: 114, fire: 40 },
+  { name: 'Infinix Smart 7', year: 2023, gen: 128, redDot: 121, s2x: 115, s4x: 103, snip: 61, fl: 119, fire: 42 },
+  // 2022 (16)
+  { name: 'Infinix Zero Ultra', year: 2022, gen: 155, redDot: 148, s2x: 150, s4x: 137, snip: 90, fl: 153, fire: 54 },
+  { name: 'Infinix Zero 20', year: 2022, gen: 152, redDot: 145, s2x: 145, s4x: 132, snip: 86, fl: 149, fire: 52 },
+  { name: 'Infinix Zero 5G', year: 2022, gen: 150, redDot: 143, s2x: 141, s4x: 128, snip: 82, fl: 145, fire: 51 },
+  { name: 'Infinix Hot 20S', year: 2022, gen: 148, redDot: 141, s2x: 138, s4x: 125, snip: 79, fl: 142, fire: 50 },
+  { name: 'Infinix Hot 20 5G', year: 2022, gen: 145, redDot: 141, s2x: 134, s4x: 121, snip: 76, fl: 139, fire: 48 },
+  { name: 'Infinix Hot 20', year: 2022, gen: 142, redDot: 135, s2x: 130, s4x: 117, snip: 73, fl: 135, fire: 47 },
+  { name: 'Infinix Hot 20 Play', year: 2022, gen: 139, redDot: 132, s2x: 126, s4x: 113, snip: 69, fl: 130, fire: 45 },
+  { name: 'Infinix Hot 20i', year: 2022, gen: 136, redDot: 129, s2x: 122, s4x: 109, snip: 66, fl: 126, fire: 44 },
+  { name: 'Infinix Note 12 VIP', year: 2022, gen: 153, redDot: 146, s2x: 147, s4x: 134, snip: 88, fl: 151, fire: 53 },
+  { name: 'Infinix Note 12 Pro 5G', year: 2022, gen: 150, redDot: 143, s2x: 142, s4x: 129, snip: 83, fl: 146, fire: 51 },
+  { name: 'Infinix Note 12 Pro', year: 2022, gen: 147, redDot: 140, s2x: 137, s4x: 124, snip: 79, fl: 142, fire: 49 },
+  { name: 'Infinix Note 12 5G', year: 2022, gen: 144, redDot: 137, s2x: 132, s4x: 119, snip: 75, fl: 138, fire: 48 },
+  { name: 'Infinix Note 12', year: 2022, gen: 141, redDot: 134, s2x: 127, s4x: 114, snip: 71, fl: 133, fire: 46 },
+  { name: 'Infinix Note 12i', year: 2022, gen: 138, redDot: 134, s2x: 124, s4x: 111, snip: 68, fl: 129, fire: 45 },
+  { name: 'Infinix Hot 11 2022', year: 2022, gen: 145, redDot: 138, s2x: 134, s4x: 121, snip: 77, fl: 139, fire: 49 },
+  { name: 'Infinix Smart 6 Plus', year: 2022, gen: 135, redDot: 128, s2x: 120, s4x: 108, snip: 65, fl: 125, fire: 44 },
+  // 2021 (12)
+  { name: 'Infinix Zero X Pro', year: 2021, gen: 158, redDot: 151, s2x: 154, s4x: 141, snip: 94, fl: 157, fire: 55 },
+  { name: 'Infinix Zero X', year: 2021, gen: 155, redDot: 148, s2x: 149, s4x: 136, snip: 89, fl: 153, fire: 53 },
+  { name: 'Infinix Zero X Neo', year: 2021, gen: 150, redDot: 143, s2x: 142, s4x: 129, snip: 83, fl: 146, fire: 51 },
+  { name: 'Infinix Note 11 Pro', year: 2021, gen: 156, redDot: 149, s2x: 151, s4x: 138, snip: 92, fl: 155, fire: 54 },
+  { name: 'Infinix Note 11S', year: 2021, gen: 153, redDot: 146, s2x: 146, s4x: 133, snip: 87, fl: 150, fire: 52 },
+  { name: 'Infinix Note 11', year: 2021, gen: 149, redDot: 142, s2x: 139, s4x: 126, snip: 81, fl: 144, fire: 50 },
+  { name: 'Infinix Hot 11S', year: 2021, gen: 151, redDot: 144, s2x: 143, s4x: 130, snip: 85, fl: 147, fire: 51 },
+  { name: 'Infinix Hot 11', year: 2021, gen: 146, redDot: 139, s2x: 136, s4x: 123, snip: 78, fl: 140, fire: 48 },
+  { name: 'Infinix Hot 11 Play', year: 2021, gen: 142, redDot: 135, s2x: 129, s4x: 116, snip: 73, fl: 135, fire: 46 },
+  { name: 'Infinix Hot 10S', year: 2021, gen: 149, redDot: 142, s2x: 139, s4x: 126, snip: 81, fl: 144, fire: 50 },
+  { name: 'Infinix Hot 10 Play', year: 2021, gen: 144, redDot: 137, s2x: 132, s4x: 119, snip: 76, fl: 138, fire: 48 },
+  { name: 'Infinix Smart 6', year: 2021, gen: 138, redDot: 131, s2x: 124, s4x: 111, snip: 68, fl: 128, fire: 45 },
+  // 2020 (9)
+  { name: 'Infinix Zero 8', year: 2020, gen: 160, redDot: 153, s2x: 156, s4x: 143, snip: 96, fl: 160, fire: 56 },
+  { name: 'Infinix Zero 8i', year: 2020, gen: 156, redDot: 149, s2x: 149, s4x: 136, snip: 90, fl: 154, fire: 53 },
+  { name: 'Infinix Note 8', year: 2020, gen: 153, redDot: 146, s2x: 144, s4x: 131, snip: 85, fl: 149, fire: 51 },
+  { name: 'Infinix Note 8i', year: 2020, gen: 148, redDot: 141, s2x: 137, s4x: 124, snip: 79, fl: 142, fire: 49 },
+  { name: 'Infinix Hot 10', year: 2020, gen: 155, redDot: 148, s2x: 148, s4x: 135, snip: 89, fl: 153, fire: 53 },
+  { name: 'Infinix Hot 9', year: 2020, gen: 151, redDot: 144, s2x: 141, s4x: 128, snip: 83, fl: 147, fire: 51 },
+  { name: 'Infinix Hot 9 Play', year: 2020, gen: 146, redDot: 139, s2x: 134, s4x: 121, snip: 77, fl: 140, fire: 48 },
+  { name: 'Infinix S5 Pro', year: 2020, gen: 150, redDot: 143, s2x: 139, s4x: 126, snip: 81, fl: 145, fire: 50 },
+  { name: 'Infinix Smart 5', year: 2020, gen: 142, redDot: 135, s2x: 128, s4x: 115, snip: 71, fl: 133, fire: 46 },
+];
+
+const infinixModels = ALL_VERIFIED_PHONES.filter(p => p.brand === 'Infinix');
+assert(infinixModels.length === 91, `Infinix brand contains exactly 91 models (Got: ${infinixModels.length})`);
+
+const infinixIds = new Set(infinixModels.map(p => p.id));
+assert(infinixIds.size === 91, `Infinix models have unique IDs with 0 duplicates (Found ${infinixIds.size}/91)`);
+
+const infinixNames = new Set(infinixModels.map(p => p.name));
+assert(infinixNames.size === 91, `Infinix models have unique names with 0 duplicates (Found ${infinixNames.size}/91)`);
+
+const infinixDiffsSeen = new Set<number>();
+
+infinixExpectedModels.forEach(m => {
+  const found = infinixModels.find(p => p.name === m.name);
+  assert(Boolean(found), `Infinix model "${m.name}" is present in database`);
+  if (!found) return;
+
+  assert(found.releaseYear === m.year, `Infinix "${m.name}" releaseYear is ${m.year} (Got: ${found.releaseYear})`);
+  assert(Boolean(found.customSensitivityPreset), `Infinix "${m.name}" has customSensitivityPreset`);
+
+  const gen = found.customSensitivityPreset!.general;
+  const rd = found.customSensitivityPreset!.redDot;
+  const diff = gen - rd;
+  infinixDiffsSeen.add(diff);
+
+  assert([4, 7, 9].includes(diff), `Infinix "${m.name}" Red Dot diff (${diff}) is 4, 7, or 9 points below General`);
+  assert(gen === m.gen, `Infinix "${m.name}" General matches chart (${m.gen}) (Got: ${gen})`);
+  assert(rd === m.redDot, `Infinix "${m.name}" Red Dot matches chart (${m.redDot}) (Got: ${rd})`);
+  assert(found.customSensitivityPreset?.scope2x === m.s2x, `Infinix "${m.name}" 2x matches chart (${m.s2x}) (Got: ${found.customSensitivityPreset?.scope2x})`);
+  assert(found.customSensitivityPreset?.scope4x === m.s4x, `Infinix "${m.name}" 4x matches chart (${m.s4x}) (Got: ${found.customSensitivityPreset?.scope4x})`);
+  assert(found.customSensitivityPreset?.sniperScope === m.snip, `Infinix "${m.name}" Sniper matches chart (${m.snip}) (Got: ${found.customSensitivityPreset?.sniperScope})`);
+  assert(found.customSensitivityPreset?.freeLook === m.fl, `Infinix "${m.name}" Free Look matches chart (${m.fl}) (Got: ${found.customSensitivityPreset?.freeLook})`);
+  assert(found.customFireButtonPreset === m.fire, `Infinix "${m.name}" Fire Button matches chart (${m.fire}%) (Got: ${found.customFireButtonPreset}%)`);
+  assert(Boolean(found.auditNotes?.includes('Recommended starter settings')), `Infinix "${m.name}" audit notes indicate starter settings disclaimer`);
+
+  const calcResult = calculateSensitivity('freefire_max', found, '2finger', 'onetap', 60, 1.0, 'smg', 0);
+  assert(calcResult.sensitivity.gameId === 'freefire_max', `Infinix "${m.name}" engine returns valid freefire_max output`);
+});
+
+assert(infinixDiffsSeen.has(4) && infinixDiffsSeen.has(7), 'Infinix Red Dot differences span chart offsets (4 and 7 points)');
+
+const infinixInOrder = getModelsForBrand('Infinix');
+assert(infinixInOrder.length === 91, `getModelsForBrand('Infinix') returns all 91 models (Got: ${infinixInOrder.length})`);
+assert(infinixInOrder[0].name === 'Infinix GT 50 Pro', `First Infinix model in getModelsForBrand is Infinix GT 50 Pro (Got: ${infinixInOrder[0].name})`);
+assert(infinixInOrder[infinixInOrder.length - 1].name === 'Infinix Smart 5', `Last Infinix model in getModelsForBrand is Infinix Smart 5 (Got: ${infinixInOrder[infinixInOrder.length - 1].name})`);
+
+const infinixGaming = getModelsForBrand('Infinix', 'gaming');
+assert(infinixGaming.length === 5, `getModelsForBrand('Infinix', 'gaming') returns 5 GT gaming models (Got: ${infinixGaming.length})`);
+
+assert(selectorCode.includes("selectedBrand === 'Infinix'"), 'DeviceSelector implements optgroup for Infinix models');
+assert(selectorCode.includes('2026 Infinix Series'), 'DeviceSelector includes 2026 Infinix Series optgroup');
+assert(selectorCode.includes('2020 Infinix Series'), 'DeviceSelector includes 2020 Infinix Series optgroup');
+
+// ==========================================
+// TEST GROUP 44: Non-Repeating Generation, Device Limits, Launch-Year Rules & My Previous Sensi
+// ==========================================
+console.log('\n[TEST GROUP 44] Non-Repeating Generation, Device Limits, Launch-Year Rules & My Previous Sensi');
+
+// 1. Preset & non-preset devices: 10 consecutive Generate clicks yield 10 unique valid combinations within tight device limits
+const presetSampleNames = [
+  'Infinix GT 50 Pro',
+  'Pixel 9 Pro',
+  'Nothing Phone (4b)',
+  'iPhone 16 Pro Max',
+  'Samsung Galaxy S24 Ultra',
+  'Samsung Galaxy Tab A8',
+  'iPhone SE (3rd generation)',
+];
+
+for (const modelName of presetSampleNames) {
+  const phone = ALL_VERIFIED_PHONES.find((p) => p.name === modelName);
+  assert(Boolean(phone), `Test Group 44 found device "${modelName}"`);
+  if (!phone) continue;
+
+  const baseline = calculatePresetVariation('freefire_max', phone, '2finger', 'onetap', 60, 'smg', 0);
+  const baseSig = getCalibrationSignature(baseline.sensitivity, baseline.fireButton.sizePercent);
+  const seenSigs = new Set<string>([baseSig]);
+  const baseGen = phone.customSensitivityPreset?.general ?? (baseline.sensitivity.data as any).general;
+  let step = 1;
+
+  for (let i = 0; i < 10; i++) {
+    const out = generateNextCalibration({
+      gameId: 'freefire_max',
+      phone,
+      grip: '2finger',
+      playstyle: 'onetap',
+      selectedFps: 60,
+      weaponCategory: 'smg',
+      variationStep: step,
+      excludedSignatures: seenSigs,
+    });
+    const d = out.result.sensitivity.data as any;
+    assert(
+      !seenSigs.has(out.signature),
+      `"${modelName}" generation #${i + 1} produces unique non-repeating signature (${out.signature})`
+    );
+    assert(
+      d.general >= Math.max(85, baseGen - 4) && d.general <= Math.min(200, baseGen + 4),
+      `"${modelName}" generation #${i + 1} General (${d.general}) stays strictly within ±4 of device preset (${baseGen})`
+    );
+    assert(
+      out.result.fireButton.sizePercent >= 40 && out.result.fireButton.sizePercent <= 55,
+      `"${modelName}" generation #${i + 1} Fire Button (${out.result.fireButton.sizePercent}%) stays within [40, 55]%`
+    );
+
+    if (phone.customSensitivityPreset) {
+      if (phone.brand === 'Nothing' || phone.brand === 'Infinix' || phone.brand === 'Google Pixel') {
+        const diff = d.general - d.redDot;
+        assert(
+          [4, 7, 9].includes(diff),
+          `"${modelName}" generation #${i + 1} Red Dot diff (${diff}) obeys 4/7/9 rule`
+        );
+      } else if (phone.brand === 'Apple') {
+        const diff = d.general - d.redDot;
+        assert(diff === 12, `"${modelName}" generation #${i + 1} Apple Red Dot diff stays 12 (Got: ${diff})`);
+      }
+    }
+
+    seenSigs.add(out.signature);
+    step = out.usedStep + 1;
+  }
+}
+
+// 2. Custom devices: 10 consecutive generations strictly obey Launch-Year Rule + 4/7/9 Red Dot + Determinism
+const customPre2022 = makeCustomTestPhone({ brand: 'Meizu', name: '16th Plus', releaseYear: 2019, ramGb: 6, customTargetFps: 60 });
+const custom2022 = makeCustomTestPhone({ brand: 'Sony', name: 'Xperia 5 IV', releaseYear: 2022, ramGb: 8, customTargetFps: 90 });
+const customPost2022 = makeCustomTestPhone({ brand: 'Fairphone', name: 'FP5 Pro', releaseYear: 2025, ramGb: 8, customTargetFps: 90 });
+
+for (const [label, cPhone, minG, maxG] of [
+  ['Pre-2022 (<2022)', customPre2022, 172, 195],
+  ['2022 (Medium)', custom2022, 152, 160],
+  ['Post-2022 (>2022)', customPost2022, 128, 141],
+] as const) {
+  const cBase = calculateSensitivity('freefire_india', cPhone, '2finger', 'onetap', cPhone.customTargetFps ?? 60, 1.0, 'smg', 0);
+  const cExcluded = new Set<string>([getCalibrationSignature(cBase.sensitivity, cBase.fireButton.sizePercent)]);
+  let cStep = 1;
+
+  for (let i = 0; i < 8; i++) {
+    const out = generateNextCalibration({
+      gameId: 'freefire_india',
+      phone: cPhone,
+      grip: '2finger',
+      playstyle: 'onetap',
+      selectedFps: cPhone.customTargetFps ?? 60,
+      weaponCategory: 'smg',
+      variationStep: cStep,
+      excludedSignatures: cExcluded,
+    });
+    const d = out.result.sensitivity.data as any;
+    const diff = d.general - d.redDot;
+
+    assert(!cExcluded.has(out.signature), `Custom ${label} generation #${i + 1} is unique (${out.signature})`);
+    assert(d.general >= minG && d.general <= maxG, `Custom ${label} generation #${i + 1} General (${d.general}) obeys [${minG}, ${maxG}] launch-year band`);
+    assert([4, 7, 9].includes(diff), `Custom ${label} generation #${i + 1} Red Dot diff (${diff}) is 4, 7, or 9 below General`);
+    assert(out.result.fireButton.sizePercent >= 40 && out.result.fireButton.sizePercent <= 55, `Custom ${label} Fire Button (${out.result.fireButton.sizePercent}%) within [40, 55]%`);
+
+    // Determinism check (same inputs => identical signature)
+    const repeatCheck = generateNextCalibration({
+      gameId: 'freefire_india',
+      phone: cPhone,
+      grip: '2finger',
+      playstyle: 'onetap',
+      selectedFps: cPhone.customTargetFps ?? 60,
+      weaponCategory: 'smg',
+      variationStep: cStep,
+      excludedSignatures: cExcluded,
+    });
+    assert(repeatCheck.signature === out.signature, `Custom ${label} generation #${i + 1} is 100% deterministic (zero randomness)`);
+
+    cExcluded.add(out.signature);
+    cStep = out.usedStep + 1;
+  }
+}
+
+// 3. Simulated re-selection + My Previous Sensi persistence + deduplication + manual preset protection
+const pixel9Pro = ALL_VERIFIED_PHONES.find((p) => p.name === 'Pixel 9 Pro')!;
+const manualPresetOut = calculatePresetVariation('freefire_india', pixel9Pro, '2finger', 'onetap', 60, 'smg', 0);
+savePreset({
+  id: 'manual-pixel-9-pro',
+  name: 'My Favorite Pixel 9 Pro',
+  timestamp: Date.now(),
+  gameId: 'freefire_india',
+  phoneBrand: pixel9Pro.brand,
+  phoneModel: pixel9Pro.name,
+  refreshRate: pixel9Pro.refreshRate,
+  touchSamplingRate: pixel9Pro.touchSamplingRate,
+  gripStyle: '2finger',
+  playstyle: 'onetap',
+  weaponCategory: 'smg',
+  selectedFps: 60,
+  sensitivity: manualPresetOut.sensitivity,
+  fireButton: manualPresetOut.fireButton,
+});
+
+const gen1 = generateNextCalibration({
+  gameId: 'freefire_india',
+  phone: pixel9Pro,
+  grip: '2finger',
+  playstyle: 'onetap',
+  selectedFps: 60,
+  weaponCategory: 'smg',
+  variationStep: 1,
+  excludedSignatures: [getCalibrationSignature(manualPresetOut.sensitivity, manualPresetOut.fireButton.sizePercent)],
+});
+recordDeviceGeneration(pixel9Pro.brand, pixel9Pro.name, 'freefire_india', gen1.usedStep, gen1.signature);
+saveAutoPreviousPreset({
+  id: 'auto-gen1',
+  name: 'Pixel 9 Pro (Variant #1)',
+  timestamp: Date.now(),
+  gameId: 'freefire_india',
+  phoneBrand: pixel9Pro.brand,
+  phoneModel: pixel9Pro.name,
+  refreshRate: pixel9Pro.refreshRate,
+  touchSamplingRate: pixel9Pro.touchSamplingRate,
+  gripStyle: '2finger',
+  playstyle: 'onetap',
+  weaponCategory: 'smg',
+  selectedFps: 60,
+  sensitivity: gen1.result.sensitivity,
+  fireButton: gen1.result.fireButton,
+});
+
+// User switches to another brand & back, then re-selects Pixel 9 Pro and clicks Generate
+const reloadedHistory = getDeviceGenerationState(pixel9Pro.brand, pixel9Pro.name, 'freefire_india');
+assert(reloadedHistory.recentSignatures.includes(gen1.signature), 'Device generation history retains previous signature after re-selecting same brand & model');
+
+const gen2 = generateNextCalibration({
+  gameId: 'freefire_india',
+  phone: pixel9Pro,
+  grip: '2finger',
+  playstyle: 'onetap',
+  selectedFps: 60,
+  weaponCategory: 'smg',
+  variationStep: reloadedHistory.step + 1,
+  excludedSignatures: [
+    getCalibrationSignature(manualPresetOut.sensitivity, manualPresetOut.fireButton.sizePercent),
+    ...reloadedHistory.recentSignatures,
+  ],
+});
+assert(gen2.signature !== gen1.signature, `Re-selecting Pixel 9 Pro and clicking Generate produces a NEW combination (${gen2.signature} !== ${gen1.signature})`);
+
+// Deduplication check in My Previous Sensi
+const afterDupAutoSave = saveAutoPreviousPreset({
+  id: 'auto-gen1-dup',
+  name: 'Pixel 9 Pro (Variant #1 Duplicate)',
+  timestamp: Date.now() + 10,
+  gameId: 'freefire_india',
+  phoneBrand: pixel9Pro.brand,
+  phoneModel: pixel9Pro.name,
+  refreshRate: pixel9Pro.refreshRate,
+  touchSamplingRate: pixel9Pro.touchSamplingRate,
+  gripStyle: '2finger',
+  playstyle: 'onetap',
+  weaponCategory: 'smg',
+  selectedFps: 60,
+  sensitivity: gen1.result.sensitivity,
+  fireButton: gen1.result.fireButton,
+});
+assert(
+  afterDupAutoSave.filter((p) => p.isAutoSaved).length === 1 &&
+  afterDupAutoSave.some((p) => p.id === 'manual-pixel-9-pro'),
+  'My Previous Sensi deduplicates identical auto-saved signatures and preserves manual presets intact'
+);
+
+// Clean up test storage entries
+deletePreset('manual-pixel-9-pro');
+deletePreset('auto-gen1-dup');
+assert(getSavedPresets().length === 0, 'Storage cleanup leaves no leftover test presets');
+
+// ==========================================
+// TEST GROUP 45: Global Multi-Brand, All-Model, All-Game & Custom Isolation Audit
+// ==========================================
+console.log('\n[TEST GROUP 45] Global Coverage: All 27 Brands, All Models, All 6 Games, Old vs New, Custom Brand & Custom Model');
+
+// 1. Every single verified model across every brand (5 consecutive non-repeating generations per model)
+const brandStats: Record<string, { models: number; failures: string[] }> = {};
+for (const phone of ALL_VERIFIED_PHONES) {
+  if (!brandStats[phone.brand]) {
+    brandStats[phone.brand] = { models: 0, failures: [] };
+  }
+  brandStats[phone.brand].models++;
+
+  const base = calculatePresetVariation('freefire_india', phone, '2finger', 'onetap', 60, 'smg', 0);
+  const seen = new Set<string>([getCalibrationSignature(base.sensitivity, base.fireButton.sizePercent)]);
+  const baseGen = phone.customSensitivityPreset?.general ?? (base.sensitivity.data as any).general;
+  const baseDiff = phone.customSensitivityPreset
+    ? Math.max(0, phone.customSensitivityPreset.general - phone.customSensitivityPreset.redDot)
+    : null;
+  const allowedDiffs = baseDiff !== null ? getAllowedRedDotDiffsForPreset(phone, baseDiff) : null;
+  let step = 1;
+
+  for (let click = 0; click < 5; click++) {
+    const out = generateNextCalibration({
+      gameId: 'freefire_india',
+      phone,
+      grip: '2finger',
+      playstyle: 'onetap',
+      selectedFps: 60,
+      weaponCategory: 'smg',
+      variationStep: step,
+      excludedSignatures: seen,
+    });
+    const d = out.result.sensitivity.data as any;
+    if (seen.has(out.signature)) {
+      brandStats[phone.brand].failures.push(`${phone.name} duplicate sig at click ${click + 1}`);
+    }
+    if (d.general < Math.max(85, baseGen - 4) || d.general > Math.min(200, baseGen + 4)) {
+      brandStats[phone.brand].failures.push(`${phone.name} General ${d.general} out of bounds around ${baseGen}`);
+    }
+    if (out.result.fireButton.sizePercent < 40 || out.result.fireButton.sizePercent > 55) {
+      brandStats[phone.brand].failures.push(`${phone.name} Fire Button ${out.result.fireButton.sizePercent}% out of [40,55]`);
+    }
+    if (allowedDiffs && !allowedDiffs.includes(d.general - d.redDot)) {
+      brandStats[phone.brand].failures.push(`${phone.name} Red Dot diff ${d.general - d.redDot} not in [${allowedDiffs.join(',')}]`);
+    }
+    seen.add(out.signature);
+    step = out.usedStep + 1;
+  }
+}
+
+for (const [brandName, stat] of Object.entries(brandStats)) {
+  assert(
+    stat.failures.length === 0,
+    `Global brand coverage "${brandName}" (${stat.models} models x 5 non-repeating generations) passed with 0 errors`,
+    stat.failures.slice(0, 3).join('; ')
+  );
+}
+assert(
+  Object.keys(brandStats).length >= ALL_BRANDS.length && ALL_VERIFIED_PHONES.length >= 1000,
+  `Audited all ${Object.keys(brandStats).length} distinct brand keys across ${ALL_BRANDS.length} UI brand groups covering ${ALL_VERIFIED_PHONES.length} verified models globally`
+);
+
+// 2. All 6 supported games across Preset, Non-Preset, Other / Custom Brand, and Custom Model
+const allSupportedGames: GameId[] = ['freefire_india', 'freefire_max', 'freefire', 'bgmi', 'pubg', 'codm'];
+const globalSampleDevices: { label: string; phone: PhoneModel }[] = [
+  { label: 'Preset Apple', phone: ALL_VERIFIED_PHONES.find((p) => p.name === 'iPhone 12')! },
+  { label: 'Preset Pixel Old', phone: ALL_VERIFIED_PHONES.find((p) => p.name === 'Pixel 3 XL')! },
+  { label: 'Preset Pixel New', phone: ALL_VERIFIED_PHONES.find((p) => p.name === 'Pixel 11 Pro')! },
+  { label: 'Preset Infinix', phone: ALL_VERIFIED_PHONES.find((p) => p.name === 'Infinix Note 50 Pro')! },
+  { label: 'Preset Nothing', phone: ALL_VERIFIED_PHONES.find((p) => p.name === 'Nothing Phone (3)')! },
+  { label: 'Preset POCO', phone: ALL_VERIFIED_PHONES.find((p) => p.brand === 'POCO' && Boolean(p.customSensitivityPreset))! },
+  { label: 'Preset Realme', phone: ALL_VERIFIED_PHONES.find((p) => p.brand === 'Realme' && Boolean(p.customSensitivityPreset))! },
+  { label: 'Non-Preset Verified', phone: ALL_VERIFIED_PHONES.find((p) => !p.customSensitivityPreset)! },
+  {
+    label: 'Other / Custom Brand (Pre-2022)',
+    phone: makeCustomTestPhone({ brand: 'HTC Custom', name: 'U12+ Custom', releaseYear: 2019, ramGb: 6, customTargetFps: 60, customModeSource: 'custom_brand' }),
+  },
+  {
+    label: 'Custom Model (Post-2022)',
+    phone: makeCustomTestPhone({ brand: 'Motorola', name: 'Moto Edge Ultra Custom', releaseYear: 2025, ramGb: 12, customTargetFps: 120, customModeSource: 'custom_model' }),
+  },
+];
+
+for (const { label, phone } of globalSampleDevices) {
+  assert(Boolean(phone), `Sample device resolved cleanly for ${label}`);
+  if (!phone) continue;
+
+  for (const gId of allSupportedGames) {
+    const base = calculatePresetVariation(gId, phone, '4finger', 'drag', 90, 'smg', 0);
+    const excluded = new Set<string>([getCalibrationSignature(base.sensitivity, base.fireButton.sizePercent)]);
+    let step = 1;
+    let gameFailures = 0;
+
+    for (let c = 0; c < 6; c++) {
+      const out = generateNextCalibration({
+        gameId: gId,
+        phone,
+        grip: '4finger',
+        playstyle: 'drag',
+        selectedFps: 90,
+        weaponCategory: 'smg',
+        variationStep: step,
+        excludedSignatures: excluded,
+      });
+      if (excluded.has(out.signature)) gameFailures++;
+      if (out.result.fireButton.sizePercent < 40 || out.result.fireButton.sizePercent > 55) gameFailures++;
+
+      // Record separate game + brand + model history
+      recordDeviceGeneration(phone.brand, phone.name, gId, out.usedStep, out.signature);
+      excluded.add(out.signature);
+      step = out.usedStep + 1;
+    }
+
+    const hist = getDeviceGenerationState(phone.brand, phone.name, gId);
+    assert(
+      gameFailures === 0 && hist.recentSignatures.length === 6,
+      `${label} under ${gId}: 6 unique combinations generated & isolated in (${gId}::${phone.brand}::${phone.name}) history`
+    );
+  }
+}
+
+// 3. Separate history isolation check across games on same brand & model
+const histFfIndia = getDeviceGenerationState('Apple', 'iPhone 12', 'freefire_india');
+const histBgmi = getDeviceGenerationState('Apple', 'iPhone 12', 'bgmi');
+const histCodm = getDeviceGenerationState('Apple', 'iPhone 12', 'codm');
+assert(
+  histFfIndia.recentSignatures.every((s) => s.startsWith('ff:')) &&
+  histBgmi.recentSignatures.every((s) => s.startsWith('bgmi:')) &&
+  histCodm.recentSignatures.every((s) => s.startsWith('codm:')),
+  'Generation history isolates signatures cleanly per game + brand + model'
+);
 
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;

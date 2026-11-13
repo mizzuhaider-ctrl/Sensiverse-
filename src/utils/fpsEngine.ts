@@ -29,6 +29,25 @@ export function getDeviceFpsCapability(
   const isFlagship = category === 'flagship';
   const isBudget = category === 'budget';
 
+  if (phone.verificationStatus === 'custom') {
+    const customOptions = [30, 45, 60, 90, 120];
+    if (refreshRate >= 144 || (phone.customTargetFps && phone.customTargetFps >= 144)) {
+      customOptions.push(144);
+    }
+    const preferred = phone.customTargetFps && customOptions.includes(phone.customTargetFps)
+      ? phone.customTargetFps
+      : 60;
+
+    return {
+      availableFps: customOptions,
+      recommendedDefaultFps: preferred,
+      hardwareMaxRefreshRate: refreshRate,
+      gameMaxFps: Math.max(...customOptions),
+      badgeLabel: `Custom (${preferred} FPS)`,
+      reason: `User-configured custom hardware profile (${phone.ramGb ?? 8}GB RAM, ${preferred} FPS target).`,
+    };
+  }
+
   // 1. Game engine official frame rate ceiling
   // - Free Fire & Free Fire India: Officially capped at 60 FPS in engine (with 90 FPS on select gaming flagships). 120 FPS is unsupported.
   // - BGMI / PUBG Mobile: 60 FPS standard; 90 FPS on modern 90Hz+ chips; 120 FPS in v3.2+ on 2025+ flagships & gaming phones.

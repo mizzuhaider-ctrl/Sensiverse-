@@ -35,6 +35,15 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
 
   // Helper to normalize initial brand
   const getInitialBrand = (phone: PhoneModel): string => {
+    if (phone.verificationStatus === 'custom') {
+      if (phone.customModeSource === 'custom_model') {
+        const allBrands = getBrandsForCategory('all');
+        if (allBrands.includes(phone.brand)) {
+          return phone.brand;
+        }
+      }
+      return 'Other / Custom';
+    }
     if (phone.brand === 'Xiaomi / Redmi') {
       return phone.name.startsWith('Redmi') ? 'Redmi' : 'Xiaomi';
     }
@@ -49,21 +58,45 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
 
   const [selectedBrand, setSelectedBrand] = useState<string>(getInitialBrand(selectedPhone));
   const [isCustomMode, setIsCustomMode] = useState<boolean>(selectedPhone.verificationStatus === 'custom');
+  const [customSource, setCustomSource] = useState<'custom_brand' | 'custom_model'>(
+    selectedPhone.customModeSource || 'custom_brand'
+  );
 
   // Custom device manual inputs
-  const [customName, setCustomName] = useState(
+  const [customBrand, setCustomBrand] = useState<string>(
+    selectedPhone.verificationStatus === 'custom' && selectedPhone.brand !== 'Other / Custom'
+      ? selectedPhone.brand
+      : 'Custom Brand'
+  );
+  const [customName, setCustomName] = useState<string>(
     selectedPhone.verificationStatus === 'custom' ? selectedPhone.name : 'Custom Gaming Device'
   );
+  const [customYear, setCustomYear] = useState<number>(selectedPhone.releaseYear ?? 2024);
+  const [customRam, setCustomRam] = useState<number>(selectedPhone.ramGb ?? 8);
+  const [customFps, setCustomFps] = useState<number>(selectedPhone.customTargetFps ?? 60);
   const [customHz, setCustomHz] = useState<number>(selectedPhone.refreshRate || 120);
   const [customTouchRate, setCustomTouchRate] = useState<number>(selectedPhone.touchSamplingRate || 240);
   const [customScreenSize, setCustomScreenSize] = useState<number>(selectedPhone.screenSize || 6.67);
   const [customDpi, setCustomDpi] = useState<number>(selectedPhone.recommendedDpi || 420);
 
-  // Sync brand when selectedPhone changes from external action (e.g. preset loaded from history)
+  // Sync brand and custom fields when selectedPhone changes from external action (e.g. preset loaded from history)
   useEffect(() => {
     const brandName = getInitialBrand(selectedPhone);
     setSelectedBrand(brandName);
-    setIsCustomMode(selectedPhone.verificationStatus === 'custom');
+    const customActive = selectedPhone.verificationStatus === 'custom';
+    setIsCustomMode(customActive);
+    if (customActive) {
+      setCustomSource(selectedPhone.customModeSource || (brandName !== 'Other / Custom' ? 'custom_model' : 'custom_brand'));
+      setCustomBrand(selectedPhone.brand && selectedPhone.brand !== 'Other / Custom' ? selectedPhone.brand : 'Custom Brand');
+      setCustomName(selectedPhone.name || 'Custom Gaming Device');
+      setCustomYear(selectedPhone.releaseYear ?? 2024);
+      setCustomRam(selectedPhone.ramGb ?? 8);
+      setCustomFps(selectedPhone.customTargetFps ?? 60);
+      setCustomHz(selectedPhone.refreshRate || 120);
+      setCustomTouchRate(selectedPhone.touchSamplingRate || 240);
+      setCustomScreenSize(selectedPhone.screenSize || 6.67);
+      setCustomDpi(selectedPhone.recommendedDpi || 420);
+    }
   }, [selectedPhone.id, selectedPhone.brand, selectedPhone.verificationStatus]);
 
   // Compute available brands based on current category
@@ -96,6 +129,10 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
     playCyberClick('click');
     setCategory(newCategory);
 
+    if (selectedBrand === 'Other / Custom') {
+      return;
+    }
+
     const newAvailableBrands = getBrandsForCategory(newCategory);
 
     // If currently selected brand is valid under the new category
@@ -122,6 +159,58 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
     }
   };
 
+  const buildCustomPhoneModel = (overrides?: {
+    source?: 'custom_brand' | 'custom_model';
+    brand?: string;
+    name?: string;
+    year?: number;
+    ram?: number;
+    fps?: number;
+    hz?: number;
+    touchRate?: number;
+    screenSize?: number;
+    dpi?: number;
+  }): PhoneModel => {
+    const source = overrides?.source ?? customSource;
+    const rawBrand = (overrides?.brand ?? customBrand).trim();
+    const rawName = (overrides?.name ?? customName).trim();
+    const year = overrides?.year ?? customYear;
+    const ram = overrides?.ram ?? customRam;
+    const fps = overrides?.fps ?? customFps;
+    const hz = overrides?.hz ?? customHz;
+    const touchRate = overrides?.touchRate ?? customTouchRate;
+    const screenSize = overrides?.screenSize ?? customScreenSize;
+    const dpi = overrides?.dpi ?? customDpi;
+
+    const effectiveBrand = rawBrand || (source === 'custom_model' && selectedBrand !== 'Other / Custom' ? selectedBrand : 'Custom Brand');
+    const effectiveName = rawName || `${effectiveBrand} Custom Model`;
+
+    const slug = `${effectiveBrand}-${effectiveName}-${year}-${ram}gb-${fps}fps`
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)/g, '');
+
+    return {
+      ...CUSTOM_DEVICE_TEMPLATE,
+      id: `custom-${source}-${slug || Date.now()}`,
+      brand: effectiveBrand,
+      name: effectiveName,
+      series: source === 'custom_model' ? `${effectiveBrand} Custom Model` : 'Custom Brand Device',
+      releaseYear: year,
+      ramGb: ram,
+      customTargetFps: fps,
+      customModeSource: source,
+      refreshRate: hz,
+      touchSamplingRate: touchRate,
+      screenSize,
+      recommendedDpi: dpi,
+      chipset: `${ram}GB RAM • ${fps} FPS Custom Profile`,
+      category: hz >= 144 || fps >= 120 ? 'gaming' : ram >= 8 && hz >= 120 ? 'flagship' : ram <= 4 ? 'budget' : 'midrange',
+      verificationStatus: 'custom',
+      specsSource: source === 'custom_brand' ? 'Other / Custom Brand Configuration' : 'Custom Model Configuration',
+    };
+  };
+
   // Handle Brand Change
   const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const brand = e.target.value;
@@ -130,14 +219,16 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
 
     if (brand === 'Other / Custom') {
       setIsCustomMode(true);
-      const customPhone: PhoneModel = {
-        ...CUSTOM_DEVICE_TEMPLATE,
-        name: customName || 'Custom Gaming Device',
-        refreshRate: customHz,
-        touchSamplingRate: customTouchRate,
-        screenSize: customScreenSize,
-        recommendedDpi: customDpi,
-      };
+      setCustomSource('custom_brand');
+      const nextBrand = customBrand && !availableBrands.includes(customBrand) ? customBrand : 'Custom Brand';
+      const nextName = customName && customName !== 'Custom Gaming Device' ? customName : 'Custom Pro 5G';
+      setCustomBrand(nextBrand);
+      setCustomName(nextName);
+      const customPhone = buildCustomPhoneModel({
+        source: 'custom_brand',
+        brand: nextBrand,
+        name: nextName,
+      });
       onSelectPhone(customPhone);
       return;
     }
@@ -155,7 +246,22 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
     playCyberClick('click');
 
     if (modelId === 'custom-mode-trigger') {
+      const source: 'custom_brand' | 'custom_model' = selectedBrand === 'Other / Custom' ? 'custom_brand' : 'custom_model';
+      const prefilledBrand = source === 'custom_model' ? selectedBrand : (customBrand || 'Custom Brand');
+      const prefilledName =
+        selectedPhone.verificationStatus === 'custom' && customName.trim()
+          ? customName
+          : `${prefilledBrand} Custom Model`;
       setIsCustomMode(true);
+      setCustomSource(source);
+      setCustomBrand(prefilledBrand);
+      setCustomName(prefilledName);
+      const customPhone = buildCustomPhoneModel({
+        source,
+        brand: prefilledBrand,
+        name: prefilledName,
+      });
+      onSelectPhone(customPhone);
       return;
     }
 
@@ -167,22 +273,10 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
   };
 
   // Apply custom device
-  const handleApplyCustomDevice = () => {
+  const handleApplyCustomDevice = (e?: React.FormEvent) => {
+    if (e) e.preventDefault();
     playCyberClick('calibrate');
-    const customPhone: PhoneModel = {
-      id: `custom-${Date.now()}`,
-      brand: 'Other / Custom',
-      name: customName.trim() || 'Custom Device (User Configured)',
-      series: 'Custom Device',
-      releaseYear: new Date().getFullYear(),
-      refreshRate: customHz,
-      touchSamplingRate: customTouchRate,
-      screenSize: customScreenSize,
-      recommendedDpi: customDpi,
-      category: customHz >= 144 ? 'gaming' : customHz >= 120 ? 'flagship' : 'budget',
-      verificationStatus: 'custom',
-      specsSource: 'Manual User Configuration',
-    };
+    const customPhone = buildCustomPhoneModel();
     onSelectPhone(customPhone);
   };
 
@@ -296,7 +390,7 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
                     {brand}
                   </option>
                 ))}
-                {category === 'all' && (
+                {(category === 'all' || selectedBrand === 'Other / Custom') && (
                   <option value="Other / Custom" className="bg-zinc-900 text-[#00FF66] font-bold">
                     Other / Custom
                   </option>
@@ -320,7 +414,7 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
             <div className="relative w-full min-w-0">
               <select
                 id="model-dropdown"
-                value={selectedPhone.id}
+                value={isCustomMode ? 'custom-mode-trigger' : selectedPhone.id}
                 onChange={handleModelChange}
                 aria-label="Select Phone Model"
                 className="w-full min-w-0 max-w-full min-h-[44px] appearance-none bg-black/95 text-white font-medium text-xs sm:text-sm border border-zinc-700 hover:border-[#00FF66]/60 focus:border-[#00FF66] rounded-lg sm:rounded-xl px-2 sm:px-3 py-2 sm:py-2.5 pr-6 sm:pr-8 focus:outline-none focus:ring-1 focus:ring-[#00FF66]/40 transition-all cursor-pointer shadow-inner truncate text-ellipsis overflow-hidden touch-manipulation"
@@ -767,6 +861,148 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
                         </optgroup>
                       ));
                   })()
+                ) : selectedBrand === 'Google Pixel' ? (
+                  (() => {
+                    const seriesOrder = [
+                      '2026 Pixel Series',
+                      '2025 Pixel Series',
+                      '2024 Pixel 9 & 8a Series',
+                      '2022–2023 Pixel 8 & 7 Series',
+                      '2021 Pixel 6 & 5a Series',
+                      '2019–2020 Pixel 5 & 4 Series',
+                      '2016–2018 Classic Pixel Series',
+                    ];
+                    const groups: Record<string, PhoneModel[]> = {
+                      '2026 Pixel Series': [],
+                      '2025 Pixel Series': [],
+                      '2024 Pixel 9 & 8a Series': [],
+                      '2022–2023 Pixel 8 & 7 Series': [],
+                      '2021 Pixel 6 & 5a Series': [],
+                      '2019–2020 Pixel 5 & 4 Series': [],
+                      '2016–2018 Classic Pixel Series': [],
+                    };
+                    availableModels.forEach((m) => {
+                      const yr = m.releaseYear || 2020;
+                      if (yr >= 2026) {
+                        groups['2026 Pixel Series'].push(m);
+                      } else if (yr === 2025) {
+                        groups['2025 Pixel Series'].push(m);
+                      } else if (yr === 2024) {
+                        groups['2024 Pixel 9 & 8a Series'].push(m);
+                      } else if (yr === 2023 || yr === 2022) {
+                        groups['2022–2023 Pixel 8 & 7 Series'].push(m);
+                      } else if (yr === 2021) {
+                        groups['2021 Pixel 6 & 5a Series'].push(m);
+                      } else if (yr === 2020 || yr === 2019) {
+                        groups['2019–2020 Pixel 5 & 4 Series'].push(m);
+                      } else {
+                        groups['2016–2018 Classic Pixel Series'].push(m);
+                      }
+                    });
+                    return seriesOrder
+                      .filter((s) => groups[s] && groups[s].length > 0)
+                      .map((seriesLabel) => (
+                        <optgroup key={seriesLabel} label={seriesLabel} className="bg-black text-[#00FF66] font-bold">
+                          {groups[seriesLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : selectedBrand === 'Nothing' ? (
+                  (() => {
+                    const seriesOrder = [
+                      '2026 Nothing Phone (4) Series',
+                      '2025 Nothing Phone (3) Series',
+                      '2024 Nothing Phone (2a) Series',
+                      '2022–2023 Nothing Flagship Series',
+                    ];
+                    const groups: Record<string, PhoneModel[]> = {
+                      '2026 Nothing Phone (4) Series': [],
+                      '2025 Nothing Phone (3) Series': [],
+                      '2024 Nothing Phone (2a) Series': [],
+                      '2022–2023 Nothing Flagship Series': [],
+                    };
+                    availableModels.forEach((m) => {
+                      const yr = m.releaseYear || 2022;
+                      if (yr >= 2026) {
+                        groups['2026 Nothing Phone (4) Series'].push(m);
+                      } else if (yr === 2025) {
+                        groups['2025 Nothing Phone (3) Series'].push(m);
+                      } else if (yr === 2024) {
+                        groups['2024 Nothing Phone (2a) Series'].push(m);
+                      } else {
+                        groups['2022–2023 Nothing Flagship Series'].push(m);
+                      }
+                    });
+                    return seriesOrder
+                      .filter((s) => groups[s] && groups[s].length > 0)
+                      .map((seriesLabel) => (
+                        <optgroup key={seriesLabel} label={seriesLabel} className="bg-black text-[#00FF66] font-bold">
+                          {groups[seriesLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
+                ) : selectedBrand === 'Infinix' ? (
+                  (() => {
+                    const yearOrder = [
+                      '2026 Infinix Series',
+                      '2025 Infinix Series',
+                      '2024 Infinix Series',
+                      '2023 Infinix Series',
+                      '2022 Infinix Series',
+                      '2021 Infinix Series',
+                      '2020 Infinix Series',
+                    ];
+                    const groups: Record<string, PhoneModel[]> = {
+                      '2026 Infinix Series': [],
+                      '2025 Infinix Series': [],
+                      '2024 Infinix Series': [],
+                      '2023 Infinix Series': [],
+                      '2022 Infinix Series': [],
+                      '2021 Infinix Series': [],
+                      '2020 Infinix Series': [],
+                    };
+                    availableModels.forEach((m) => {
+                      const yr = m.releaseYear || 2020;
+                      if (yr >= 2026) groups['2026 Infinix Series'].push(m);
+                      else if (yr === 2025) groups['2025 Infinix Series'].push(m);
+                      else if (yr === 2024) groups['2024 Infinix Series'].push(m);
+                      else if (yr === 2023) groups['2023 Infinix Series'].push(m);
+                      else if (yr === 2022) groups['2022 Infinix Series'].push(m);
+                      else if (yr === 2021) groups['2021 Infinix Series'].push(m);
+                      else groups['2020 Infinix Series'].push(m);
+                    });
+                    return yearOrder
+                      .filter((y) => groups[y] && groups[y].length > 0)
+                      .map((yearLabel) => (
+                        <optgroup key={yearLabel} label={yearLabel} className="bg-black text-[#00FF66] font-bold">
+                          {groups[yearLabel].map((model) => (
+                            <option
+                              key={model.id}
+                              value={model.id}
+                              className="bg-[#09120b] text-white py-1 font-normal"
+                            >
+                              {model.name}
+                            </option>
+                          ))}
+                        </optgroup>
+                      ));
+                  })()
                 ) : (
                   availableModels.map((model) => (
                     <option 
@@ -841,42 +1077,127 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
 
       {/* Manual Custom Mode Form if toggled */}
       {isCustomMode && (
-        <div className="mt-4 p-4 rounded-xl bg-black/90 border-2 border-[#00FF66]/40 space-y-4 animate-in fade-in duration-200">
-          <div className="flex items-center justify-between">
+        <form
+          onSubmit={handleApplyCustomDevice}
+          className="mt-4 p-4 rounded-xl bg-black/90 border-2 border-[#00FF66]/40 space-y-4 animate-in fade-in duration-200"
+        >
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Sliders className="w-4 h-4 text-[#00FF66]" />
               <h3 className="text-sm font-bold font-cyber text-white">
-                MANUAL HARDWARE SPECIFICATION
+                {customSource === 'custom_brand'
+                  ? 'OTHER / CUSTOM BRAND SPECIFICATION'
+                  : `CUSTOM MODEL SPECIFICATION (${selectedBrand})`}
               </h3>
             </div>
-            <span className="text-[10px] font-mono-code text-amber-300 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
-              User Custom Baseline
-            </span>
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-[10px] font-mono-code text-[#00FF66] px-2 py-0.5 rounded bg-[#00FF66]/10 border border-[#00FF66]/30">
+                {customYear < 2022
+                  ? 'Pre-2022: Higher General & Red Dot'
+                  : customYear === 2022
+                  ? '2022: Medium General & Red Dot'
+                  : 'Post-2022: Lower General & Red Dot'}
+              </span>
+              <span className="text-[10px] font-mono-code text-amber-300 px-2 py-0.5 rounded bg-amber-500/10 border border-amber-500/30">
+                {customSource === 'custom_brand' ? 'Custom Brand' : 'Custom Model'}
+              </span>
+            </div>
           </div>
 
           <p className="text-xs text-zinc-400">
-            Define your exact display parameters below for personalized sensitivity and fire button calculation.
+            Enter your phone brand, exact model name, launch year, RAM, and FPS below. SensiVerse automatically scales General, Red Dot (-4/-7/-9), scopes, and Fire Button to your hardware performance.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div>
-              <label className="text-[11px] font-mono-code text-zinc-400 block mb-1">
-                Device Model Name
+              <label htmlFor="custom-brand-input" className="text-[11px] font-mono-code text-zinc-400 block mb-1">
+                Phone Brand
               </label>
               <input
+                id="custom-brand-input"
                 type="text"
-                value={customName}
-                onChange={(e) => setCustomName(e.target.value)}
-                placeholder="e.g. My Phone Pro 5G"
+                value={customBrand}
+                onChange={(e) => setCustomBrand(e.target.value)}
+                placeholder="e.g. Infinix, Lava, Micromax"
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00FF66] focus:outline-none"
               />
             </div>
 
             <div>
-              <label className="text-[11px] font-mono-code text-zinc-400 block mb-1">
+              <label htmlFor="custom-model-input" className="text-[11px] font-mono-code text-zinc-400 block mb-1">
+                Exact Model Name
+              </label>
+              <input
+                id="custom-model-input"
+                type="text"
+                value={customName}
+                onChange={(e) => setCustomName(e.target.value)}
+                placeholder="e.g. Agni 3 5G, Note 40 Pro"
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00FF66] focus:outline-none"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="custom-year-select" className="text-[11px] font-mono-code text-zinc-400 block mb-1">
+                Launch Year
+              </label>
+              <select
+                id="custom-year-select"
+                value={customYear}
+                onChange={(e) => setCustomYear(Number(e.target.value))}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00FF66] focus:outline-none"
+              >
+                {[2026, 2025, 2024, 2023, 2022, 2021, 2020, 2019, 2018, 2017, 2016, 2015, 2014].map((yr) => (
+                  <option key={yr} value={yr}>
+                    {yr} {yr < 2022 ? '(Higher Sensi)' : yr === 2022 ? '(Medium Sensi)' : '(Lower Sensi)'}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="custom-ram-select" className="text-[11px] font-mono-code text-zinc-400 block mb-1">
+                RAM (Memory)
+              </label>
+              <select
+                id="custom-ram-select"
+                value={customRam}
+                onChange={(e) => setCustomRam(Number(e.target.value))}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00FF66] focus:outline-none"
+              >
+                {[2, 3, 4, 6, 8, 12, 16, 24].map((gb) => (
+                  <option key={gb} value={gb}>
+                    {gb} GB RAM
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="custom-fps-select" className="text-[11px] font-mono-code text-zinc-400 block mb-1">
+                Target Game FPS
+              </label>
+              <select
+                id="custom-fps-select"
+                value={customFps}
+                onChange={(e) => setCustomFps(Number(e.target.value))}
+                className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00FF66] focus:outline-none"
+              >
+                <option value={30}>30 FPS (Standard)</option>
+                <option value={45}>45 FPS (High)</option>
+                <option value={60}>60 FPS (Very High)</option>
+                <option value={90}>90 FPS (Ultra)</option>
+                <option value={120}>120 FPS (Extreme)</option>
+                <option value={144}>144 FPS (Esports)</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="custom-hz-select" className="text-[11px] font-mono-code text-zinc-400 block mb-1">
                 Display Refresh Rate
               </label>
               <select
+                id="custom-hz-select"
                 value={customHz}
                 onChange={(e) => setCustomHz(Number(e.target.value))}
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00FF66] focus:outline-none"
@@ -891,10 +1212,11 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
             </div>
 
             <div>
-              <label className="text-[11px] font-mono-code text-zinc-400 block mb-1">
+              <label htmlFor="custom-touch-select" className="text-[11px] font-mono-code text-zinc-400 block mb-1">
                 Touch Sampling Rate
               </label>
               <select
+                id="custom-touch-select"
                 value={customTouchRate}
                 onChange={(e) => setCustomTouchRate(Number(e.target.value))}
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00FF66] focus:outline-none"
@@ -909,26 +1231,27 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
             </div>
 
             <div>
-              <label className="text-[11px] font-mono-code text-zinc-400 block mb-1">
+              <label htmlFor="custom-screen-select" className="text-[11px] font-mono-code text-zinc-400 block mb-1">
                 Screen Size (Inches)
               </label>
               <select
+                id="custom-screen-select"
                 value={customScreenSize}
                 onChange={(e) => setCustomScreenSize(Number(e.target.value))}
                 className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-3 py-2 text-xs text-white focus:border-[#00FF66] focus:outline-none"
               >
-                <option value={5.5}>5.5" (Classic Screen)</option>
-                <option value={6.1}>6.1" (Compact Flagship)</option>
-                <option value={6.4}>6.4" (Mid-Size)</option>
-                <option value={6.67}>6.67" (Standard Esports)</option>
-                <option value={6.78}>6.78" (Large Gaming Screen)</option>
-                <option value={6.85}>6.85" (RedMagic Flagship)</option>
-                <option value={6.9}>6.9" (Ultra Screen)</option>
+                <option value={5.5}>5.5&quot; (Classic Screen)</option>
+                <option value={6.1}>6.1&quot; (Compact Flagship)</option>
+                <option value={6.4}>6.4&quot; (Mid-Size)</option>
+                <option value={6.67}>6.67&quot; (Standard Esports)</option>
+                <option value={6.78}>6.78&quot; (Large Gaming Screen)</option>
+                <option value={6.85}>6.85&quot; (RedMagic Flagship)</option>
+                <option value={6.9}>6.9&quot; (Ultra Screen)</option>
               </select>
             </div>
           </div>
 
-          <div className="flex items-center justify-between pt-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
             <button
               type="button"
               onClick={() => {
@@ -938,20 +1261,19 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
                 const firstApple = getModelsByBrand('Apple')[0];
                 if (firstApple) onSelectPhone(firstApple);
               }}
-              className="text-xs text-zinc-400 hover:text-white underline cursor-pointer"
+              className="text-xs text-zinc-400 hover:text-white underline cursor-pointer text-left"
             >
               ← Back to Verified Official Brand Dropdown
             </button>
 
             <button
-              type="button"
-              onClick={handleApplyCustomDevice}
+              type="submit"
               className="px-5 py-2.5 rounded-lg bg-[#00FF66] text-black font-bold text-xs font-cyber shadow-[0_0_12px_rgba(0,255,102,0.4)] hover:bg-[#00e65c] transition-all cursor-pointer"
             >
-              APPLY CUSTOM SPECS
+              APPLY &amp; GENERATE SENSI
             </button>
           </div>
-        </div>
+        </form>
       )}
 
       {/* Selected Device Telemetry & Specifications Card */}
@@ -1025,6 +1347,20 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
             <Maximize2 className="w-3.5 h-3.5 text-[#00FF66]" />
             <span className="font-mono-code text-zinc-300">{selectedPhone.screenSize}" Diagonal</span>
           </div>
+
+          {selectedPhone.ramGb && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
+              <span className="text-[#00FF66] font-bold font-mono-code">RAM:</span>
+              <span className="font-mono-code text-zinc-300">{selectedPhone.ramGb} GB</span>
+            </div>
+          )}
+
+          {selectedPhone.customTargetFps && (
+            <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
+              <span className="text-[#00FF66] font-bold font-mono-code">FPS:</span>
+              <span className="font-mono-code text-zinc-300">{selectedPhone.customTargetFps} FPS</span>
+            </div>
+          )}
 
           {selectedPhone.resolution && (
             <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">

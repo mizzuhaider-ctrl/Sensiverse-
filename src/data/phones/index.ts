@@ -13,6 +13,7 @@ import { INFINIX_PHONES } from './infinix';
 import { TECNO_PHONES } from './tecno';
 import { VIVO_PHONES } from './vivo';
 import { OPPO_PHONES } from './oppo';
+import { GOOGLE_PIXEL_PHONES } from './google';
 import { OTHER_BRANDS_PHONES } from './other_brands';
 
 // Generic fallback template for custom devices
@@ -35,6 +36,9 @@ export const CUSTOM_DEVICE_TEMPLATE: PhoneModel = {
   category: 'midrange',
   specsSource: 'User Manual Specification',
   verificationStatus: 'custom',
+  ramGb: 8,
+  customTargetFps: 60,
+  customModeSource: 'custom_brand',
 };
 
 // Base aggregated list from raw files
@@ -53,6 +57,7 @@ const RAW_PHONES: PhoneModel[] = [
   ...NOTHING_PHONES,
   ...INFINIX_PHONES,
   ...TECNO_PHONES,
+  ...GOOGLE_PIXEL_PHONES,
   ...OTHER_BRANDS_PHONES,
 ];
 
@@ -966,6 +971,220 @@ export function getModelsForBrand(brand: string, categoryFilter?: 'all' | 'gamin
     return filtered.sort((a, b) => {
       const idxA = ASUS_ROG_MODEL_ORDER.findIndex(o => o === a.name || o === a.name.replace(/^ASUS\s+/, '') || ('ASUS ' + o) === a.name);
       const idxB = ASUS_ROG_MODEL_ORDER.findIndex(o => o === b.name || o === b.name.replace(/^ASUS\s+/, '') || ('ASUS ' + o) === b.name);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      const yearA = a.releaseYear || 2020;
+      const yearB = b.releaseYear || 2020;
+      if (yearA !== yearB) return yearB - yearA;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  if (brand === 'Google Pixel') {
+    const GOOGLE_PIXEL_MODEL_ORDER = [
+      // 2026 Models
+      'Pixel 11 Pro',
+      'Pixel 11 Pro Fold',
+      'Pixel 11',
+      // 2025 Models
+      'Pixel 10 Pro XL',
+      'Pixel 10 Pro',
+      'Pixel 10 Pro Fold',
+      'Pixel 10',
+      // 2026 A-Series
+      'Pixel 10a',
+      // 2025 A-Series
+      'Pixel 9a',
+      // 2024 Models
+      'Pixel 9 Pro Fold',
+      'Pixel 9 Pro XL',
+      'Pixel 9 Pro',
+      'Pixel 9',
+      'Pixel 8a',
+      // 2023 Models
+      'Pixel 8 Pro',
+      'Pixel 8',
+      'Pixel 7a',
+      // 2022 Models
+      'Pixel 7 Pro',
+      'Pixel 7',
+      'Pixel 6a',
+      // 2021 Models
+      'Pixel 6 Pro',
+      'Pixel 6',
+      'Pixel 5a',
+      // 2020 Models
+      'Pixel 5',
+      'Pixel 4a 5G',
+      'Pixel 4a',
+      // 2019 Models
+      'Pixel 4 XL',
+      'Pixel 4',
+      'Pixel 3a XL',
+      'Pixel 3a',
+      // 2018 Models
+      'Pixel 3 XL',
+      'Pixel 3',
+      // 2017 Models
+      'Pixel 2 XL',
+      'Pixel 2',
+      // 2016 Models
+      'Pixel XL',
+      'Pixel',
+    ];
+
+    return filtered.sort((a, b) => {
+      const idxA = GOOGLE_PIXEL_MODEL_ORDER.findIndex(o => o === a.name || o === a.name.replace(/^Google Pixel\s+/, '') || ('Google Pixel ' + o) === a.name || ('Google ' + o) === a.name);
+      const idxB = GOOGLE_PIXEL_MODEL_ORDER.findIndex(o => o === b.name || o === b.name.replace(/^Google Pixel\s+/, '') || ('Google Pixel ' + o) === b.name || ('Google ' + o) === b.name);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      const yearA = a.releaseYear || 2020;
+      const yearB = b.releaseYear || 2020;
+      if (yearA !== yearB) return yearB - yearA;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  if (brand === 'Nothing') {
+    const NOTHING_MODEL_ORDER = [
+      // 2026 Models
+      'Nothing Phone (4b)',
+      'Nothing Phone (4a) Pro',
+      'Nothing Phone (4a)',
+      // 2025 Models
+      'Nothing Phone (3)',
+      'Nothing Phone (3a) Pro',
+      'Nothing Phone (3a)',
+      'Nothing Phone (3a) Lite',
+      // 2024 Models
+      'Nothing Phone (2a) Plus',
+      'Nothing Phone (2a)',
+      // 2023 Models
+      'Nothing Phone (2)',
+      // 2022 Models
+      'Nothing Phone (1)',
+    ];
+
+    return filtered.sort((a, b) => {
+      const idxA = NOTHING_MODEL_ORDER.findIndex(o => o === a.name || o === `Nothing ${a.name}`);
+      const idxB = NOTHING_MODEL_ORDER.findIndex(o => o === b.name || o === `Nothing ${b.name}`);
+      if (idxA !== -1 && idxB !== -1) return idxA - idxB;
+      if (idxA !== -1) return -1;
+      if (idxB !== -1) return 1;
+      const yearA = a.releaseYear || 2022;
+      const yearB = b.releaseYear || 2022;
+      if (yearA !== yearB) return yearB - yearA;
+      return a.name.localeCompare(b.name);
+    });
+  }
+
+  if (brand === 'Infinix') {
+    const INFINIX_MODEL_ORDER = [
+      // 2026
+      'Infinix GT 50 Pro',
+      'Infinix Hot 70 Pro',
+      'Infinix Note 60 Pro',
+      'Infinix Note 60',
+      'Infinix Note 60 Ultra',
+      'Infinix Note Edge',
+      'Infinix Smart 20',
+      'Infinix Smart 20 HD',
+      // 2025
+      'Infinix GT 30 Pro',
+      'Infinix GT 30',
+      'Infinix Note 50 Pro+',
+      'Infinix Note 50 Pro',
+      'Infinix Note 50',
+      'Infinix Note 50X 5G',
+      'Infinix Note 50s 5G+',
+      'Infinix Hot 60 Pro',
+      'Infinix Hot 60',
+      'Infinix Hot 60i',
+      'Infinix Hot 60i 5G',
+      'Infinix Hot 60 5G+',
+      'Infinix Smart 10',
+      'Infinix Smart 10 Plus',
+      'Infinix Smart 9 HD',
+      // 2024
+      'Infinix GT 20 Pro',
+      'Infinix Note 40 Pro+ 5G',
+      'Infinix Note 40 Pro 5G',
+      'Infinix Note 40 5G',
+      'Infinix Note 40 Pro 4G',
+      'Infinix Note 40',
+      'Infinix Note 40X 5G',
+      'Infinix Zero 40 5G',
+      'Infinix Zero 40 4G',
+      'Infinix Zero Flip',
+      'Infinix Hot 50 Pro+',
+      'Infinix Hot 50 Pro',
+      'Infinix Hot 50',
+      'Infinix Hot 50i',
+      // 2023
+      'Infinix GT 10 Pro',
+      'Infinix Zero 30 5G',
+      'Infinix Zero 30 4G',
+      'Infinix Note 30 VIP',
+      'Infinix Note 30 Pro',
+      'Infinix Note 30 5G',
+      'Infinix Note 30',
+      'Infinix Note 30i',
+      'Infinix Hot 40 Pro',
+      'Infinix Hot 40',
+      'Infinix Hot 40i',
+      'Infinix Hot 30 5G',
+      'Infinix Hot 30',
+      'Infinix Hot 30i',
+      'Infinix Smart 8',
+      'Infinix Smart 8 HD',
+      'Infinix Smart 7',
+      // 2022
+      'Infinix Zero Ultra',
+      'Infinix Zero 20',
+      'Infinix Zero 5G',
+      'Infinix Hot 20S',
+      'Infinix Hot 20 5G',
+      'Infinix Hot 20',
+      'Infinix Hot 20 Play',
+      'Infinix Hot 20i',
+      'Infinix Note 12 VIP',
+      'Infinix Note 12 Pro 5G',
+      'Infinix Note 12 Pro',
+      'Infinix Note 12 5G',
+      'Infinix Note 12',
+      'Infinix Note 12i',
+      'Infinix Hot 11 2022',
+      'Infinix Smart 6 Plus',
+      // 2021
+      'Infinix Zero X Pro',
+      'Infinix Zero X',
+      'Infinix Zero X Neo',
+      'Infinix Note 11 Pro',
+      'Infinix Note 11S',
+      'Infinix Note 11',
+      'Infinix Hot 11S',
+      'Infinix Hot 11',
+      'Infinix Hot 11 Play',
+      'Infinix Hot 10S',
+      'Infinix Hot 10 Play',
+      'Infinix Smart 6',
+      // 2020
+      'Infinix Zero 8',
+      'Infinix Zero 8i',
+      'Infinix Note 8',
+      'Infinix Note 8i',
+      'Infinix Hot 10',
+      'Infinix Hot 9',
+      'Infinix Hot 9 Play',
+      'Infinix S5 Pro',
+      'Infinix Smart 5',
+    ];
+
+    return filtered.sort((a, b) => {
+      const idxA = INFINIX_MODEL_ORDER.findIndex(o => o === a.name || o === `Infinix ${a.name}`);
+      const idxB = INFINIX_MODEL_ORDER.findIndex(o => o === b.name || o === `Infinix ${b.name}`);
       if (idxA !== -1 && idxB !== -1) return idxA - idxB;
       if (idxA !== -1) return -1;
       if (idxB !== -1) return 1;

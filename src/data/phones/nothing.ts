@@ -1,6 +1,152 @@
 import { PhoneModel } from '../../types';
 
+/**
+ * Nothing Phone & CMF Free Fire Sensitivity Database
+ * Nothing Phone (11 Models, 2022–2026) + CMF by Nothing (2 Models)
+ * Recommended starter settings — not official or device-tested values.
+ */
 export const NOTHING_PHONES: PhoneModel[] = [
+  {
+    "id": "nothing-phone4b",
+    "brand": "Nothing",
+    "name": "Nothing Phone (4b)",
+    "series": "Phone Series",
+    "releaseYear": 2026,
+    "releaseDate": "2026-08",
+    "releaseStatus": "announced_pending",
+    "screenSize": 6.7,
+    "resolution": "1080 x 2412",
+    "aspectRatio": "20:9",
+    "aspectRatioSource": "CALCULATED",
+    "refreshRate": 120,
+    "touchSamplingRate": 480,
+    "touchSamplingRateVerified": true,
+    "chipset": "Snapdragon 7+ Gen 4",
+    "gpu": "Adreno 820",
+    "nativePpi": 394,
+    "ppiSource": "MANUFACTURER_PUBLISHED",
+    "ppiDerivation": {
+      "method": "PYTHAGOREAN_PPI",
+      "formula": "sqrt(w^2 + h^2) / diagonal",
+      "inputs": {
+        "width": 1080,
+        "height": 2412,
+        "diagonal": 6.7
+      }
+    },
+    "recommendedDpi": 420,
+    "hasHardwareGyro": true,
+    "gyroscopeType": "PHYSICAL_HARDWARE",
+    "category": "midrange",
+    "specsSource": "Nothing Official",
+    "specsSourceUrl": "https://nothing.tech",
+    "verificationStatus": "verified",
+    "popular": true,
+    "customSensitivityPreset": {
+      "general": 140,
+      "redDot": 133,
+      "scope2x": 126,
+      "scope4x": 114,
+      "sniperScope": 72,
+      "freeLook": 132
+    },
+    "customFireButtonPreset": 46,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. AMOLED 120Hz display with hardware gyro."
+  },
+  {
+    "id": "nothing-phone4apro",
+    "brand": "Nothing",
+    "name": "Nothing Phone (4a) Pro",
+    "series": "Phone (a) Series",
+    "releaseYear": 2026,
+    "releaseDate": "2026-03",
+    "releaseStatus": "announced_pending",
+    "screenSize": 6.77,
+    "resolution": "1080 x 2392",
+    "aspectRatio": "20:9",
+    "aspectRatioSource": "CALCULATED",
+    "refreshRate": 120,
+    "touchSamplingRate": 480,
+    "touchSamplingRateVerified": true,
+    "chipset": "Snapdragon 7s Gen 4",
+    "gpu": "Adreno 810",
+    "nativePpi": 387,
+    "ppiSource": "MANUFACTURER_PUBLISHED",
+    "ppiDerivation": {
+      "method": "PYTHAGOREAN_PPI",
+      "formula": "sqrt(w^2 + h^2) / diagonal",
+      "inputs": {
+        "width": 1080,
+        "height": 2392,
+        "diagonal": 6.77
+      }
+    },
+    "recommendedDpi": 420,
+    "hasHardwareGyro": true,
+    "gyroscopeType": "PHYSICAL_HARDWARE",
+    "category": "midrange",
+    "specsSource": "Nothing Official",
+    "specsSourceUrl": "https://nothing.tech",
+    "verificationStatus": "verified",
+    "popular": true,
+    "customSensitivityPreset": {
+      "general": 145,
+      "redDot": 141,
+      "scope2x": 134,
+      "scope4x": 121,
+      "sniperScope": 78,
+      "freeLook": 139
+    },
+    "customFireButtonPreset": 49,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. AMOLED 120Hz display with hardware gyro."
+  },
+  {
+    "id": "nothing-phone4a",
+    "brand": "Nothing",
+    "name": "Nothing Phone (4a)",
+    "series": "Phone (a) Series",
+    "releaseYear": 2026,
+    "releaseDate": "2026-03",
+    "releaseStatus": "announced_pending",
+    "screenSize": 6.77,
+    "resolution": "1080 x 2392",
+    "aspectRatio": "20:9",
+    "aspectRatioSource": "CALCULATED",
+    "refreshRate": 120,
+    "touchSamplingRate": 480,
+    "touchSamplingRateVerified": true,
+    "chipset": "Snapdragon 7s Gen 4",
+    "gpu": "Adreno 810",
+    "nativePpi": 387,
+    "ppiSource": "MANUFACTURER_PUBLISHED",
+    "ppiDerivation": {
+      "method": "PYTHAGOREAN_PPI",
+      "formula": "sqrt(w^2 + h^2) / diagonal",
+      "inputs": {
+        "width": 1080,
+        "height": 2392,
+        "diagonal": 6.77
+      }
+    },
+    "recommendedDpi": 420,
+    "hasHardwareGyro": true,
+    "gyroscopeType": "PHYSICAL_HARDWARE",
+    "category": "midrange",
+    "specsSource": "Nothing Official",
+    "specsSourceUrl": "https://nothing.tech",
+    "verificationStatus": "verified",
+    "popular": true,
+    "customSensitivityPreset": {
+      "general": 138,
+      "redDot": 134,
+      "scope2x": 128,
+      "scope4x": 116,
+      "sniperScope": 70,
+      "freeLook": 130
+    },
+    "customFireButtonPreset": 45,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. AMOLED 120Hz display with hardware gyro."
+  },
   {
     "id": "nothing-phone3",
     "brand": "Nothing",
@@ -37,45 +183,156 @@ export const NOTHING_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://nothing.tech",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Flexible AMOLED 120Hz display with physical 6-axis MEMS gyro and 240Hz touch sampling rate."
+    "customSensitivityPreset": {
+      "general": 150,
+      "redDot": 143,
+      "scope2x": 142,
+      "scope4x": 129,
+      "sniperScope": 83,
+      "freeLook": 147
+    },
+    "customFireButtonPreset": 51,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. Flexible AMOLED 120Hz display with physical 6-axis MEMS gyro and 240Hz touch sampling rate."
   },
   {
-    "id": "nothing-phone2",
+    "id": "nothing-phone3apro",
     "brand": "Nothing",
-    "name": "Nothing Phone (2)",
-    "series": "Phone Series",
-    "releaseYear": 2023,
-    "releaseDate": "2023-07",
+    "name": "Nothing Phone (3a) Pro",
+    "series": "Phone (a) Series",
+    "releaseYear": 2025,
+    "releaseDate": "2025-03",
     "releaseStatus": "commercially_released",
-    "screenSize": 6.7,
-    "resolution": "1080 x 2412",
+    "screenSize": 6.77,
+    "resolution": "1080 x 2392",
     "aspectRatio": "20:9",
     "aspectRatioSource": "CALCULATED",
     "refreshRate": 120,
-    "touchSamplingRate": 240,
+    "touchSamplingRate": 480,
     "touchSamplingRateVerified": true,
-    "chipset": "Snapdragon 8+ Gen 1",
-    "gpu": "Adreno 730",
-    "nativePpi": 394,
+    "chipset": "Snapdragon 7s Gen 3",
+    "gpu": "Adreno 710",
+    "nativePpi": 387,
     "ppiSource": "MANUFACTURER_PUBLISHED",
     "ppiDerivation": {
       "method": "PYTHAGOREAN_PPI",
       "formula": "sqrt(w^2 + h^2) / diagonal",
       "inputs": {
         "width": 1080,
-        "height": 2412,
-        "diagonal": 6.7
+        "height": 2392,
+        "diagonal": 6.77
       }
     },
     "recommendedDpi": 420,
     "hasHardwareGyro": true,
     "gyroscopeType": "PHYSICAL_HARDWARE",
-    "category": "flagship",
+    "category": "midrange",
     "specsSource": "Nothing Official Tech Specs",
-    "specsSourceUrl": "https://nothing.tech/pages/phone-2",
+    "specsSourceUrl": "https://nothing.tech/pages/phone-3a-pro",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "LTPO OLED 120Hz panel with 240Hz touch sampling rate and hardware gyro."
+    "customSensitivityPreset": {
+      "general": 144,
+      "redDot": 137,
+      "scope2x": 131,
+      "scope4x": 118,
+      "sniperScope": 76,
+      "freeLook": 138
+    },
+    "customFireButtonPreset": 48,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. Flexible AMOLED 120Hz display with 480Hz touch sampling rate and physical MEMS gyro."
+  },
+  {
+    "id": "nothing-phone3a",
+    "brand": "Nothing",
+    "name": "Nothing Phone (3a)",
+    "series": "Phone (a) Series",
+    "releaseYear": 2025,
+    "releaseDate": "2025-03",
+    "releaseStatus": "commercially_released",
+    "screenSize": 6.77,
+    "resolution": "1080 x 2392",
+    "aspectRatio": "20:9",
+    "aspectRatioSource": "CALCULATED",
+    "refreshRate": 120,
+    "touchSamplingRate": 480,
+    "touchSamplingRateVerified": true,
+    "chipset": "Snapdragon 7s Gen 3",
+    "gpu": "Adreno 710",
+    "nativePpi": 387,
+    "ppiSource": "MANUFACTURER_PUBLISHED",
+    "ppiDerivation": {
+      "method": "PYTHAGOREAN_PPI",
+      "formula": "sqrt(w^2 + h^2) / diagonal",
+      "inputs": {
+        "width": 1080,
+        "height": 2392,
+        "diagonal": 6.77
+      }
+    },
+    "recommendedDpi": 420,
+    "hasHardwareGyro": true,
+    "gyroscopeType": "PHYSICAL_HARDWARE",
+    "category": "midrange",
+    "specsSource": "Nothing Official Tech Specs",
+    "specsSourceUrl": "https://nothing.tech/pages/phone-3a",
+    "verificationStatus": "verified",
+    "popular": true,
+    "customSensitivityPreset": {
+      "general": 139,
+      "redDot": 132,
+      "scope2x": 127,
+      "scope4x": 115,
+      "sniperScope": 71,
+      "freeLook": 133
+    },
+    "customFireButtonPreset": 46,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. Flexible AMOLED 120Hz display with 480Hz touch sampling rate and physical MEMS gyro."
+  },
+  {
+    "id": "nothing-phone3alite",
+    "brand": "Nothing",
+    "name": "Nothing Phone (3a) Lite",
+    "series": "Phone (a) Series",
+    "releaseYear": 2025,
+    "releaseDate": "2025-05",
+    "releaseStatus": "commercially_released",
+    "screenSize": 6.67,
+    "resolution": "1080 x 2400",
+    "aspectRatio": "20:9",
+    "aspectRatioSource": "CALCULATED",
+    "refreshRate": 120,
+    "touchSamplingRate": 240,
+    "touchSamplingRateVerified": true,
+    "chipset": "Snapdragon 6s Gen 3",
+    "gpu": "Adreno 619",
+    "nativePpi": 395,
+    "ppiSource": "MANUFACTURER_PUBLISHED",
+    "ppiDerivation": {
+      "method": "PYTHAGOREAN_PPI",
+      "formula": "sqrt(w^2 + h^2) / diagonal",
+      "inputs": {
+        "width": 1080,
+        "height": 2400,
+        "diagonal": 6.67
+      }
+    },
+    "recommendedDpi": 420,
+    "hasHardwareGyro": true,
+    "gyroscopeType": "PHYSICAL_HARDWARE",
+    "category": "budget",
+    "specsSource": "Nothing Official Tech Specs",
+    "specsSourceUrl": "https://nothing.tech",
+    "verificationStatus": "verified",
+    "customSensitivityPreset": {
+      "general": 134,
+      "redDot": 130,
+      "scope2x": 123,
+      "scope4x": 111,
+      "sniperScope": 67,
+      "freeLook": 127
+    },
+    "customFireButtonPreset": 44,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. AMOLED 120Hz display with 240Hz touch rate and hardware gyro."
   },
   {
     "id": "nothing-phone2aplus",
@@ -113,7 +370,16 @@ export const NOTHING_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://nothing.tech/pages/phone-2a-plus",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Flexible AMOLED 120Hz display with 240Hz touch sampling rate and physical MEMS gyro."
+    "customSensitivityPreset": {
+      "general": 148,
+      "redDot": 139,
+      "scope2x": 137,
+      "scope4x": 124,
+      "sniperScope": 80,
+      "freeLook": 143
+    },
+    "customFireButtonPreset": 50,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. Flexible AMOLED 120Hz display with 240Hz touch sampling rate and physical MEMS gyro."
   },
   {
     "id": "nothing-phone2a",
@@ -151,7 +417,63 @@ export const NOTHING_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://nothing.tech/pages/phone-2a",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "Flexible AMOLED 120Hz display with 240Hz touch rate and hardware gyro."
+    "customSensitivityPreset": {
+      "general": 142,
+      "redDot": 135,
+      "scope2x": 129,
+      "scope4x": 117,
+      "sniperScope": 73,
+      "freeLook": 136
+    },
+    "customFireButtonPreset": 47,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. Flexible AMOLED 120Hz display with 240Hz touch rate and hardware gyro."
+  },
+  {
+    "id": "nothing-phone2",
+    "brand": "Nothing",
+    "name": "Nothing Phone (2)",
+    "series": "Phone Series",
+    "releaseYear": 2023,
+    "releaseDate": "2023-07",
+    "releaseStatus": "commercially_released",
+    "screenSize": 6.7,
+    "resolution": "1080 x 2412",
+    "aspectRatio": "20:9",
+    "aspectRatioSource": "CALCULATED",
+    "refreshRate": 120,
+    "touchSamplingRate": 240,
+    "touchSamplingRateVerified": true,
+    "chipset": "Snapdragon 8+ Gen 1",
+    "gpu": "Adreno 730",
+    "nativePpi": 394,
+    "ppiSource": "MANUFACTURER_PUBLISHED",
+    "ppiDerivation": {
+      "method": "PYTHAGOREAN_PPI",
+      "formula": "sqrt(w^2 + h^2) / diagonal",
+      "inputs": {
+        "width": 1080,
+        "height": 2412,
+        "diagonal": 6.7
+      }
+    },
+    "recommendedDpi": 420,
+    "hasHardwareGyro": true,
+    "gyroscopeType": "PHYSICAL_HARDWARE",
+    "category": "flagship",
+    "specsSource": "Nothing Official Tech Specs",
+    "specsSourceUrl": "https://nothing.tech/pages/phone-2",
+    "verificationStatus": "verified",
+    "popular": true,
+    "customSensitivityPreset": {
+      "general": 154,
+      "redDot": 145,
+      "scope2x": 146,
+      "scope4x": 133,
+      "sniperScope": 88,
+      "freeLook": 151
+    },
+    "customFireButtonPreset": 53,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. LTPO OLED 120Hz panel with 240Hz touch sampling rate and hardware gyro."
   },
   {
     "id": "nothing-phone1",
@@ -189,7 +511,16 @@ export const NOTHING_PHONES: PhoneModel[] = [
     "specsSourceUrl": "https://nothing.tech/pages/phone-1",
     "verificationStatus": "verified",
     "popular": true,
-    "auditNotes": "OLED 120Hz with dedicated MEMS gyro and 240Hz touch response."
+    "customSensitivityPreset": {
+      "general": 146,
+      "redDot": 137,
+      "scope2x": 135,
+      "scope4x": 122,
+      "sniperScope": 79,
+      "freeLook": 142
+    },
+    "customFireButtonPreset": 49,
+    "auditNotes": "Recommended starter settings — not official or device-tested values. OLED 120Hz with dedicated MEMS gyro and 240Hz touch response."
   },
   {
     "id": "cmf-phone2",

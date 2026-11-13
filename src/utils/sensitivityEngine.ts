@@ -39,6 +39,16 @@ export interface CalibrationVariationInfo {
   tagline: string;
 }
 
+export interface CalibrationStepVector {
+  gen: number;
+  redDot: number;
+  s2x: number;
+  s4x: number;
+  sniper: number;
+  freeLook: number;
+  fire: number;
+}
+
 export const CALIBRATION_VARIATIONS: CalibrationVariationInfo[] = [
   {
     name: 'Unified Brazil Meta Baseline',
@@ -46,17 +56,428 @@ export const CALIBRATION_VARIATIONS: CalibrationVariationInfo[] = [
   },
   {
     name: 'Brazilian High-Drag Flick Profile',
-    tagline: 'Elevated close-range flick responsiveness (+3 General/Red Dot, -1% Fire Button runway)',
+    tagline: 'Elevated close-range flick responsiveness (+2 to +3 General/Red Dot, -1% Fire Button runway)',
   },
   {
     name: 'Anchored Precision Capa Profile',
-    tagline: 'Stabilized headshot tracking (-3 General/Red Dot, +1% Fire Button contact)',
+    tagline: 'Stabilized headshot tracking (-2 to -3 General/Red Dot, +1% Fire Button contact)',
   },
   {
     name: 'Cadence Dynamic Ramp Profile',
-    tagline: 'Snappier initial drag lift (+2 General/Red Dot) with stabilized optical tracking',
+    tagline: 'Snappier initial drag lift (+1 to +2 General/Red Dot) with stabilized optical tracking',
+  },
+  {
+    name: 'Close-Range Swipe Boost',
+    tagline: 'Tuned for fast CQC drag entry (+3 General, +2 Free Look, -1% Fire Button)',
+  },
+  {
+    name: 'Mid-Range Lock Balance',
+    tagline: 'Controlled 2x/4x reticle stability (-1 General, -2 Scopes, +1% Fire Button)',
+  },
+  {
+    name: 'Micro-Flick Control Tuning',
+    tagline: 'Crisper one-tap deceleration (-2 General, +2 Sniper, compact swipe arc)',
+  },
+  {
+    name: 'Sustained Spray Anchor',
+    tagline: 'Balanced AR/SMG recoil control (-3 General, -2 4x Scope, +2% Fire Button)',
+  },
+  {
+    name: 'Rusher Agility Tuning',
+    tagline: 'Responsive 180° turn clearance (+4 General, +3 2x Scope, -2% Fire Button)',
+  },
+  {
+    name: 'Sniper Quick-Scope Balance',
+    tagline: 'Micro-damped optical tracking (-1 General, +3 Sniper, +1 Free Look)',
+  },
+  {
+    name: 'Desert Eagle Tap Precision',
+    tagline: 'Balanced vertical lift (+1 General, -1 2x/4x Scopes, neutral Fire Button)',
+  },
+  {
+    name: 'Tournament Stability Clamp',
+    tagline: 'Low-overshoot ranked preset (-4 General, -3 2x/4x Scopes, +1% Fire Button)',
+  },
+  {
+    name: 'Hybrid Drag-to-Spray Sync',
+    tagline: 'Smooth drag transition (+2 General, +1 2x Scope, -1% Fire Button)',
+  },
+  {
+    name: 'Anti-Chest-Lock Lift',
+    tagline: 'Extra upward torso escape (+3 General, +2 2x Scope, -2% Fire Button)',
+  },
+  {
+    name: 'Optical Tracking Refiner',
+    tagline: 'Steady scoped headshot lock (-2 General, +3 4x Scope, +2% Fire Button)',
+  },
+  {
+    name: 'Fine-Tuned Balanced Edge',
+    tagline: 'Subtle all-axis calibration (+1 General, +2 Free Look, -1% Fire Button)',
   },
 ];
+
+// 16 deterministic, bounded step vectors (index 0 is baseline zero offset)
+export const CALIBRATION_STEP_VECTORS: CalibrationStepVector[] = [
+  { gen: 0, redDot: 0, s2x: 0, s4x: 0, sniper: 0, freeLook: 0, fire: 0 },
+  { gen: 3, redDot: 3, s2x: 2, s4x: 1, sniper: 1, freeLook: 2, fire: -1 },
+  { gen: -3, redDot: -3, s2x: -2, s4x: -2, sniper: -2, freeLook: -2, fire: 1 },
+  { gen: 2, redDot: 2, s2x: -1, s4x: -1, sniper: 1, freeLook: 1, fire: 0 },
+  { gen: 3, redDot: 2, s2x: 1, s4x: -1, sniper: 0, freeLook: 2, fire: -1 },
+  { gen: -1, redDot: -1, s2x: -2, s4x: -2, sniper: 1, freeLook: -1, fire: 1 },
+  { gen: -2, redDot: -2, s2x: 1, s4x: 0, sniper: 2, freeLook: -2, fire: 0 },
+  { gen: -3, redDot: -2, s2x: -1, s4x: -2, sniper: -1, freeLook: -3, fire: 2 },
+  { gen: 4, redDot: 3, s2x: 3, s4x: 2, sniper: 0, freeLook: 3, fire: -2 },
+  { gen: -1, redDot: -2, s2x: 0, s4x: 1, sniper: 3, freeLook: 1, fire: 1 },
+  { gen: 1, redDot: 1, s2x: -1, s4x: -1, sniper: 2, freeLook: 0, fire: 0 },
+  { gen: -4, redDot: -3, s2x: -3, s4x: -3, sniper: -2, freeLook: -2, fire: 1 },
+  { gen: 2, redDot: 1, s2x: 1, s4x: 2, sniper: -1, freeLook: 2, fire: -1 },
+  { gen: 3, redDot: 3, s2x: 2, s4x: 0, sniper: -1, freeLook: 1, fire: -2 },
+  { gen: -2, redDot: -1, s2x: 2, s4x: 3, sniper: 1, freeLook: -1, fire: 2 },
+  { gen: 1, redDot: 2, s2x: 0, s4x: 1, sniper: 0, freeLook: 2, fire: -1 },
+];
+
+export function getCalibrationStepVector(variationIndex: number): CalibrationStepVector {
+  if (variationIndex <= 0) {
+    return CALIBRATION_STEP_VECTORS[0];
+  }
+  if (variationIndex < CALIBRATION_STEP_VECTORS.length) {
+    return CALIBRATION_STEP_VECTORS[variationIndex];
+  }
+  // Beyond step 15, produce controlled deterministic micro-nudges strictly within [-4, +4] bounds
+  const base = CALIBRATION_STEP_VECTORS[1 + ((variationIndex - 1) % (CALIBRATION_STEP_VECTORS.length - 1))];
+  const cycle = Math.floor((variationIndex - 1) / (CALIBRATION_STEP_VECTORS.length - 1));
+  const nudgeA = ((cycle % 5) - 2); // -2..+2
+  const nudgeB = (((cycle * 3) % 5) - 2); // -2..+2
+  const nudgeC = (((cycle * 7) % 3) - 1); // -1..+1
+  const fireShift = (((base.fire + nudgeC + 2) % 5) + 5) % 5 - 2;
+  return {
+    gen: Math.max(-4, Math.min(4, base.gen + nudgeC)),
+    redDot: Math.max(-4, Math.min(4, base.redDot + nudgeC)),
+    s2x: Math.max(-3, Math.min(3, base.s2x + nudgeA)),
+    s4x: Math.max(-3, Math.min(3, base.s4x + nudgeB)),
+    sniper: Math.max(-2, Math.min(3, base.sniper + nudgeC)),
+    freeLook: Math.max(-3, Math.min(3, base.freeLook - nudgeA)),
+    fire: Math.max(-2, Math.min(2, fireShift)),
+  };
+}
+
+export function getCalibrationSignature(sensitivity: SensitivityOutput, fireButtonSize: number): string {
+  const safeFire = clampFireButtonSize(fireButtonSize);
+  if (
+    sensitivity.gameId === 'freefire_india' ||
+    sensitivity.gameId === 'freefire_max' ||
+    sensitivity.gameId === 'freefire'
+  ) {
+    const d = sensitivity.data;
+    return `ff:${d.general}-${d.redDot}-${d.scope2x}-${d.scope4x}-${d.sniperScope}-${d.freeLook}-${safeFire}`;
+  }
+  if (sensitivity.gameId === 'bgmi' || sensitivity.gameId === 'pubg') {
+    const d = sensitivity.data;
+    return `bgmi:${d.camera.thirdPersonNoScope}-${d.camera.redDot}-${d.ads.redDot}-${d.ads.scope3x}-${d.gyroscope.redDot}-${safeFire}`;
+  }
+  const d = sensitivity.data;
+  return `codm:${d.camera.standard}-${d.camera.ads}-${d.firingAds.ads}-${d.gyroscope.standard}-${safeFire}`;
+}
+
+function fnv1aMixedHash(input: string): number {
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < input.length; i++) {
+    hash ^= input.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x85ebca6b);
+  hash ^= hash >>> 13;
+  hash = Math.imul(hash, 0xc2b2ae35);
+  hash ^= hash >>> 16;
+  return hash >>> 0;
+}
+
+/**
+ * Deterministic sensitivity engine for Other / Custom Brand and Custom Model devices.
+ * Enforces:
+ * 1. Launch-year rule: <2022 = higher General & Red Dot, 2022 = medium, >2022 = lower.
+ * 2. Red Dot is strictly 4, 7, or 9 points below General.
+ * 3. Performance personalization across 2x, 4x, Sniper, Free Look, and Fire Button using RAM, FPS, Hz, touch rate, screen size, and deterministic brand/model identity.
+ */
+export function calculateCustomDeviceSensitivity(
+  gameId: GameId,
+  phone: PhoneModel,
+  grip: GripStyle,
+  playstyle: Playstyle,
+  playerSelectedFps = 60,
+  customTouchDpiMultiplier = 1.0,
+  weaponCategory: WeaponCategory = 'smg',
+  variationIndex = 0
+): CalibrationResult {
+  const year = phone.releaseYear ?? 2024;
+  const ramGb = phone.ramGb ?? 8;
+  const effectiveFps = playerSelectedFps || phone.customTargetFps || 60;
+  const hz = phone.refreshRate ?? 120;
+  const touchRate = phone.touchSamplingRate ?? (hz >= 120 ? 240 : 180);
+  const screenSize = phone.screenSize ?? 6.67;
+
+  const brandKey = (phone.brand || 'Custom Brand').trim().toLowerCase();
+  const modelKey = (phone.name || 'Custom Model').trim().toLowerCase();
+  const identityHash = fnv1aMixedHash(`${brandKey}::${modelKey}`);
+
+  // Independent deterministic nibbles per axis so different brands/models never collide identically
+  const hGen = ((identityHash & 0xff) % 5) - 2; // -2..+2
+  const hRedDotIdx = (identityHash >>> 8) % 3;
+  const h2x = (((identityHash >>> 12) & 0xff) % 7) - 3; // -3..+3
+  const h4x = (((identityHash >>> 16) & 0xff) % 7) - 3; // -3..+3
+  const hSniper = (((identityHash >>> 20) & 0xff) % 7) - 3; // -3..+3
+  const hFreeLook = (((identityHash >>> 24) & 0xff) % 9) - 4; // -4..+4
+  const hFire = (((identityHash >>> 28) & 0x0f) % 3) - 1; // -1..+1
+
+  // Monotonic RAM & FPS performance ranks
+  const ramRank =
+    ramGb <= 2 ? 0 :
+    ramGb <= 3 ? 1 :
+    ramGb <= 4 ? 2 :
+    ramGb <= 6 ? 3 :
+    ramGb <= 8 ? 4 :
+    ramGb <= 12 ? 5 :
+    ramGb <= 16 ? 6 : 7;
+
+  const fpsRank =
+    effectiveFps <= 30 ? 0 :
+    effectiveFps <= 45 ? 1 :
+    effectiveFps <= 60 ? 2 :
+    effectiveFps <= 90 ? 3 :
+    effectiveFps <= 120 ? 4 : 5;
+
+  // Launch-Year Rule bands (strictly non-overlapping across tiers)
+  let tierBaseGen: number;
+  let tierMinGen: number;
+  let tierMaxGen: number;
+  let yearTierLabel: string;
+
+  if (year < 2022) {
+    const ageBonus = Math.min(6, Math.max(0, 2021 - year));
+    tierBaseGen = 178 + ageBonus;
+    tierMinGen = 172;
+    tierMaxGen = 195;
+    yearTierLabel = 'Pre-2022 (Higher General & Red Dot)';
+  } else if (year === 2022) {
+    tierBaseGen = 156;
+    tierMinGen = 152;
+    tierMaxGen = 160;
+    yearTierLabel = '2022 (Medium General & Red Dot)';
+  } else {
+    const recencyPenalty = Math.min(4, Math.max(0, year - 2023));
+    tierBaseGen = 138 - recencyPenalty;
+    tierMinGen = 128;
+    tierMaxGen = 141;
+    yearTierLabel = 'Post-2022 (Lower General & Red Dot)';
+  }
+
+  // Performance + playstyle + variation adjustments for General
+  const genRamOffset = Math.round((3 - ramRank) * 0.8);
+  const genFpsOffset = Math.round((2 - fpsRank) * 0.8);
+  const screenOffset = screenSize < 6.2 ? 2 : screenSize < 6.5 ? 1 : screenSize > 6.75 ? -2 : 0;
+  const hzOffset = hz >= 165 ? -2 : hz >= 144 ? -1 : hz >= 120 ? 0 : hz >= 90 ? 1 : 2;
+  const touchOffset = touchRate >= 720 ? -2 : touchRate >= 480 ? -1 : touchRate >= 240 ? 0 : 1;
+  const playstyleGen =
+    playstyle === 'onetap' || playstyle === 'rusher' ? 2 :
+    playstyle === 'drag' ? 1 :
+    playstyle === 'recoil' || playstyle === 'sniper' ? -2 : 0;
+  const weaponGen =
+    weaponCategory === 'shotgun' || weaponCategory === 'pistol' ? 1 :
+    weaponCategory === 'ar' ? -1 : 0;
+  const gripGen = grip === '2finger' ? 1 : grip === '4finger' ? -1 : 0;
+  const stepVec = getCalibrationStepVector(variationIndex);
+  const varGen =
+    variationIndex === 0 ? 0 :
+    variationIndex === 1 ? 2 :
+    variationIndex === 2 ? -2 :
+    variationIndex === 3 ? 1 :
+    stepVec.gen;
+  const ffIndiaBias = gameId === 'freefire_india' ? 1 : 0;
+
+  const dpiDelta = Math.round((customTouchDpiMultiplier - 1.0) * 15);
+
+  const general = clamp(
+    tierBaseGen +
+      genRamOffset +
+      genFpsOffset +
+      screenOffset +
+      hzOffset +
+      touchOffset +
+      playstyleGen +
+      weaponGen +
+      gripGen +
+      varGen +
+      ffIndiaBias +
+      dpiDelta +
+      hGen,
+    tierMinGen,
+    tierMaxGen
+  );
+
+  // Red Dot Rule: strictly 4, 7, or 9 points below General
+  const RED_DOT_DROPS = [4, 7, 9] as const;
+  const varDropShift = variationIndex <= 0 ? 0 : (variationIndex % 3);
+  const dropIndex =
+    (hRedDotIdx +
+      ramRank +
+      fpsRank +
+      (playstyle === 'recoil' ? 2 : playstyle === 'drag' ? 1 : 0) +
+      varDropShift) %
+    3;
+  const redDotDrop = RED_DOT_DROPS[dropIndex];
+  const redDot = clamp(general - redDotDrop, 0, 200);
+
+  // Performance-personalized scopes (2x, 4x, Sniper, Free Look)
+  const var2x =
+    variationIndex === 0 ? 0 :
+    variationIndex === 1 ? 2 :
+    variationIndex === 2 ? -2 :
+    variationIndex === 3 ? -1 :
+    stepVec.s2x;
+  const var4x =
+    variationIndex === 0 ? 0 :
+    variationIndex === 1 ? 1 :
+    variationIndex === 2 ? -2 :
+    variationIndex === 3 ? 2 :
+    stepVec.s4x;
+  const varSniper =
+    variationIndex === 0 ? 0 :
+    variationIndex === 1 ? 1 :
+    variationIndex === 2 ? -2 :
+    variationIndex === 3 ? 2 :
+    stepVec.sniper;
+  const varFreeLook =
+    variationIndex === 0 ? 0 :
+    variationIndex === 1 ? 3 :
+    variationIndex === 2 ? -2 :
+    variationIndex === 3 ? 1 :
+    stepVec.freeLook;
+
+  const scope2x = clamp(
+    Math.round(general * 0.89) +
+      (fpsRank - 2) * 3 +
+      (ramRank - 3) * 2 +
+      (touchRate >= 360 ? -1 : 1) +
+      (playstyle === 'drag' ? 3 : playstyle === 'recoil' ? -3 : 0) +
+      (weaponCategory === 'smg' ? 2 : weaponCategory === 'ar' ? -3 : 0) +
+      var2x +
+      h2x,
+    70,
+    195
+  );
+
+  const scope4x = clamp(
+    Math.round(scope2x * 0.88) +
+      (fpsRank - 2) * 2 +
+      (ramRank - 3) * 2 +
+      (hz >= 120 ? -1 : 1) +
+      (playstyle === 'recoil' ? -4 : playstyle === 'drag' ? 2 : 0) +
+      (weaponCategory === 'ar' ? -3 : weaponCategory === 'marksman' ? 2 : 0) +
+      var4x +
+      h4x,
+    60,
+    185
+  );
+
+  const sniperScope = clamp(
+    72 +
+      (year < 2022 ? 8 : year === 2022 ? 3 : -2) +
+      (fpsRank - 2) * 2 +
+      (ramRank - 3) +
+      (playstyle === 'sniper' ? 8 : playstyle === 'onetap' ? -3 : 0) +
+      (weaponCategory === 'sniper' ? -4 : 0) +
+      varSniper +
+      hSniper,
+    40,
+    130
+  );
+
+  const freeLook = clamp(
+    126 +
+      (year < 2022 ? 12 : year === 2022 ? 5 : 0) +
+      (fpsRank - 2) * 3 +
+      (ramRank - 3) * 2 +
+      (hz >= 120 ? 3 : 0) +
+      (playstyle === 'rusher' ? 6 : playstyle === 'recoil' ? -3 : 0) +
+      varFreeLook +
+      hFreeLook,
+    75,
+    195
+  );
+
+  // Performance-personalized Fire Button (40-55%)
+  const fireButton = generateFireButtonConfig(
+    gameId,
+    phone,
+    grip,
+    undefined,
+    weaponCategory,
+    variationIndex,
+    playstyle
+  );
+  const customBtnAdjust =
+    (ramRank <= 1 ? 1 : ramRank >= 5 ? -1 : 0) +
+    (fpsRank <= 1 ? 1 : fpsRank >= 4 ? -1 : 0) +
+    hFire;
+  fireButton.sizePercent = Math.min(
+    55,
+    Math.max(40, clampFireButtonSize(fireButton.sizePercent + customBtnAdjust))
+  );
+
+  // Build game-specific SensitivityOutput
+  const combinedFactor =
+    (screenSize < 6.2 ? 1.04 : screenSize > 6.75 ? 0.97 : 1.0) *
+    (hz >= 144 ? 0.96 : hz >= 120 ? 0.98 : 1.02) *
+    (effectiveFps >= 120 ? 0.96 : effectiveFps >= 90 ? 0.98 : 1.0) *
+    customTouchDpiMultiplier;
+
+  let sensitivity: SensitivityOutput;
+  if (gameId === 'freefire_india' || gameId === 'freefire_max' || gameId === 'freefire') {
+    sensitivity = {
+      gameId,
+      data: {
+        general,
+        redDot,
+        scope2x,
+        scope4x,
+        sniperScope,
+        freeLook,
+      },
+    };
+  } else if (gameId === 'bgmi' || gameId === 'pubg') {
+    sensitivity = {
+      gameId,
+      data: generateBgmiPubgSensi(combinedFactor, grip, phone, effectiveFps, variationIndex),
+    };
+  } else {
+    sensitivity = {
+      gameId: 'codm',
+      data: generateCodmSensi(combinedFactor, grip, phone, effectiveFps, variationIndex),
+    };
+  }
+
+  const telemetry = generateAimTelemetry(
+    phone,
+    gameId,
+    grip,
+    playstyle,
+    effectiveFps,
+    combinedFactor,
+    weaponCategory
+  );
+
+  telemetry.reasons.unshift(
+    `Custom Hardware Profile (${phone.brand} ${phone.name}, ${year}): ${yearTierLabel} • Red Dot calibrated -${redDotDrop} below General • Performance tuned for ${ramGb}GB RAM & ${effectiveFps} FPS.`
+  );
+
+  return {
+    sensitivity,
+    fireButton,
+    telemetry,
+    weaponCategory,
+  };
+}
 
 /**
  * Main sensitivity calibration engine.
@@ -73,6 +494,18 @@ export function calculateSensitivity(
   weaponCategory: WeaponCategory = 'smg',
   variationIndex = 0
 ): CalibrationResult {
+  if (phone.verificationStatus === 'custom') {
+    return calculateCustomDeviceSensitivity(
+      gameId,
+      phone,
+      grip,
+      playstyle,
+      playerSelectedFps,
+      customTouchDpiMultiplier,
+      weaponCategory,
+      variationIndex
+    );
+  }
   // 1. Screen size factor:
   // On screens < 6.3" (compact), physical thumb runway is restricted by screen bezels (~36-40mm).
   // A slight sensitivity compensation (+3% to +5%) prevents running out of screen width during 180 turns.
@@ -143,12 +576,12 @@ export function calculateSensitivity(
   } else if (gameId === 'bgmi' || gameId === 'pubg') {
     sensitivity = {
       gameId,
-      data: generateBgmiPubgSensi(combinedFactor, grip, phone, playerSelectedFps),
+      data: generateBgmiPubgSensi(combinedFactor, grip, phone, playerSelectedFps, variationIndex),
     };
   } else {
     sensitivity = {
       gameId: 'codm',
-      data: generateCodmSensi(combinedFactor, grip, phone, playerSelectedFps),
+      data: generateCodmSensi(combinedFactor, grip, phone, playerSelectedFps, variationIndex),
     };
   }
 
@@ -352,33 +785,13 @@ function generateFreeFireIndiaSensi(
   const wVec = WEAPON_VECTORS[weaponCategory] || WEAPON_VECTORS.smg;
 
   // Meaningful gradual calibration variations for Try New Sensi:
-  let varGen = 0;
-  let varRedDot = 0;
-  let var2x = 0;
-  let var4x = 0;
-  let varSniper = 0;
-  let varFreeLook = 0;
-
-  if (variationIndex === 1) {
-    varGen = 3;
-    varRedDot = 3;
-    var2x = 2;
-    var4x = 1;
-    varFreeLook = 2;
-  } else if (variationIndex === 2) {
-    varGen = -3;
-    varRedDot = -3;
-    var2x = -2;
-    var4x = -2;
-    varSniper = -2;
-    varFreeLook = -2;
-  } else if (variationIndex === 3) {
-    varGen = 2;
-    varRedDot = 2;
-    var2x = -1;
-    var4x = -1;
-    varSniper = 1;
-  }
+  const stepVec = getCalibrationStepVector(variationIndex);
+  const varGen = stepVec.gen;
+  const varRedDot = stepVec.redDot;
+  const var2x = stepVec.s2x;
+  const var4x = stepVec.s4x;
+  const varSniper = stepVec.sniper;
+  const varFreeLook = stepVec.freeLook;
 
   // Device Delta = 0 strictly maintained
   const deviceDelta = DEVICE_DELTA;
@@ -443,33 +856,13 @@ function generateFreeFireSensi(
   const wVec = WEAPON_VECTORS[weaponCategory] || WEAPON_VECTORS.smg;
 
   // Gradual calibration variations for Try New Sensi:
-  let varGen = 0;
-  let varRedDot = 0;
-  let var2x = 0;
-  let var4x = 0;
-  let varSniper = 0;
-  let varFreeLook = 0;
-
-  if (variationIndex === 1) {
-    varGen = 3;
-    varRedDot = 3;
-    var2x = 2;
-    var4x = 1;
-    varFreeLook = 2;
-  } else if (variationIndex === 2) {
-    varGen = -3;
-    varRedDot = -3;
-    var2x = -2;
-    var4x = -2;
-    varSniper = -2;
-    varFreeLook = -2;
-  } else if (variationIndex === 3) {
-    varGen = 2;
-    varRedDot = 2;
-    var2x = -1;
-    var4x = -1;
-    varSniper = 1;
-  }
+  const stepVec = getCalibrationStepVector(variationIndex);
+  const varGen = stepVec.gen;
+  const varRedDot = stepVec.redDot;
+  const var2x = stepVec.s2x;
+  const var4x = stepVec.s4x;
+  const varSniper = stepVec.sniper;
+  const varFreeLook = stepVec.freeLook;
 
   // Device Delta = 0 strictly maintained
   const deviceDelta = DEVICE_DELTA;
@@ -530,11 +923,11 @@ function generateBgmiPubgSensi(
   factor: number, 
   grip: GripStyle, 
   phone: PhoneModel,
-  fps: number
+  fps: number,
+  variationIndex = 0
 ): BgmiPubgSensi {
   const isFullGyro = grip === 'gyro_full';
   const isHybridGyro = grip === 'gyro_hybrid';
-  const isGyro = isFullGyro || isHybridGyro;
 
   // Gyro multiplier aligned with FPS smoothness:
   // At 90/120 FPS, gyro registration per frame is exceptionally smooth
@@ -545,51 +938,60 @@ function generateBgmiPubgSensi(
     ? 0.92 * fpsGyroDamping 
     : 0.85;
 
+  const stepVec = getCalibrationStepVector(variationIndex);
+  const vCam = variationIndex > 0 ? stepVec.gen : 0;
+  const vRd = variationIndex > 0 ? stepVec.redDot : 0;
+  const v2x = variationIndex > 0 ? stepVec.s2x : 0;
+  const v4x = variationIndex > 0 ? stepVec.s4x : 0;
+  const vSnip = variationIndex > 0 ? stepVec.sniper : 0;
+  const vFl = variationIndex > 0 ? stepVec.freeLook : 0;
+  const vGyro = variationIndex > 0 ? (stepVec.freeLook * 2) : 0;
+
   return {
     camera: {
-      thirdPersonNoScope: clamp(124 * factor, 90, 160),
-      firstPersonNoScope: clamp(118 * factor, 85, 150),
-      redDot: clamp(54 * factor, 35, 75),
-      scope2x: clamp(40 * factor, 26, 56),
-      scope3x: clamp(29 * factor, 18, 44),
-      scope4x: clamp(20 * factor, 13, 32),
-      scope6x: clamp(15 * factor, 9, 24),
-      scope8x: clamp(11 * factor, 6, 18),
+      thirdPersonNoScope: clamp(124 * factor + vCam, 90, 160),
+      firstPersonNoScope: clamp(118 * factor + vCam, 85, 150),
+      redDot: clamp(54 * factor + vRd, 35, 75),
+      scope2x: clamp(40 * factor + v2x, 26, 56),
+      scope3x: clamp(29 * factor + v2x, 18, 44),
+      scope4x: clamp(20 * factor + v4x, 13, 32),
+      scope6x: clamp(15 * factor + vSnip, 9, 24),
+      scope8x: clamp(11 * factor + vSnip, 6, 18),
     },
     ads: {
-      thirdPersonNoScope: clamp(114 * factor, 80, 145),
-      firstPersonNoScope: clamp(108 * factor, 75, 140),
-      redDot: clamp(58 * factor, 38, 80),
-      scope2x: clamp(44 * factor, 28, 62),
-      scope3x: clamp(34 * factor, 22, 48),
-      scope4x: clamp(24 * factor, 15, 36),
-      scope6x: clamp(18 * factor, 10, 28),
-      scope8x: clamp(13 * factor, 7, 22),
+      thirdPersonNoScope: clamp(114 * factor + vCam, 80, 145),
+      firstPersonNoScope: clamp(108 * factor + vCam, 75, 140),
+      redDot: clamp(58 * factor + vRd, 38, 80),
+      scope2x: clamp(44 * factor + v2x, 28, 62),
+      scope3x: clamp(34 * factor + v2x, 22, 48),
+      scope4x: clamp(24 * factor + v4x, 15, 36),
+      scope6x: clamp(18 * factor + vSnip, 10, 28),
+      scope8x: clamp(13 * factor + vSnip, 7, 22),
     },
     gyroscope: {
-      thirdPersonNoScope: clamp(380 * gyroMod, 250, 400),
-      firstPersonNoScope: clamp(380 * gyroMod, 250, 400),
-      redDot: clamp(370 * gyroMod, 260, 400),
-      scope2x: clamp(345 * gyroMod, 240, 400),
-      scope3x: clamp(275 * gyroMod, 190, 360),
-      scope4x: clamp(210 * gyroMod, 145, 290),
-      scope6x: clamp(145 * gyroMod, 90, 210),
-      scope8x: clamp(88 * gyroMod, 50, 140),
+      thirdPersonNoScope: clamp(380 * gyroMod + vGyro, 250, 400),
+      firstPersonNoScope: clamp(380 * gyroMod + vGyro, 250, 400),
+      redDot: clamp(370 * gyroMod + vGyro, 260, 400),
+      scope2x: clamp(345 * gyroMod + vGyro, 240, 400),
+      scope3x: clamp(275 * gyroMod + vGyro, 190, 360),
+      scope4x: clamp(210 * gyroMod + vGyro, 145, 290),
+      scope6x: clamp(145 * gyroMod + vSnip * 2, 90, 210),
+      scope8x: clamp(88 * gyroMod + vSnip * 2, 50, 140),
     },
     gyroAds: {
-      thirdPersonNoScope: clamp(380 * gyroMod, 250, 400),
-      firstPersonNoScope: clamp(380 * gyroMod, 250, 400),
-      redDot: clamp(380 * gyroMod, 270, 400),
-      scope2x: clamp(355 * gyroMod, 250, 400),
-      scope3x: clamp(285 * gyroMod, 200, 370),
-      scope4x: clamp(220 * gyroMod, 155, 300),
-      scope6x: clamp(155 * gyroMod, 95, 220),
-      scope8x: clamp(92 * gyroMod, 55, 145),
+      thirdPersonNoScope: clamp(380 * gyroMod + vGyro, 250, 400),
+      firstPersonNoScope: clamp(380 * gyroMod + vGyro, 250, 400),
+      redDot: clamp(380 * gyroMod + vGyro, 270, 400),
+      scope2x: clamp(355 * gyroMod + vGyro, 250, 400),
+      scope3x: clamp(285 * gyroMod + vGyro, 200, 370),
+      scope4x: clamp(220 * gyroMod + vGyro, 155, 300),
+      scope6x: clamp(155 * gyroMod + vSnip * 2, 95, 220),
+      scope8x: clamp(92 * gyroMod + vSnip * 2, 55, 145),
     },
     freeLook: {
-      thirdPerson: clamp(125 * factor, 80, 170),
-      cameraParachute: clamp(120 * factor, 75, 160),
-      firstPerson: clamp(110 * factor, 70, 150),
+      thirdPerson: clamp(125 * factor + vFl, 80, 170),
+      cameraParachute: clamp(120 * factor + vFl, 75, 160),
+      firstPerson: clamp(110 * factor + vFl, 70, 150),
     },
   };
 }
@@ -606,7 +1008,8 @@ function generateCodmModeSensi(
   factor: number,
   grip: GripStyle,
   screenSize: number,
-  fps: number
+  fps: number,
+  variationIndex = 0
 ): CodmModeSensi {
   const isGyro = grip === 'gyro_full' || grip === 'gyro_hybrid';
   const gyroMod = isGyro ? (fps >= 120 ? 1.0 : 0.94) : 0.86;
@@ -622,48 +1025,56 @@ function generateCodmModeSensi(
   const modeMult = mode === 'mp' ? 1.0 : 0.88;
   const sniperMult = mode === 'mp' ? 1.0 : 0.82; // BR snipers require micro-leads for bullet travel
 
+  const stepVec = getCalibrationStepVector(variationIndex);
+  const vStd = variationIndex > 0 ? stepVec.gen : 0;
+  const vAds = variationIndex > 0 ? stepVec.redDot : 0;
+  const vTac = variationIndex > 0 ? stepVec.s2x : 0;
+  const vSnip = variationIndex > 0 ? stepVec.sniper : 0;
+  const vScope = variationIndex > 0 ? stepVec.s4x : 0;
+  const vGyro = variationIndex > 0 ? (stepVec.freeLook * 2) : 0;
+
   return {
     rotationMode,
     accelerationValue,
     camera: {
-      standard: clamp((mode === 'mp' ? 104 : 90) * factor, 50, 240),
-      ads: clamp((mode === 'mp' ? 126 : 108) * factor * modeMult, 50, 240),
-      tacticalScope: clamp((mode === 'mp' ? 116 : 98) * factor * modeMult, 40, 220),
-      sniperScope: clamp((mode === 'mp' ? 78 : 62) * factor * sniperMult, 30, 160),
-      scope3x: clamp((mode === 'mp' ? 92 : 78) * factor * modeMult, 35, 180),
-      scope4x: clamp((mode === 'mp' ? 74 : 60) * factor * modeMult, 25, 160),
-      scope6x: clamp((mode === 'mp' ? 56 : 44) * factor * modeMult, 20, 140),
-      scope8x: clamp((mode === 'mp' ? 44 : 34) * factor * modeMult, 15, 120),
+      standard: clamp((mode === 'mp' ? 104 : 90) * factor + vStd, 50, 240),
+      ads: clamp((mode === 'mp' ? 126 : 108) * factor * modeMult + vAds, 50, 240),
+      tacticalScope: clamp((mode === 'mp' ? 116 : 98) * factor * modeMult + vTac, 40, 220),
+      sniperScope: clamp((mode === 'mp' ? 78 : 62) * factor * sniperMult + vSnip, 30, 160),
+      scope3x: clamp((mode === 'mp' ? 92 : 78) * factor * modeMult + vScope, 35, 180),
+      scope4x: clamp((mode === 'mp' ? 74 : 60) * factor * modeMult + vScope, 25, 160),
+      scope6x: clamp((mode === 'mp' ? 56 : 44) * factor * modeMult + vSnip, 20, 140),
+      scope8x: clamp((mode === 'mp' ? 44 : 34) * factor * modeMult + vSnip, 15, 120),
     },
     firingAds: {
-      standard: clamp((mode === 'mp' ? 108 : 94) * factor, 50, 240),
-      ads: clamp((mode === 'mp' ? 136 : 116) * factor * modeMult, 50, 260),
-      tacticalScope: clamp((mode === 'mp' ? 124 : 104) * factor * modeMult, 45, 230),
-      sniperScope: clamp((mode === 'mp' ? 82 : 65) * factor * sniperMult, 30, 170),
-      scope3x: clamp((mode === 'mp' ? 98 : 82) * factor * modeMult, 35, 190),
-      scope4x: clamp((mode === 'mp' ? 78 : 64) * factor * modeMult, 25, 170),
-      scope6x: clamp((mode === 'mp' ? 60 : 48) * factor * modeMult, 20, 150),
-      scope8x: clamp((mode === 'mp' ? 46 : 36) * factor * modeMult, 15, 130),
+      standard: clamp((mode === 'mp' ? 108 : 94) * factor + vStd, 50, 240),
+      ads: clamp((mode === 'mp' ? 136 : 116) * factor * modeMult + vAds, 50, 260),
+      tacticalScope: clamp((mode === 'mp' ? 124 : 104) * factor * modeMult + vTac, 45, 230),
+      sniperScope: clamp((mode === 'mp' ? 82 : 65) * factor * sniperMult + vSnip, 30, 170),
+      scope3x: clamp((mode === 'mp' ? 98 : 82) * factor * modeMult + vScope, 35, 190),
+      scope4x: clamp((mode === 'mp' ? 78 : 64) * factor * modeMult + vScope, 25, 170),
+      scope6x: clamp((mode === 'mp' ? 60 : 48) * factor * modeMult + vSnip, 20, 150),
+      scope8x: clamp((mode === 'mp' ? 46 : 36) * factor * modeMult + vSnip, 15, 130),
     },
     gyroscope: {
-      standard: clamp((mode === 'mp' ? 155 : 135) * gyroMod, 50, 300),
-      ads: clamp((mode === 'mp' ? 135 : 115) * gyroMod * modeMult, 50, 280),
-      tacticalScope: clamp((mode === 'mp' ? 125 : 105) * gyroMod * modeMult, 40, 260),
-      sniperScope: clamp((mode === 'mp' ? 74 : 58) * gyroMod * sniperMult, 25, 180),
-      scope3x: clamp((mode === 'mp' ? 86 : 70) * gyroMod * modeMult, 30, 200),
-      scope4x: clamp((mode === 'mp' ? 68 : 54) * gyroMod * modeMult, 25, 180),
-      scope6x: clamp((mode === 'mp' ? 50 : 38) * gyroMod * modeMult, 20, 150),
-      scope8x: clamp((mode === 'mp' ? 40 : 28) * gyroMod * modeMult, 15, 130),
+      standard: clamp((mode === 'mp' ? 155 : 135) * gyroMod + vGyro, 50, 300),
+      ads: clamp((mode === 'mp' ? 135 : 115) * gyroMod * modeMult + vGyro, 50, 280),
+      tacticalScope: clamp((mode === 'mp' ? 125 : 105) * gyroMod * modeMult + vGyro, 40, 260),
+      sniperScope: clamp((mode === 'mp' ? 74 : 58) * gyroMod * sniperMult + vSnip, 25, 180),
+      scope3x: clamp((mode === 'mp' ? 86 : 70) * gyroMod * modeMult + vScope, 30, 200),
+      scope4x: clamp((mode === 'mp' ? 68 : 54) * gyroMod * modeMult + vScope, 25, 180),
+      scope6x: clamp((mode === 'mp' ? 50 : 38) * gyroMod * modeMult + vSnip, 20, 150),
+      scope8x: clamp((mode === 'mp' ? 40 : 28) * gyroMod * modeMult + vSnip, 15, 130),
     },
     gyroFiring: {
-      standard: clamp((mode === 'mp' ? 160 : 140) * gyroMod, 50, 300),
-      ads: clamp((mode === 'mp' ? 140 : 120) * gyroMod * modeMult, 50, 290),
-      tacticalScope: clamp((mode === 'mp' ? 130 : 110) * gyroMod * modeMult, 40, 270),
-      sniperScope: clamp((mode === 'mp' ? 78 : 62) * gyroMod * sniperMult, 25, 190),
-      scope3x: clamp((mode === 'mp' ? 90 : 74) * gyroMod * modeMult, 30, 210),
-      scope4x: clamp((mode === 'mp' ? 72 : 58) * gyroMod * modeMult, 25, 190),
-      scope6x: clamp((mode === 'mp' ? 54 : 42) * gyroMod * modeMult, 20, 160),
-      scope8x: clamp((mode === 'mp' ? 42 : 30) * gyroMod * modeMult, 15, 140),
+      standard: clamp((mode === 'mp' ? 160 : 140) * gyroMod + vGyro, 50, 300),
+      ads: clamp((mode === 'mp' ? 140 : 120) * gyroMod * modeMult + vGyro, 50, 290),
+      tacticalScope: clamp((mode === 'mp' ? 130 : 110) * gyroMod * modeMult + vGyro, 40, 270),
+      sniperScope: clamp((mode === 'mp' ? 78 : 62) * gyroMod * sniperMult + vSnip, 25, 190),
+      scope3x: clamp((mode === 'mp' ? 90 : 74) * gyroMod * modeMult + vScope, 30, 210),
+      scope4x: clamp((mode === 'mp' ? 72 : 58) * gyroMod * modeMult + vScope, 25, 190),
+      scope6x: clamp((mode === 'mp' ? 54 : 42) * gyroMod * modeMult + vSnip, 20, 160),
+      scope8x: clamp((mode === 'mp' ? 42 : 30) * gyroMod * modeMult + vSnip, 15, 140),
     },
   };
 }
@@ -672,10 +1083,11 @@ function generateCodmSensi(
   factor: number, 
   grip: GripStyle, 
   phone: PhoneModel,
-  fps: number
+  fps: number,
+  variationIndex = 0
 ): CodmSensi {
-  const mp = generateCodmModeSensi('mp', factor, grip, phone.screenSize ?? 6.67, fps);
-  const br = generateCodmModeSensi('br', factor, grip, phone.screenSize ?? 6.67, fps);
+  const mp = generateCodmModeSensi('mp', factor, grip, phone.screenSize ?? 6.67, fps, variationIndex);
+  const br = generateCodmModeSensi('br', factor, grip, phone.screenSize ?? 6.67, fps, variationIndex);
 
   return {
     activeMode: 'mp',
@@ -811,10 +1223,9 @@ export function generateFireButtonConfig(
       dragTip = `Button size at ${sizePercent}% provides ${runwayMm}mm of vertical runway on this ${phone.screenSize}" display.`;
     }
 
-    if (variationIndex === 1) {
-      sizePercent = Math.max(FIRE_BUTTON_MIN, sizePercent - 1);
-    } else if (variationIndex === 2) {
-      sizePercent = Math.min(FIRE_BUTTON_MAX, sizePercent + 1);
+    if (variationIndex > 0) {
+      const stepVec = getCalibrationStepVector(variationIndex);
+      sizePercent = clamp(sizePercent + stepVec.fire, FIRE_BUTTON_RECOMMENDED_MIN, FIRE_BUTTON_RECOMMENDED_MAX);
     }
     sizePercent = Math.min(55, Math.max(40, sizePercent));
   } else if (gameId === 'bgmi' || gameId === 'pubg') {
@@ -854,6 +1265,10 @@ export function generateFireButtonConfig(
       dragTip = 'Right thumb holds and pulls downward along the center-right axis while spraying. Maintain steady downward velocity.';
     }
 
+    if (variationIndex > 0) {
+      const stepVec = getCalibrationStepVector(variationIndex);
+      sizePercent = clamp(sizePercent + stepVec.fire, FIRE_BUTTON_RECOMMENDED_MIN, FIRE_BUTTON_RECOMMENDED_MAX);
+    }
   } else {
     // Call of Duty: Mobile
     technique = 'pull_down';
@@ -871,6 +1286,11 @@ export function generateFireButtonConfig(
       posY = 20;
       sizePercent = physicalWidthMm < 155 ? 44 : 49;
       dragTip = 'Keep dedicated hip-fire button on thumb quadrant for instant shotgun / SMG point-blank reflex.';
+    }
+
+    if (variationIndex > 0) {
+      const stepVec = getCalibrationStepVector(variationIndex);
+      sizePercent = clamp(sizePercent + stepVec.fire, FIRE_BUTTON_RECOMMENDED_MIN, FIRE_BUTTON_RECOMMENDED_MAX);
     }
   }
 
@@ -915,13 +1335,13 @@ export function generateAimTelemetry(
   let evidenceCategory: EvidenceCategory = 'official_manufacturer';
   let confidenceScore = 95;
 
-  if (gameId === 'freefire_india') {
+  if (phone.verificationStatus === 'custom') {
+    evidenceCategory = 'algorithmic_estimate';
+    confidenceScore = 82;
+  } else if (gameId === 'freefire_india') {
     evidenceCategory = 'algorithmic_estimate';
     confidenceScore = 78;
     reasons.push('💡 Free Fire India values are recommended starting points (unverified / pre-release) based on your phone display specifications. Test in the Training Ground before ranked matches.');
-  } else if (phone.verificationStatus === 'custom') {
-    evidenceCategory = 'algorithmic_estimate';
-    confidenceScore = 80;
   } else if (!phone.touchSamplingRateVerified) {
     evidenceCategory = 'published_reference';
     confidenceScore = 88;
@@ -1865,3 +2285,284 @@ export function applyPhase4Calibration(
     atBound: allAtBound,
   };
 }
+
+/**
+ * Returns the brand-compliant Red Dot difference(s) below General for verified preset phones,
+ * preserving each chart's exact Red Dot relationship (baseDiff always first at index 0).
+ */
+export function getAllowedRedDotDiffsForPreset(phone: PhoneModel, baseDiff: number): number[] {
+  const b = (phone.brand || '').trim().toLowerCase();
+  let pool: number[];
+  if (b === 'apple') {
+    pool = [12];
+  } else if (b === 'oneplus' || b === 'vivo' || b === 'iqoo' || b === 'nothing') {
+    pool = [4, 7, 9];
+  } else if (b === 'oppo' || b === 'asus rog' || b === 'infinix' || b === 'google pixel') {
+    pool = [4, 7];
+  } else if (b === 'realme') {
+    pool = [8, 9, 10, 12];
+  } else if (b === 'poco') {
+    pool = [8, 10, 12];
+  } else if (b === 'redmi') {
+    pool = [5, 6, 7];
+  } else if (b === 'xiaomi' || b === 'xiaomi / redmi' || b === 'motorola') {
+    pool = [5, 6];
+  } else if (b === 'samsung') {
+    const low = Math.max(0, baseDiff - 1);
+    const high = Math.min(7, baseDiff + 1);
+    pool = Array.from(new Set([baseDiff, low, high]));
+  } else {
+    pool = [baseDiff];
+  }
+
+  if (!pool.includes(baseDiff)) {
+    pool = [baseDiff, ...pool];
+  } else {
+    pool = [baseDiff, ...pool.filter((d) => d !== baseDiff)];
+  }
+  return pool;
+}
+
+/**
+ * Generates a deterministic, device-bounded variation for phones with an approved customSensitivityPreset.
+ * step === 0 returns the exact verified chart preset.
+ * step >= 1 returns subtle bounded offsets around the device's chart preset while respecting
+ * device-appropriate limits, brand Red Dot rules, launch-year positioning, and [40, 55]% Fire Button bounds.
+ */
+export function calculatePresetVariation(
+  gameId: GameId,
+  phone: PhoneModel,
+  grip: GripStyle,
+  playstyle: Playstyle,
+  playerSelectedFps = 60,
+  weaponCategory: WeaponCategory = 'smg',
+  variationIndex = 0
+): CalibrationResult {
+  const baseResult = calculateSensitivity(
+    gameId,
+    phone,
+    grip,
+    playstyle,
+    playerSelectedFps,
+    1.0,
+    weaponCategory,
+    0
+  );
+
+  const preset = phone.customSensitivityPreset;
+  if (!preset) {
+    return calculateSensitivity(
+      gameId,
+      phone,
+      grip,
+      playstyle,
+      playerSelectedFps,
+      1.0,
+      weaponCategory,
+      variationIndex
+    );
+  }
+
+  const baseGen = preset.general;
+  const baseRedDot = preset.redDot;
+  const base2x = preset.scope2x ?? 120;
+  const base4x = preset.scope4x ?? 105;
+  const baseSniper = preset.sniperScope ?? 65;
+  const baseFreeLook = preset.freeLook ?? 95;
+  const baseFire =
+    typeof phone.customFireButtonPreset === 'number'
+      ? clamp(phone.customFireButtonPreset, FIRE_BUTTON_RECOMMENDED_MIN, FIRE_BUTTON_RECOMMENDED_MAX)
+      : baseResult.fireButton.sizePercent;
+
+  if (variationIndex <= 0) {
+    const isFf = gameId === 'freefire_india' || gameId === 'freefire_max' || gameId === 'freefire';
+    return {
+      sensitivity: isFf
+        ? ({
+            gameId,
+            data: {
+              general: baseGen,
+              redDot: baseRedDot,
+              scope2x: base2x,
+              scope4x: base4x,
+              sniperScope: baseSniper,
+              freeLook: baseFreeLook,
+            },
+          } as SensitivityOutput)
+        : baseResult.sensitivity,
+      fireButton: {
+        ...baseResult.fireButton,
+        sizePercent: baseFire,
+      },
+      telemetry: baseResult.telemetry,
+      weaponCategory,
+    };
+  }
+
+  const stepVec = getCalibrationStepVector(variationIndex);
+  const baseDiff = Math.max(0, baseGen - baseRedDot);
+  const allowedDiffs = getAllowedRedDotDiffsForPreset(phone, baseDiff);
+  const chosenDiff = allowedDiffs[variationIndex % allowedDiffs.length];
+
+  // Tight device-appropriate bounds around the model's verified chart preset
+  const minGen = Math.max(85, baseGen - 4);
+  const maxGen = Math.min(200, baseGen + 4);
+  const general = clamp(baseGen + stepVec.gen, minGen, maxGen);
+  const redDot = clamp(general - chosenDiff, 60, general);
+
+  const scope2x = clamp(base2x + stepVec.s2x, Math.max(40, base2x - 4), Math.min(200, base2x + 4));
+  const scope4x = clamp(base4x + stepVec.s4x, Math.max(35, base4x - 4), Math.min(200, base4x + 4));
+  const sniperScope = clamp(baseSniper + stepVec.sniper, Math.max(30, baseSniper - 4), Math.min(180, baseSniper + 4));
+  const freeLook = clamp(baseFreeLook + stepVec.freeLook, Math.max(40, baseFreeLook - 4), Math.min(200, baseFreeLook + 4));
+
+  const minFire = Math.max(FIRE_BUTTON_RECOMMENDED_MIN, baseFire - 2);
+  const maxFire = Math.min(FIRE_BUTTON_RECOMMENDED_MAX, baseFire + 2);
+  const fireSize = clamp(baseFire + stepVec.fire, minFire, maxFire);
+
+  const isFf = gameId === 'freefire_india' || gameId === 'freefire_max' || gameId === 'freefire';
+
+  if (!isFf) {
+    const variedNonFf = calculateSensitivity(
+      gameId,
+      phone,
+      grip,
+      playstyle,
+      playerSelectedFps,
+      1.0,
+      weaponCategory,
+      variationIndex
+    );
+    return {
+      ...variedNonFf,
+      fireButton: {
+        ...variedNonFf.fireButton,
+        sizePercent: fireSize,
+      },
+    };
+  }
+
+  const variationInfo =
+    CALIBRATION_VARIATIONS[variationIndex % CALIBRATION_VARIATIONS.length] || CALIBRATION_VARIATIONS[0];
+
+  const telemetry: AimTelemetry = {
+    ...baseResult.telemetry,
+    reasons: [
+      `Variant #${variationIndex} (${variationInfo.name}): Tuned within ${phone.brand} ${phone.name} verified device bounds (General ${minGen}–${maxGen}, Red Dot -${chosenDiff}, Fire ${minFire}–${maxFire}%).`,
+      ...baseResult.telemetry.reasons,
+    ],
+  };
+
+  return {
+    sensitivity: ({
+      gameId,
+      data: {
+        general,
+        redDot,
+        scope2x,
+        scope4x,
+        sniperScope,
+        freeLook,
+      },
+    } as SensitivityOutput),
+    fireButton: {
+      ...baseResult.fireButton,
+      sizePercent: fireSize,
+    },
+    telemetry,
+    weaponCategory,
+  };
+}
+
+export interface NextCalibrationOptions {
+  gameId: GameId;
+  phone: PhoneModel;
+  grip: GripStyle;
+  playstyle: Playstyle;
+  selectedFps?: number;
+  customTouchDpiMultiplier?: number;
+  weaponCategory?: WeaponCategory;
+  variationStep?: number;
+  excludedSignatures?: Set<string> | string[];
+}
+
+export interface NextCalibrationOutput {
+  result: CalibrationResult;
+  usedStep: number;
+  signature: string;
+  variationInfo: CalibrationVariationInfo;
+}
+
+/**
+ * Generates a fresh, valid, non-repeating deterministic sensitivity combination for the given device.
+ * Automatically skips any signatures in `excludedSignatures` (such as previously generated results
+ * or the currently displayed preset) while staying strictly within device limits & launch-year rules.
+ */
+export function generateNextCalibration(options: NextCalibrationOptions): NextCalibrationOutput {
+  const {
+    gameId,
+    phone,
+    grip,
+    playstyle,
+    selectedFps = 60,
+    customTouchDpiMultiplier = 1.0,
+    weaponCategory = 'smg',
+    variationStep = 1,
+    excludedSignatures,
+  } = options;
+
+  const excludedSet =
+    excludedSignatures instanceof Set
+      ? excludedSignatures
+      : new Set(excludedSignatures || []);
+
+  const startStep = Math.max(1, Math.floor(variationStep));
+  const maxAttempts = 240;
+
+  let fallbackOutput: NextCalibrationOutput | null = null;
+
+  for (let offset = 0; offset < maxAttempts; offset++) {
+    const candidateStep = startStep + offset;
+    const result = phone.customSensitivityPreset
+      ? calculatePresetVariation(
+          gameId,
+          phone,
+          grip,
+          playstyle,
+          selectedFps,
+          weaponCategory,
+          candidateStep
+        )
+      : calculateSensitivity(
+          gameId,
+          phone,
+          grip,
+          playstyle,
+          selectedFps,
+          customTouchDpiMultiplier,
+          weaponCategory,
+          candidateStep
+        );
+
+    const signature = getCalibrationSignature(result.sensitivity, result.fireButton.sizePercent);
+    const variationInfo =
+      CALIBRATION_VARIATIONS[candidateStep % CALIBRATION_VARIATIONS.length] || CALIBRATION_VARIATIONS[0];
+
+    const candidateOutput: NextCalibrationOutput = {
+      result,
+      usedStep: candidateStep,
+      signature,
+      variationInfo,
+    };
+
+    if (!fallbackOutput) {
+      fallbackOutput = candidateOutput;
+    }
+
+    if (!excludedSet.has(signature)) {
+      return candidateOutput;
+    }
+  }
+
+  return fallbackOutput!;
+}
+
