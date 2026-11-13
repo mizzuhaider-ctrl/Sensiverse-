@@ -17,7 +17,7 @@
       ]
     },
     {
-      "source": "/(manifest.json|robots.txt|sitemap.xml)",
+      "source": "/(manifest\\.json|robots\\.txt|sitemap\\.xml)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -32,7 +32,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!assets/|favicon|apple-touch-icon|manifest.json|robots.txt|sitemap.xml|sensiverse-logo|google).*).*",
+      "source": "/((?!api/|assets/|favicon|apple-touch-icon|manifest\\.json|robots\\.txt|sitemap\\.xml|sensiverse-logo|google).*)",
       "destination": "/index.html"
     }
   ]

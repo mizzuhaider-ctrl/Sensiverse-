@@ -3954,6 +3954,21 @@ assert(
   'vercel.json has no conflicting wildcard HTTP Link rel="canonical" header'
 );
 
+const parsedVercelConfig = JSON.parse(vercelConfigContent);
+const spaRewrite = parsedVercelConfig?.rewrites?.[0];
+assert(
+  Boolean(spaRewrite) &&
+  typeof spaRewrite.source === 'string' &&
+  !spaRewrite.source.endsWith(').*') &&
+  spaRewrite.source.includes('api/') &&
+  spaRewrite.source.includes('assets/') &&
+  spaRewrite.source.includes('robots') &&
+  spaRewrite.source.includes('sitemap') &&
+  spaRewrite.source.includes('google') &&
+  spaRewrite.destination === '/index.html',
+  'vercel.json rewrite uses valid path-to-regexp negative lookahead excluding API, assets, robots.txt, sitemap.xml, and Google verification files'
+);
+
 const sitemapLocMatches = Array.from(sitemapContent.matchAll(/<loc>(.*?)<\/loc>/g)).map((m) => m[1]);
 assert(
   sitemapLocMatches.length >= 3 &&
