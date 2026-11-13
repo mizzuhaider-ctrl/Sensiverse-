@@ -27,6 +27,11 @@ import {
   getUnifiedBrazilBaseline, 
   PHASE9_BRAZILIAN_PROFILES 
 } from '../src/data/brazilSensiProfiles';
+import {
+  PRODUCTION_CANONICAL_HOME,
+  PRODUCTION_CANONICAL_ORIGIN,
+  resolveCanonicalUrl,
+} from '../src/utils/seo';
 
 interface TestSummary {
   name: string;
@@ -3905,6 +3910,87 @@ assert(
   histCodm.recentSignatures.every((s) => s.startsWith('codm:')),
   'Generation history isolates signatures cleanly per game + brand + model'
 );
+
+// ==========================================
+// TEST GROUP 45: Production Canonical Domain & SEO Integrity
+// ==========================================
+console.log('\n[TEST GROUP 45] Production Canonical Domain & SEO Integrity');
+
+const vercelConfigContent = fs.readFileSync(path.resolve(process.cwd(), 'vercel.json'), 'utf-8');
+const seoTsContent = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/seo.ts'), 'utf-8');
+
+assert(
+  !seoHtmlContent.includes('ai.studio') &&
+  !vercelConfigContent.includes('ai.studio') &&
+  !sitemapContent.includes('ai.studio') &&
+  !robotsContent.includes('ai.studio') &&
+  !seoTsContent.includes('ai.studio'),
+  'Zero legacy ai.studio references exist in index.html, vercel.json, sitemap.xml, robots.txt, or seo.ts'
+);
+
+const canonicalLinkMatches = seoHtmlContent.match(/<link\s+rel=["']canonical["'][^>]*>/gi) || [];
+assert(
+  canonicalLinkMatches.length === 1 && canonicalLinkMatches[0].includes(`href="${PRODUCTION_CANONICAL_HOME}"`),
+  `index.html contains exactly 1 canonical link tag pointing to ${PRODUCTION_CANONICAL_HOME}`
+);
+
+assert(
+  seoHtmlContent.includes(`<meta property="og:url" content="${PRODUCTION_CANONICAL_HOME}" />`) &&
+  seoHtmlContent.includes(`<meta property="og:image" content="${PRODUCTION_CANONICAL_ORIGIN}/sensiverse-logo.png" />`) &&
+  seoHtmlContent.includes(`<meta name="twitter:image" content="${PRODUCTION_CANONICAL_ORIGIN}/sensiverse-logo.png" />`),
+  'Open Graph and Twitter meta URLs point exclusively to https://sensiverse.vercel.app/'
+);
+
+assert(
+  seoHtmlContent.includes(`"@id": "${PRODUCTION_CANONICAL_ORIGIN}/#app"`) &&
+  seoHtmlContent.includes(`"url": "${PRODUCTION_CANONICAL_HOME}"`) &&
+  seoHtmlContent.includes(`"@id": "${PRODUCTION_CANONICAL_ORIGIN}/#organization"`) &&
+  seoHtmlContent.includes(`"${PRODUCTION_CANONICAL_ORIGIN}/favicon-512x512.png"`),
+  'Schema.org JSON-LD @id and url fields point exclusively to https://sensiverse.vercel.app/'
+);
+
+assert(
+  !vercelConfigContent.includes('rel=\\"canonical\\"') && !vercelConfigContent.includes('rel="canonical"'),
+  'vercel.json has no conflicting wildcard HTTP Link rel="canonical" header'
+);
+
+const sitemapLocMatches = Array.from(sitemapContent.matchAll(/<loc>(.*?)<\/loc>/g)).map((m) => m[1]);
+assert(
+  sitemapLocMatches.length >= 3 &&
+  sitemapLocMatches.every((loc) => loc.startsWith(PRODUCTION_CANONICAL_HOME) && !loc.includes('ai.studio')),
+  'Every <loc> entry in sitemap.xml uses https://sensiverse.vercel.app/ exclusively'
+);
+
+sitemapLocMatches.forEach((loc) => {
+  const parsedLoc = new URL(loc);
+  const resolved = resolveCanonicalUrl(parsedLoc.pathname, parsedLoc.search);
+  assert(
+    resolved === loc,
+    `Sitemap URL ${loc} resolves to exact self-referencing canonical (${resolved})`
+  );
+});
+
+assert(
+  resolveCanonicalUrl('/', '') === PRODUCTION_CANONICAL_HOME &&
+  resolveCanonicalUrl('/index.html', '') === PRODUCTION_CANONICAL_HOME &&
+  resolveCanonicalUrl('/', '?game=freefire_india') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire_india` &&
+  resolveCanonicalUrl('/', '?game=freefire_max') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire_max` &&
+  resolveCanonicalUrl('/', '?game=freefire_india&phone=apple-12&style=onetap') === PRODUCTION_CANONICAL_HOME &&
+  resolveCanonicalUrl('/non-existent-route', '') === PRODUCTION_CANONICAL_HOME,
+  'resolveCanonicalUrl handles home, game pages, share links, and fallback paths accurately'
+);
+
+const distHtmlPath = path.resolve(process.cwd(), 'dist/index.html');
+if (fs.existsSync(distHtmlPath)) {
+  const distHtml = fs.readFileSync(distHtmlPath, 'utf-8');
+  const distCanonicalMatches = distHtml.match(/<link\s+rel=["']canonical["'][^>]*>/gi) || [];
+  assert(
+    !distHtml.includes('ai.studio') &&
+    distCanonicalMatches.length === 1 &&
+    distCanonicalMatches[0].includes(`href="${PRODUCTION_CANONICAL_HOME}"`),
+    'Production build dist/index.html serves single https://sensiverse.vercel.app/ canonical with zero ai.studio references'
+  );
+}
 
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;

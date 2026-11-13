@@ -28,15 +28,6 @@
           "value": "*"
         }
       ]
-    },
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Link",
-          "value": "<https://sensiverse.vercel.app/>; rel=\"canonical\""
-        }
-      ]
     }
   ],
   "rewrites": [

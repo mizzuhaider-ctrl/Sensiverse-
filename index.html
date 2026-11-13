@@ -33,6 +33,29 @@
     <meta property="og:description" content="Calibrate optimized Free Fire and Free Fire MAX sensitivity settings, fire button sizes, and Brazilian 🇧🇷 &amp; Indonesian 🇮🇩 presets for your phone." />
     <meta property="og:image" content="https://sensiverse.vercel.app/sensiverse-logo.png" />
     <meta property="og:site_name" content="SensiVerse" />
+    <script>
+      (function () {
+        var ORIGIN = 'https://sensiverse.vercel.app';
+        var path = window.location.pathname === '/index.html' ? '/' : window.location.pathname;
+        var params = new URLSearchParams(window.location.search || '');
+        var game = (params.get('game') || '').toLowerCase();
+        var hasTransient = params.has('phone') || params.has('style') || params.has('weapon') || params.has('fps');
+        var canonical = (path === '/' && !hasTransient && (game === 'freefire_india' || game === 'freefire_max'))
+          ? ORIGIN + '/?game=' + game
+          : ORIGIN + '/';
+        var links = document.head.querySelectorAll('link[rel="canonical"]');
+        if (links.length > 0) {
+          links[0].setAttribute('href', canonical);
+          for (var i = 1; i < links.length; i++) {
+            links[i].parentNode.removeChild(links[i]);
+          }
+        }
+        var ogUrl = document.head.querySelector('meta[property="og:url"]');
+        if (ogUrl) {
+          ogUrl.setAttribute('content', canonical);
+        }
+      })();
+    </script>
 
     <!-- Twitter / X -->
     <meta name="twitter:card" content="summary_large_image" />

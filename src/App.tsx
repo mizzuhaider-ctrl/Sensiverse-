@@ -42,6 +42,7 @@ import {
 import { playCyberClick } from './utils/sound';
 import { getValidFpsForDevice } from './utils/fpsEngine';
 import { WEAPON_CATEGORIES } from './data/weapons';
+import { syncDocumentCanonical } from './utils/seo';
 
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
@@ -223,6 +224,7 @@ export default function App() {
       setSelectedFps(targetFps);
 
       runCalibration(targetGame, targetPhone, '2finger', targetStyle, targetFps, targetWeapon);
+      syncDocumentCanonical(window.location.pathname, window.location.search);
     } catch {
       // Safe no-op if URL parsing fails
     }
@@ -446,6 +448,7 @@ export default function App() {
       const params = new URLSearchParams(window.location.search);
       params.set('game', targetGame);
       window.history.replaceState({}, '', `${window.location.pathname}?${params.toString()}`);
+      syncDocumentCanonical(window.location.pathname, `?${params.toString()}`);
     } catch {
       // ignore
     }
