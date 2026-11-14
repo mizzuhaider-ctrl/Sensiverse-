@@ -3980,9 +3980,14 @@ const expectedAllGameUrls = [
   `${PRODUCTION_CANONICAL_ORIGIN}/?game=codm`,
 ];
 assert(
+  sitemapContent.startsWith('<?xml version="1.0" encoding="UTF-8"?>') &&
+  sitemapContent.includes('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">') &&
+  sitemapContent.trimEnd().endsWith('</urlset>') &&
+  sitemapLocMatches.length === 7 &&
+  new Set(sitemapLocMatches).size === 7 &&
   expectedAllGameUrls.every((u) => sitemapLocMatches.includes(u)) &&
   sitemapLocMatches.every((loc) => loc.startsWith(PRODUCTION_CANONICAL_HOME) && !loc.includes('ai.studio')),
-  'Every <loc> entry in sitemap.xml uses https://sensiverse.vercel.app/ and covers all 6 supported games'
+  'sitemap.xml is valid XML with exactly 7 unique production URLs (homepage + all 6 games) on https://sensiverse.vercel.app/'
 );
 
 sitemapLocMatches.forEach((loc) => {
@@ -4017,6 +4022,15 @@ if (fs.existsSync(distHtmlPath)) {
     distCanonicalMatches.length === 1 &&
     distCanonicalMatches[0].includes(`href="${PRODUCTION_CANONICAL_HOME}"`),
     'Production build dist/index.html serves single https://sensiverse.vercel.app/ canonical with zero ai.studio references'
+  );
+}
+
+const distSitemapPath = path.resolve(process.cwd(), 'dist/sitemap.xml');
+if (fs.existsSync(distSitemapPath)) {
+  const distSitemap = fs.readFileSync(distSitemapPath, 'utf-8');
+  assert(
+    distSitemap === sitemapContent,
+    'Production build dist/sitemap.xml exactly matches public/sitemap.xml'
   );
 }
 
