@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>SensiVerse – Free Fire &amp; Free Fire MAX Sensitivity Generator</title>
     <meta name="description" content="Calibrate optimized Free Fire and Free Fire MAX sensitivity settings, fire button sizes, and Brazilian 🇧🇷 &amp; Indonesian 🇮🇩 presets for your phone." />
-    <meta name="keywords" content="gaming sensitivity generator, free fire sensitivity settings, free fire max sensi, brazilian sensi meta, indonesian sensi meta, free fire drag headshot sensitivity, fire button size calculator, best sensi for 120hz, sensiverse" />
+    <meta name="keywords" content="gaming sensitivity generator, free fire sensitivity settings, free fire max sensi, free fire india sensitivity, bgmi sensitivity settings, pubg mobile sensitivity, cod mobile sensitivity, brazilian sensi meta, indonesian sensi meta, free fire drag headshot sensitivity, fire button size calculator, best sensi for 120hz, sensiverse" />
     <meta name="robots" content="index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1" />
     <meta name="theme-color" content="#030704" />
     <meta name="author" content="SensiVerse" />
@@ -40,7 +40,8 @@
         var params = new URLSearchParams(window.location.search || '');
         var game = (params.get('game') || '').toLowerCase();
         var hasTransient = params.has('phone') || params.has('style') || params.has('weapon') || params.has('fps');
-        var canonical = (path === '/' && !hasTransient && (game === 'freefire_india' || game === 'freefire_max'))
+        var VALID_GAMES = ['freefire_india', 'freefire_max', 'freefire', 'bgmi', 'pubg', 'codm'];
+        var canonical = (path === '/' && !hasTransient && VALID_GAMES.indexOf(game) !== -1)
           ? ORIGIN + '/?game=' + game
           : ORIGIN + '/';
         var links = document.head.querySelectorAll('link[rel="canonical"]');
@@ -88,7 +89,7 @@
           },
           "featureList": [
             "Hardware-matched touch response calculations (60Hz to 165Hz)",
-            "Game-specific sensitivity engines (Free Fire India 🇮🇳, Free Fire MAX 🔥)",
+            "Game-specific sensitivity engines (Free Fire India 🇮🇳, Free Fire MAX 🔥, Free Fire, BGMI, PUBG Mobile, and COD Mobile)",
             "Fire button size slider from 10% to 100% with competitive presets [42, 46, 50, 54]",
             "Claw and thumb HUD layout optimization",
             "Targeted feedback calibration for overshooting, chest lock, recoil bloom, and shaky sight",

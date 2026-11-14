@@ -3970,10 +3970,19 @@ assert(
 );
 
 const sitemapLocMatches = Array.from(sitemapContent.matchAll(/<loc>(.*?)<\/loc>/g)).map((m) => m[1]);
+const expectedAllGameUrls = [
+  PRODUCTION_CANONICAL_HOME,
+  `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire_india`,
+  `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire_max`,
+  `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire`,
+  `${PRODUCTION_CANONICAL_ORIGIN}/?game=bgmi`,
+  `${PRODUCTION_CANONICAL_ORIGIN}/?game=pubg`,
+  `${PRODUCTION_CANONICAL_ORIGIN}/?game=codm`,
+];
 assert(
-  sitemapLocMatches.length >= 3 &&
+  expectedAllGameUrls.every((u) => sitemapLocMatches.includes(u)) &&
   sitemapLocMatches.every((loc) => loc.startsWith(PRODUCTION_CANONICAL_HOME) && !loc.includes('ai.studio')),
-  'Every <loc> entry in sitemap.xml uses https://sensiverse.vercel.app/ exclusively'
+  'Every <loc> entry in sitemap.xml uses https://sensiverse.vercel.app/ and covers all 6 supported games'
 );
 
 sitemapLocMatches.forEach((loc) => {
@@ -3990,9 +3999,13 @@ assert(
   resolveCanonicalUrl('/index.html', '') === PRODUCTION_CANONICAL_HOME &&
   resolveCanonicalUrl('/', '?game=freefire_india') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire_india` &&
   resolveCanonicalUrl('/', '?game=freefire_max') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire_max` &&
+  resolveCanonicalUrl('/', '?game=freefire') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire` &&
+  resolveCanonicalUrl('/', '?game=bgmi') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=bgmi` &&
+  resolveCanonicalUrl('/', '?game=pubg') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=pubg` &&
+  resolveCanonicalUrl('/', '?game=codm') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=codm` &&
   resolveCanonicalUrl('/', '?game=freefire_india&phone=apple-12&style=onetap') === PRODUCTION_CANONICAL_HOME &&
   resolveCanonicalUrl('/non-existent-route', '') === PRODUCTION_CANONICAL_HOME,
-  'resolveCanonicalUrl handles home, game pages, share links, and fallback paths accurately'
+  'resolveCanonicalUrl handles home, all 6 game pages, share links, and fallback paths accurately'
 );
 
 const distHtmlPath = path.resolve(process.cwd(), 'dist/index.html');

@@ -1,7 +1,14 @@
 export const PRODUCTION_CANONICAL_ORIGIN = 'https://sensiverse.vercel.app';
 export const PRODUCTION_CANONICAL_HOME = `${PRODUCTION_CANONICAL_ORIGIN}/`;
 
-const CANONICAL_PUBLIC_GAMES = new Set(['freefire_india', 'freefire_max']);
+const CANONICAL_PUBLIC_GAMES = new Set([
+  'freefire_india',
+  'freefire_max',
+  'freefire',
+  'bgmi',
+  'pubg',
+  'codm',
+]);
 
 /**
  * Resolves the authoritative self-referencing canonical URL for SensiVerse
