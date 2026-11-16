@@ -44,7 +44,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </h1>
 
           <p className="text-sm sm:text-base text-zinc-300 w-full max-w-2xl mx-auto lg:mx-0 leading-relaxed">
-            Stop copying random sensitivity settings. SensiVerse brings you Brazilian 🇧🇷 and Indonesian 🇮🇩 sensitivity presets, researched and gameplay-tested.
+            Stop copying random sensitivity settings. SensiVerse delivers Advanced Sensitivity Calibration with Brazilian 🇧🇷 and Indonesian 🇮🇩 headshot-focused presets tailored to your device hardware.
           </p>
 
           {/* Key Metric Highlights - Fully responsive feature cards */}
@@ -108,7 +108,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <div className="w-20 h-3.5 bg-black rounded-full border border-zinc-800 flex items-center justify-center">
                 <div className="w-2 h-2 rounded-full bg-zinc-900 border border-zinc-700" />
               </div>
-              <span className="text-[10px] font-mono-code text-[#00FF66]">120 FPS</span>
+              <span className="text-[10px] font-mono-code text-[#00FF66]">SAMPLE: 120 FPS</span>
             </div>
 
             {/* Radar / Crosshair 3D Simulation Center */}
@@ -128,15 +128,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 />
 
                 {/* Physical Touch Runway Telemetry */}
-                <div className="absolute -top-1 right-8 px-2 py-0.5 rounded bg-black/80 border border-[#00FF66] text-[9px] font-mono-code text-[#00FF66] shadow-[0_0_8px_rgba(0,255,102,0.6)]">
-                  RUNWAY: 54mm
+                <div className="absolute -top-1 right-6 px-2 py-0.5 rounded bg-black/80 border border-[#00FF66] text-[9px] font-mono-code text-[#00FF66] shadow-[0_0_8px_rgba(0,255,102,0.6)]">
+                  SAMPLE RUNWAY: 54mm
                 </div>
               </div>
 
-              {/* Live active profile overlay */}
+              {/* Sample HUD preview overlay */}
               <div className="mt-4 text-center px-4 py-2 rounded-xl bg-black/80 border border-zinc-800 backdrop-blur-md w-full">
                 <p className="text-[11px] font-cyber text-zinc-400 uppercase tracking-wider">
-                  Target Config
+                  Sample HUD Preview
                 </p>
                 <p className="text-sm font-bold text-white truncate">
                   {selectedDeviceName}
@@ -144,7 +144,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="flex items-center justify-center gap-2 mt-1 text-[10px] font-mono-code text-[#00FF66]">
                   <span>{selectedGameName}</span>
                   <span>•</span>
-                  <span>Low Drag Friction</span>
+                  <span>Sample Drag Curve</span>
                 </div>
               </div>
             </div>
@@ -155,15 +155,15 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="w-7 h-7 rounded-full bg-zinc-900 border border-zinc-700 flex items-center justify-center text-[10px] text-zinc-400">
                   🕹️
                 </div>
-                <span className="text-[10px] text-zinc-400 font-mono-code">Move: 65%</span>
+                <span className="text-[10px] text-zinc-400 font-mono-code">Sample Move: 65%</span>
               </div>
 
               <div className="flex items-center gap-2">
                 <span className="text-[10px] text-[#00FF66] font-mono-code">Fire: {fireButtonSize}%</span>
                 <div 
                   style={{ 
-                    width: `${Math.round(30 + ((fireButtonSize - 40) / 15) * 14)}px`, 
-                    height: `${Math.round(30 + ((fireButtonSize - 40) / 15) * 14)}px` 
+                    width: `${Math.min(52, Math.max(24, Math.round(30 + ((fireButtonSize - 40) / 15) * 14)))}px`, 
+                    height: `${Math.min(52, Math.max(24, Math.round(30 + ((fireButtonSize - 40) / 15) * 14)))}px` 
                   }}
                   className="rounded-full bg-[#00FF66]/20 border-2 border-[#00FF66] flex items-center justify-center text-[#00FF66] shadow-[0_0_12px_rgba(0,255,102,0.5)] transition-all animate-pulse"
                 >

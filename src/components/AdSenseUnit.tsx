@@ -9,30 +9,20 @@ interface AdSenseUnitProps {
 
 export const AdSenseUnit: React.FC<AdSenseUnitProps> = ({
   slot,
-  format = 'auto',
+  format: _format = 'auto',
   className = '',
-  label = 'SPONSORED PARTNER'
+  label = 'SPONSOR SLOT'
 }) => {
   return (
     <div className={`w-full my-6 flex flex-col items-center ${className}`}>
-      {/* AdSense compliance label */}
-      <div className="w-full max-w-4xl flex items-center justify-between text-[10px] tracking-widest uppercase font-mono-code text-zinc-600 px-3 py-1 bg-black/40 border-t border-x border-zinc-800/80 rounded-t-md">
+      {/* Sponsor Slot header label */}
+      <div className="w-full max-w-4xl flex items-center justify-between text-[10px] tracking-widest uppercase font-mono-code text-zinc-500 px-3 py-1 bg-black/40 border-t border-x border-zinc-800/80 rounded-t-md">
         <span>{label}</span>
-        <span className="text-zinc-600 hover:text-zinc-400 cursor-pointer">Ad Choices</span>
+        <span className="text-zinc-500">Sponsor Slot #{slot}</span>
       </div>
 
       <div className="w-full max-w-4xl min-h-[90px] md:min-h-[105px] bg-[#070d09]/90 border border-zinc-800/90 rounded-b-md relative overflow-hidden flex items-center justify-center p-3 shadow-inner">
-        {/* AdSense ins container */}
-        <ins
-          className="adsbygoogle w-full block"
-          style={{ display: 'block' }}
-          data-ad-client="ca-pub-0000000000000000"
-          data-ad-slot={slot}
-          data-ad-format={format}
-          data-full-width-responsive="true"
-        />
-
-        {/* High-tech stylized placeholder content for pre-monetization / preview */}
+        {/* Stylized sponsor slot placeholder */}
         <div className="w-full flex flex-col sm:flex-row items-center justify-between gap-3 text-center sm:text-left px-2">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-lg bg-[#00FF66]/10 border border-[#00FF66]/30 flex items-center justify-center text-[#00FF66] shrink-0 font-cyber font-bold text-xs">
@@ -40,26 +30,21 @@ export const AdSenseUnit: React.FC<AdSenseUnitProps> = ({
             </div>
             <div>
               <p className="text-xs font-semibold text-zinc-300">
-                Level Up Your Hardware: High Touch-Sampling Displays & Finger Sleeves
+                Sponsor Slot Available: High Touch-Sampling Displays &amp; Gaming Gear
               </p>
               <p className="text-[11px] text-zinc-500">
-                Responsive Google AdSense Slot ({slot}) — Zero drag latency & anti-sweat control gear
+                Reserved Sponsor Banner Placeholder ({slot}) — Showcase esports displays, finger sleeves, or mobile accessories
               </p>
             </div>
           </div>
 
           <div className="shrink-0 flex items-center gap-2">
             <span className="text-[10px] uppercase font-mono-code px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-[#00FF66]">
-              Verified Partner
+              Sponsor Slot
             </span>
-            <a
-              href="https://support.google.com/adsense"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-xs px-3 py-1.5 rounded bg-zinc-900 hover:bg-zinc-800 border border-[#00FF66]/30 text-zinc-200 transition-colors inline-block"
-            >
-              Learn More
-            </a>
+            <span className="text-xs px-3 py-1.5 rounded bg-zinc-900 border border-[#00FF66]/30 text-zinc-300 font-mono-code inline-block">
+              Placement Open
+            </span>
           </div>
         </div>
 

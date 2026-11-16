@@ -191,8 +191,8 @@ export default function App() {
       const urlFps = params.get('fps');
 
       let targetGame: GameId = 'freefire_india';
-      if (urlGame === 'freefire_max') {
-        targetGame = 'freefire_max';
+      if (urlGame === 'freefire_max' || urlGame === 'freefire') {
+        targetGame = urlGame;
       }
 
       let targetPhone = PHONE_DATABASE[0];
@@ -663,6 +663,15 @@ export default function App() {
   // Copy formatted sensitivity with weapon category and share link
   const handleCopyAll = () => {
     const game = GAMES_DATA[selectedGame];
+    const weaponName = WEAPON_CATEGORIES[weaponCategory]?.name || weaponCategory;
+    const playstyleLabel =
+      playstyle === 'onetap'
+        ? 'One-Tap Headshot'
+        : playstyle === 'drag'
+          ? 'Drag Headshot'
+          : playstyle === 'recoil'
+            ? 'Recoil Control'
+            : playstyle;
     const shareUrl = buildShareableProfileUrl(
       selectedGame,
       calibratedPhone.id,
@@ -681,8 +690,9 @@ export default function App() {
       sensitivity,
       fireButton.sizePercent,
       fireButton.dragTip,
-      shareUrl,
-      weaponCategory
+      weaponName,
+      playstyleLabel,
+      shareUrl
     );
     navigator.clipboard.writeText(text);
     showToast('📋 All sensitivity values & fire button guide copied to clipboard!');
@@ -691,6 +701,15 @@ export default function App() {
   // Share results with generated link preserving profile without private data
   const handleShare = async () => {
     const game = GAMES_DATA[selectedGame];
+    const weaponName = WEAPON_CATEGORIES[weaponCategory]?.name || weaponCategory;
+    const playstyleLabel =
+      playstyle === 'onetap'
+        ? 'One-Tap Headshot'
+        : playstyle === 'drag'
+          ? 'Drag Headshot'
+          : playstyle === 'recoil'
+            ? 'Recoil Control'
+            : playstyle;
     const shareUrl = buildShareableProfileUrl(
       selectedGame,
       calibratedPhone.id,
@@ -709,8 +728,9 @@ export default function App() {
       sensitivity,
       fireButton.sizePercent,
       fireButton.dragTip,
-      shareUrl,
-      weaponCategory
+      weaponName,
+      playstyleLabel,
+      shareUrl
     );
 
     if (navigator.share) {
@@ -731,8 +751,59 @@ export default function App() {
     }
   };
 
-  // Apply diagnostic fix from Improve My Sensi modal
+  // Apply diagnostic fix from Improve My Sensi modal (enforcing existing cumulative bounds)
   const handleApplyImprovement = (issue: IssueDiagnosticType): ImprovementResult => {
+    const isFreeFire =
+      sensitivity.gameId === 'freefire' ||
+      sensitivity.gameId === 'freefire_max' ||
+      sensitivity.gameId === 'freefire_india';
+
+    if (
+      isFreeFire &&
+      (issue === 'overshooting' ||
+        issue === 'chest_lock' ||
+        issue === 'recoil_bloom' ||
+        issue === 'shaky_sight')
+    ) {
+      const res = applyPhase4Calibration(
+        sensitivity,
+        fireButton,
+        issue,
+        feedbackCumulativeDeltas
+      );
+
+      if (!res.atBound) {
+        setPreviousProfileSnapshot({ sensitivity, fireButton });
+      }
+
+      const clampedFireButton: FireButtonConfig = {
+        ...res.updatedFireButton,
+        sizePercent: clampFireButtonSize(res.updatedFireButton.sizePercent),
+        recommendedRange: { min: FIRE_BUTTON_MIN, max: FIRE_BUTTON_MAX },
+      };
+
+      setSensitivity(res.updatedSensitivity);
+      setFireButton(clampedFireButton);
+      setFeedbackCumulativeDeltas(res.newCumulativeDeltas);
+
+      const changesSummary = res.atBound
+        ? ['Cumulative adjustment bound reached — no further changes applied for this issue.']
+        : res.isPartialStep
+          ? [...res.changesSummary, 'Partial final step applied to stay within cumulative adjustment bounds.']
+          : res.changesSummary;
+
+      const coachingAdvice = res.atBound
+        ? 'All affected parameters have reached their approved cumulative adjustment bounds. Revert or test another calibration baseline if needed.'
+        : res.coachingAdvice;
+
+      return {
+        updatedSensitivity: res.updatedSensitivity,
+        updatedFireButton: clampedFireButton,
+        changesSummary,
+        coachingAdvice,
+      };
+    }
+
     setPreviousProfileSnapshot({ sensitivity, fireButton });
     const result = applySensitivityImprovement(sensitivity, fireButton, issue);
     setSensitivity(result.updatedSensitivity);
@@ -924,7 +995,7 @@ export default function App() {
 
         {/* Top AdSense Slot (Leaderboard/Responsive) */}
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6">
-          <AdSenseUnit slot="7489201934" format="horizontal" label="ADVERTISEMENT — ESPORTS HARDWARE" />
+          <AdSenseUnit slot="7489201934" format="horizontal" label="SPONSOR SLOT — ESPORTS HARDWARE" />
         </div>
 
         {/* Main Interactive Sensitivity Generator Container - Streamlined Flow */}
@@ -1016,7 +1087,7 @@ export default function App() {
             />
 
             {/* Mid-Feed AdSense Slot */}
-            <AdSenseUnit slot="5938201844" format="auto" label="ADVERTISEMENT — DISPLAY SPONSOR" />
+            <AdSenseUnit slot="5938201844" format="auto" label="SPONSOR SLOT — DISPLAY SPONSOR" />
 
             {/* Fire Button Size & HUD Visualizer */}
             <FireButtonHUDVisualizer

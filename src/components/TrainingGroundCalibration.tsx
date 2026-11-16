@@ -231,7 +231,7 @@ export const TrainingGroundCalibration: React.FC<TrainingGroundCalibrationProps>
             </h2>
           </div>
           <p className="text-xs text-zinc-400 mt-0.5">
-            Practical in-game verification routine & mathematical touch gesture testing lab for <span className="text-[#00FF66] font-semibold">{phone.name}</span>
+            Practical in-game practice routine &amp; touch gesture calibration pad for <span className="text-[#00FF66] font-semibold">{phone.name}</span>
           </p>
         </div>
 
@@ -279,7 +279,7 @@ export const TrainingGroundCalibration: React.FC<TrainingGroundCalibrationProps>
             </h3>
           </div>
           <span className="text-[10px] font-mono-code text-zinc-500">
-            Runway for {phone.name}: ~{phone.screenSize ? Math.round(phone.screenSize * 25.4 * 0.4) : 65}mm swipe space
+            Est. Runway for {phone.name}: ~{phone.screenSize ? Math.round(phone.screenSize * 25.4 * 0.4) : 65}mm diagonal est.
           </span>
         </div>
 
@@ -321,10 +321,11 @@ export const TrainingGroundCalibration: React.FC<TrainingGroundCalibrationProps>
 
             {/* Live Metrics Overlay */}
             {dragState.distancePx > 0 && (
-              <div className="absolute top-2 right-2 bg-black/85 border border-[#00FF66]/40 rounded-lg p-1.5 sm:p-2 text-[9px] sm:text-[10px] font-mono-code text-zinc-300 space-y-0.5 pointer-events-none max-w-[130px] sm:max-w-none">
-                <div>Distance: <span className="text-[#00FF66] font-bold">{dragState.distanceMm}mm</span> ({dragState.distancePx}px)</div>
+              <div className="absolute top-2 right-2 bg-black/85 border border-[#00FF66]/40 rounded-lg p-1.5 sm:p-2 text-[9px] sm:text-[10px] font-mono-code text-zinc-300 space-y-0.5 pointer-events-none max-w-[140px] sm:max-w-none">
+                <div>Est. Distance: <span className="text-[#00FF66] font-bold">~{dragState.distanceMm}mm</span> ({dragState.distancePx}px)</div>
                 <div>Duration: <span className="text-sky-300 font-bold">{dragState.durationMs}ms</span></div>
                 <div>Velocity: <span className="text-amber-300 font-bold">{dragState.velocityPxMs} px/ms</span></div>
+                <div className="text-[8px] sm:text-[9px] text-zinc-400">~395 PPI CSS-px est.</div>
               </div>
             )}
           </div>
@@ -349,8 +350,8 @@ export const TrainingGroundCalibration: React.FC<TrainingGroundCalibrationProps>
                   <span className="text-[#00FF66] font-bold">{phone.refreshRate} Hz</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-zinc-500">Touch Polling:</span>
-                  <span className="text-[#00FF66] font-bold">{phone.touchSamplingRate} Hz</span>
+                  <span className="text-zinc-500">Est. Touch Polling:</span>
+                  <span className="text-[#00FF66] font-bold">{phone.touchSamplingRate ? `~${phone.touchSamplingRate} Hz (Est.)` : 'Estimated Baseline'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-500">Weapon Category:</span>
@@ -360,7 +361,7 @@ export const TrainingGroundCalibration: React.FC<TrainingGroundCalibrationProps>
             </div>
 
             <div className="pt-2 border-t border-zinc-800/80 text-[10px] text-zinc-400">
-              <span>Thumb drag distance depends on your physical display height and grip placement.</span>
+              <span>Distance and millimeter figures use a ~395 PPI CSS-pixel estimate; physical thumb drag depends on display size, density, and grip placement.</span>
             </div>
           </div>
         </div>

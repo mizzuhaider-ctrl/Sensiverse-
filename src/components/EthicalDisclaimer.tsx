@@ -42,7 +42,7 @@ export const EthicalDisclaimer: React.FC = () => {
             <span>Hardware Math vs Invented Data</span>
           </div>
           <p className="text-zinc-400 text-[11px]">
-            Our algorithms calculate drag multipliers by analyzing your phone's screen refresh rate (60Hz vs 120Hz/144Hz) and touch sampling rate (180Hz vs 480Hz). We never claim access to internal secret publisher files.
+            Our algorithms calculate drag multipliers using reference display refresh rates (60Hz vs 120Hz/144Hz) and touch polling profiles (180Hz vs 480Hz). We never claim access to internal secret publisher files.
           </p>
         </div>
 

@@ -44,7 +44,6 @@ export const ImproveSensiModal: React.FC<ImproveSensiModalProps> = ({
   const [showTrainingInput, setShowTrainingInput] = useState(false);
   const [shotsAttempted, setShotsAttempted] = useState<string>('30');
   const [shotsHeadshots, setShotsHeadshots] = useState<string>('12');
-  const [currentBtnSizeInput, setCurrentBtnSizeInput] = useState<number>(currentFireButton.sizePercent);
 
   if (!isOpen) return null;
 
@@ -172,8 +171,9 @@ export const ImproveSensiModal: React.FC<ImproveSensiModalProps> = ({
   const calculatedAccuracy = (() => {
     const attempted = parseInt(shotsAttempted, 10);
     const headshots = parseInt(shotsHeadshots, 10);
-    if (!isNaN(attempted) && !isNaN(headshots) && attempted > 0) {
-      return Math.min(100, Math.round((headshots / attempted) * 100));
+    if (!isNaN(attempted) && !isNaN(headshots) && attempted > 0 && headshots >= 0) {
+      const clampedHeadshots = Math.min(headshots, attempted);
+      return Math.min(100, Math.round((clampedHeadshots / attempted) * 100));
     }
     return null;
   })();
@@ -237,6 +237,7 @@ export const ImproveSensiModal: React.FC<ImproveSensiModalProps> = ({
                       </label>
                       <input 
                         type="number"
+                        min={1}
                         value={shotsAttempted}
                         onChange={(e) => setShotsAttempted(e.target.value)}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white"
@@ -249,6 +250,7 @@ export const ImproveSensiModal: React.FC<ImproveSensiModalProps> = ({
                       </label>
                       <input 
                         type="number"
+                        min={0}
                         value={shotsHeadshots}
                         onChange={(e) => setShotsHeadshots(e.target.value)}
                         className="w-full bg-zinc-900 border border-zinc-700 rounded-lg px-2 py-1 text-xs text-white"
@@ -333,9 +335,16 @@ export const ImproveSensiModal: React.FC<ImproveSensiModalProps> = ({
 
               {/* Coaching Advice */}
               <div className="p-3.5 rounded-xl bg-black/80 border border-zinc-800 space-y-1.5">
-                <div className="flex items-center gap-2 text-xs font-bold text-[#00FF66]">
-                  <Sparkles className="w-4 h-4" />
-                  <span>Esport Physics Diagnostic Note:</span>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-[#00FF66]">
+                    <Sparkles className="w-4 h-4" />
+                    <span>Esport Physics Diagnostic Note:</span>
+                  </div>
+                  {showTrainingInput && calculatedAccuracy !== null && (
+                    <span className="text-[10px] font-mono-code text-[#00FF66] bg-[#00FF66]/10 px-2 py-0.5 rounded border border-[#00FF66]/30">
+                      Baseline: {Math.min(parseInt(shotsHeadshots, 10) || 0, parseInt(shotsAttempted, 10) || 0)}/{parseInt(shotsAttempted, 10)} ({calculatedAccuracy}%)
+                    </span>
+                  )}
                 </div>
                 <p className="text-xs text-zinc-300 leading-relaxed">
                   {appliedResult.coachingAdvice}

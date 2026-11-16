@@ -223,7 +223,7 @@ export function importPresetsFromJson(jsonStr: string): SavedPreset[] {
     const existing = getSavedPresets();
     const existingIds = new Set(existing.map(p => p.id));
     const merged = [...valid.filter(p => !existingIds.has(p.id)), ...existing];
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(merged));
+    writeStorageItem(STORAGE_KEY, JSON.stringify(merged));
     return merged;
   } catch (e) {
     console.error('Failed to parse imported JSON', e);
@@ -277,6 +277,9 @@ export function formatSensitivityForSharing(
     text += `• General: ${d.general}\n`;
     text += `• Red Dot: ${d.redDot}\n`;
     text += `• 2x Scope: ${d.scope2x}\n`;
+    if (typeof d.scope4x === 'number') {
+      text += `• 4x Scope: ${d.scope4x}\n`;
+    }
     if (typeof d.sniperScope === 'number') {
       text += `• Sniper Scope: ${d.sniperScope}\n`;
     }

@@ -228,13 +228,15 @@ export function getModelsForBrand(brand: string, categoryFilter?: 'all' | 'gamin
       'iPhone 11',
     ];
 
-    const presetModels = filtered.filter(p => Boolean(p.customSensitivityPreset));
-    return presetModels.sort((a, b) => {
+    return filtered.sort((a, b) => {
       const idxA = IPHONE_GENERATION_ORDER.indexOf(a.name);
       const idxB = IPHONE_GENERATION_ORDER.indexOf(b.name);
       if (idxA !== -1 && idxB !== -1) return idxA - idxB;
       if (idxA !== -1) return -1;
       if (idxB !== -1) return 1;
+      const yearA = a.releaseYear || 2000;
+      const yearB = b.releaseYear || 2000;
+      if (yearA !== yearB) return yearB - yearA;
       return a.name.localeCompare(b.name);
     });
   }

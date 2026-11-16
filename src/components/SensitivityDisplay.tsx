@@ -264,7 +264,7 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
         <div className="flex flex-col">
           <span className="text-[10px] uppercase font-mono-code text-zinc-500">Game Engine</span>
           <span className="text-xs font-bold text-[#00FF66] flex items-center gap-1">
-            {gameId === 'freefire_india' ? '🇮🇳 Free Fire India' : '🔥 Free Fire MAX'}
+            {gameId === 'freefire_india' ? '🇮🇳 Free Fire India' : gameId === 'freefire' ? '🔥 Free Fire' : '🔥 Free Fire MAX'}
           </span>
         </div>
 
@@ -456,14 +456,14 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
               </span>
             </div>
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              These sensitivity values provide a phone-specific starting point based on your screen size and refresh rate. Calibrated for clean drag-headshot control, they prevent your crosshair from over-dragging past enemy heads or sticking to chests. Spend 5–10 minutes in the Training Ground to fine-tune your upward thumb swipe.
+              These sensitivity values provide a phone-specific starting point based on your screen size and refresh rate. Tuned as headshot-focused settings for clean drag control, they help reduce crosshair over-drag and chest-stickiness. Spend 5–10 minutes in the Training Ground to fine-tune your upward thumb swipe.
             </p>
           </div>
         ) : (
           <div className="p-3 rounded-xl bg-black/60 border border-[#00FF66]/30 text-xs text-zinc-200 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <span className="flex items-center gap-1.5">
               <Flame className="w-3.5 h-3.5 text-[#00FF66]" />
-              <span><strong>Free Fire MAX:</strong> Hardware-calibrated drag-headshot profile tuned across supported in-game slider ranges.</span>
+              <span><strong>{gameId === 'freefire' ? 'Free Fire:' : 'Free Fire MAX:'}</strong> Hardware-calibrated drag-headshot profile tuned across supported in-game slider ranges.</span>
             </span>
             <span className="text-[10px] font-mono-code text-[#00FF66] bg-[#00FF66]/10 px-2 py-0.5 rounded border border-[#00FF66]/30 shrink-0 font-bold">
               ✓ Supported Scale (0–200)
@@ -631,7 +631,11 @@ export const SensitivityDisplay: React.FC<SensitivityDisplayProps> = ({
                     <div className="flex items-center justify-between">
                       <span className="text-xs font-bold text-white capitalize">{tier.tier} Tier</span>
                       <span className="text-[9px] font-mono-code text-zinc-400 px-1.5 py-0.5 rounded bg-zinc-900 border border-zinc-800">
-                        {tier.evidenceCategory.replace('_', ' ')}
+                        {tier.evidenceCategory === 'physically_tested'
+                          ? 'hardware tier benchmark'
+                          : tier.evidenceCategory === 'official_manufacturer'
+                          ? 'hardware spec reference'
+                          : tier.evidenceCategory.replace(/_/g, ' ')}
                       </span>
                     </div>
                     <p className="text-[11px] text-zinc-400">{tier.label}</p>

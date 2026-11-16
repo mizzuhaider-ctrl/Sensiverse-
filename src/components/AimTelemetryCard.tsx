@@ -39,10 +39,10 @@ export const AimTelemetryCard: React.FC<AimTelemetryCardProps> = ({
 
   const getEvidenceLabel = (category: AimTelemetry['evidenceCategory']) => {
     switch (category) {
-      case 'official_manufacturer': return 'Official Manufacturer Specs';
+      case 'official_manufacturer': return 'Hardware-Based Calibration';
       case 'published_reference': return 'Published Esport Benchmark';
       case 'algorithmic_estimate': return 'Algorithmic Touch Physics';
-      case 'physically_tested': return 'Physically Lab Tested';
+      case 'physically_tested': return 'Hardware Tier Benchmark';
     }
   };
 
@@ -96,7 +96,7 @@ export const AimTelemetryCard: React.FC<AimTelemetryCardProps> = ({
             </span>
           </div>
           <p className="text-[10px] text-zinc-400 mt-1">
-            Runway: ~{telemetry.screenDragRunwayMm}mm diagonal
+            Est. Runway: ~{telemetry.screenDragRunwayMm}mm (diagonal est.)
           </p>
         </div>
 

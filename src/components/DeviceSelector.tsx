@@ -420,7 +420,7 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
                 className="w-full min-w-0 max-w-full min-h-[44px] appearance-none bg-black/95 text-white font-medium text-xs sm:text-sm border border-zinc-700 hover:border-[#00FF66]/60 focus:border-[#00FF66] rounded-lg sm:rounded-xl px-2 sm:px-3 py-2 sm:py-2.5 pr-6 sm:pr-8 focus:outline-none focus:ring-1 focus:ring-[#00FF66]/40 transition-all cursor-pointer shadow-inner truncate text-ellipsis overflow-hidden touch-manipulation"
               >
                 {selectedBrand === 'Apple' ? (
-                  // Group all 29 models by generation for Apple iPhone
+                  // Group all 52 models by generation for Apple iPhone
                   (() => {
                     const groups: Record<string, PhoneModel[]> = {};
                     availableModels.forEach((m) => {
@@ -1263,7 +1263,7 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
               }}
               className="text-xs text-zinc-400 hover:text-white underline cursor-pointer text-left"
             >
-              ← Back to Verified Official Brand Dropdown
+              ← Back to Device Brand Dropdown
             </button>
 
             <button
@@ -1301,7 +1301,7 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
               <p className="text-[11px] text-zinc-400 mt-0.5">
                 {selectedPhone.series ? `${selectedPhone.series} • ` : ''}
                 {selectedPhone.releaseYear ? `Released ${selectedPhone.releaseYear} • ` : ''}
-                {selectedPhone.chipset ? `${selectedPhone.chipset}` : 'Hardware Verified'}
+                {selectedPhone.chipset ? `${selectedPhone.chipset}` : 'Hardware Spec Profile'}
               </p>
             </div>
           </div>
@@ -1311,7 +1311,7 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
             {selectedPhone.verificationStatus === 'verified' ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#00FF66]/10 border border-[#00FF66]/40 text-[#00FF66] text-[11px] font-mono-code font-semibold">
                 <ShieldCheck className="w-3.5 h-3.5" />
-                Verified Official Specs
+                Hardware Spec Reference
               </span>
             ) : selectedPhone.verificationStatus === 'partially_verified' ? (
               <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-cyan-500/10 border border-cyan-500/40 text-cyan-400 text-[11px] font-mono-code font-semibold">
@@ -1338,8 +1338,8 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
             <Cpu className="w-3.5 h-3.5 text-[#00FF66]" />
             <span className="font-mono-code text-zinc-300">
               {selectedPhone.touchSamplingRate 
-                ? `${selectedPhone.touchSamplingRate}Hz Touch Rate` 
-                : 'Standard Touch (Baseline)'}
+                ? `~${selectedPhone.touchSamplingRate}Hz Touch (Est.)` 
+                : 'Estimated Touch Baseline'}
             </span>
           </div>
 
@@ -1369,8 +1369,8 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
           )}
 
           <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-zinc-900 border border-zinc-800">
-            <span className="text-[#00FF66] font-bold font-mono-code">DPI:</span>
-            <span className="font-mono-code text-zinc-300">{selectedPhone.recommendedDpi} (Dev Opt)</span>
+            <span className="text-[#00FF66] font-bold font-mono-code">Ref DPI:</span>
+            <span className="font-mono-code text-zinc-300">{selectedPhone.recommendedDpi} (Est. Dev Opt)</span>
           </div>
         </div>
       </div>

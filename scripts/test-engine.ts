@@ -11,10 +11,11 @@ import {
   getScopeFriendlyLabel 
 } from '../src/utils/sensitivityEngine';
 import { getDeviceFpsCapability, getValidFpsForDevice } from '../src/utils/fpsEngine';
-import { PhoneModel, WeaponCategory, GameId, SensitivityOutput, FireButtonConfig, Playstyle } from '../src/types';
+import { PhoneModel, WeaponCategory, GameId, SensitivityOutput, FreeFireSensi, FireButtonConfig, Playstyle } from '../src/types';
 import { WEAPON_CATEGORIES } from '../src/data/weapons';
 import { 
   buildShareableProfileUrl,
+  formatSensitivityForSharing,
   getSavedPresets,
   savePreset,
   saveAutoPreviousPreset,
@@ -1753,12 +1754,15 @@ assert(modalUpdatedCode.includes('touch-manipulation'), 'BrazilianSensiModal ena
 assert(modalUpdatedCode.includes('max-h-[92vh] overflow-y-auto'), 'BrazilianSensiModal has fluid viewport-bounded scrolling');
 
 // ==========================================
-// TEST GROUP 25: iPhone Sensitivity Database (29 Models Exact Presets)
+// TEST GROUP 25: iPhone Sensitivity Database (52 Models Total, 29 Exact Presets)
 // ==========================================
-console.log('\n[TEST GROUP 25] iPhone Sensitivity Database (29 Models Exact Presets)');
+console.log('\n[TEST GROUP 25] iPhone Sensitivity Database (52 Models Total, 29 Exact Presets)');
 
 const appleModels = getModelsForBrand('Apple');
-assert(appleModels.length === 29, `Apple brand returns exactly 29 models (Got: ${appleModels.length})`);
+const applePresetModels = appleModels.filter(m => Boolean(m.customSensitivityPreset));
+assert(appleModels.length === 52, `Apple brand returns all 52 models (Got: ${appleModels.length})`);
+assert(applePresetModels.length === 29, `Apple brand includes 29 models with exact customSensitivityPreset (Got: ${applePresetModels.length})`);
+assert(appleModels[0].name === 'iPhone 17 Pro Max' && appleModels[appleModels.length - 1].name === 'iPhone (1st generation)', 'Apple sorting preserves generation order first and newest-to-oldest legacy models');
 
 const EXPECTED_IPHONE_PRESETS: Record<string, [number, number, number, number, number, number]> = {
   'iPhone 11': [140, 128, 122, 115, 75, 100],
@@ -1881,7 +1885,7 @@ INDONESIAN_SENSI_PROFILES.forEach((prof) => {
 
 // 3. Verify Hero Section copy has the exact user-requested shortened text
 const updatedHeroContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/HeroSection.tsx'), 'utf-8');
-assert(updatedHeroContent.includes('Stop copying random sensitivity settings. SensiVerse brings you Brazilian 🇧🇷 and Indonesian 🇮🇩 sensitivity presets, researched and gameplay-tested.'), 'HeroSection contains exact shortened description');
+assert(updatedHeroContent.includes('Stop copying random sensitivity settings. SensiVerse delivers Advanced Sensitivity Calibration with Brazilian 🇧🇷 and Indonesian 🇮🇩 headshot-focused presets tailored to your device hardware.'), 'HeroSection contains updated honest description');
 assert(!updatedHeroContent.includes('Every recommendation is adapted to your device’s screen size'), 'HeroSection cleanly removes text below paragraph ("Every recommendation...")');
 assert(!updatedHeroContent.includes('Play your way'), 'HeroSection cleanly removes "Play your way"');
 
@@ -4033,6 +4037,108 @@ if (fs.existsSync(distSitemapPath)) {
     'Production build dist/sitemap.xml exactly matches public/sitemap.xml'
   );
 }
+
+// ==========================================
+// TEST GROUP 46: Copy & Share Formatting and Parameter Ordering
+// ==========================================
+console.log('\n[TEST GROUP 46] Copy & Share Formatting Integrity');
+
+(['freefire_india', 'freefire_max', 'freefire'] as const).forEach((ffGame) => {
+  const sampleCalib = calculateSensitivity(ffGame, iphone13, '2finger', 'onetap');
+  const sampleShareUrl = buildShareableProfileUrl(ffGame, iphone13.id, 'onetap', 'smg', 60);
+  const formattedText = formatSensitivityForSharing(
+    ffGame,
+    iphone13.name,
+    {
+      refreshRate: iphone13.refreshRate,
+      touchSamplingRate: iphone13.touchSamplingRate,
+      recommendedDpi: iphone13.recommendedDpi,
+    },
+    sampleCalib.sensitivity,
+    sampleCalib.fireButton.sizePercent,
+    sampleCalib.fireButton.dragTip,
+    'SMG',
+    'One-Tap Headshot',
+    sampleShareUrl
+  );
+  const d = sampleCalib.sensitivity.data as FreeFireSensi;
+  assert(
+    formattedText.includes(`🔫 Weapon Class: SMG`),
+    `Share text for ${ffGame} places Weapon Class properly (not shareUrl)`
+  );
+  assert(
+    formattedText.includes(`🎯 Technique: One-Tap Headshot`),
+    `Share text for ${ffGame} places Technique properly (not raw weaponCategory)`
+  );
+  assert(
+    formattedText.includes(`• 2x Scope: ${d.scope2x}\n• 4x Scope: ${d.scope4x}\n`),
+    `Share text for ${ffGame} includes 4x Scope (${d.scope4x}) right after 2x Scope`
+  );
+  assert(
+    formattedText.includes(`🔗 Open Calibration Link: ${sampleShareUrl}`),
+    `Share text for ${ffGame} includes clickable calibration link`
+  );
+});
+
+const appTsxSource = fs.readFileSync(path.resolve(process.cwd(), 'src/App.tsx'), 'utf-8');
+const formatCallMatches = appTsxSource.match(/formatSensitivityForSharing\([\s\S]*?\);/g) || [];
+assert(
+  formatCallMatches.length === 2 &&
+  formatCallMatches.every((call) =>
+    call.includes('weaponName,') &&
+    call.includes('playstyleLabel,') &&
+    call.includes('shareUrl')
+  ),
+  'App.tsx handleCopyAll and handleShare pass weaponName, playstyleLabel, shareUrl in exact parameter order'
+);
+
+// ==========================================
+// TEST GROUP 47: Phase 4 Bug Fixes Regression Suite
+// ==========================================
+console.log('\n[TEST GROUP 47] Phase 4 Bug Fixes Regression Suite');
+
+const hudVisCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/FireButtonHUDVisualizer.tsx'), 'utf-8');
+assert(
+  hudVisCode.includes('useEffect') && hudVisCode.includes('setActiveLayout(config.hudLayoutType'),
+  'FireButtonHUDVisualizer syncs activeLayout when config.hudLayoutType changes'
+);
+assert(
+  hudVisCode.includes('\n              06\n') && !hudVisCode.includes('\n              05\n'),
+  'FireButtonHUDVisualizer step badge updated from duplicate 05 to 06'
+);
+
+const heroCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/HeroSection.tsx'), 'utf-8');
+assert(
+  heroCode.includes('Math.min(52, Math.max(24,'),
+  'HeroSection mini fire button preview clamps size within safe visual bounds [24, 52]px'
+);
+
+const improveModalCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/ImproveSensiModal.tsx'), 'utf-8');
+assert(
+  !improveModalCode.includes('currentBtnSizeInput') && improveModalCode.includes('Baseline:'),
+  'ImproveSensiModal removes unused currentBtnSizeInput state and surfaces training ground baseline accuracy'
+);
+assert(
+  appTsxSource.includes('applyPhase4Calibration(') && appTsxSource.includes("urlGame === 'freefire_max' || urlGame === 'freefire'"),
+  'App.tsx enforces applyPhase4Calibration cumulative bounds in handleApplyImprovement and supports ?game=freefire URL loading'
+);
+
+const prevDrawerCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/PreviousSensiDrawer.tsx'), 'utf-8');
+assert(
+  prevDrawerCode.includes('PHONE_DATABASE') &&
+  prevDrawerCode.includes('recommendedDpi ?? 420') &&
+  prevDrawerCode.includes("'One-Tap Headshot'") &&
+  prevDrawerCode.includes("'Drag Headshot'") &&
+  prevDrawerCode.includes("'Recoil Control'"),
+  'PreviousSensiDrawer resolves actual device recommendedDpi (fallback 420) and formats playstyle labels on copy'
+);
+
+const storageCode = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/storage.ts'), 'utf-8');
+const importFnBody = storageCode.slice(storageCode.indexOf('export function importPresetsFromJson'), storageCode.indexOf('export function buildShareableProfileUrl'));
+assert(
+  importFnBody.includes('writeStorageItem(STORAGE_KEY') && !importFnBody.includes('localStorage.setItem'),
+  'storage.ts importPresetsFromJson uses writeStorageItem instead of direct localStorage.setItem'
+);
 
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;

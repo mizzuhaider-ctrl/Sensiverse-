@@ -82,7 +82,7 @@ Source/Notice: ${profile.transparencyDisclaimer}`;
                 </h3>
               </div>
               <p className="text-xs text-zinc-400 font-mono-code">
-                Researched regional presets & auto-headshot benchmarks • Separate from Normal Sensi
+                Headshot-focused regional presets &amp; drag benchmarks • Separate from Normal Sensi
               </p>
             </div>
           </div>
@@ -223,7 +223,7 @@ Source/Notice: ${profile.transparencyDisclaimer}`;
             <div className="p-3 rounded-lg bg-zinc-950/80 border border-zinc-800/80 space-y-1.5 text-xs">
               <div className="flex items-center justify-between text-zinc-400 font-mono-code text-[11px]">
                 <span>Documented Source Range:</span>
-                <span className="text-zinc-300">Dunia Games Auto Headshot Guide</span>
+                <span className="text-zinc-300">Dunia Games Headshot-Focused Guide</span>
               </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-[11px] text-zinc-400 font-mono-code">
                 <div>General: <span className="text-zinc-200">{selectedProfile.publishedRanges.general}</span></div>

@@ -34,7 +34,7 @@ export const SEOGuideSection: React.FC = () => {
   const faqs = [
     {
       q: 'Why does my Free Fire crosshair drag past the enemy head onto the sky?',
-      a: 'This issue (called "Over-Drag") happens when your General sensitivity is too high for your phone\'s touch sampling rate, or when your fire button is positioned too high on the screen. On 120Hz/144Hz smartphones, your swipe registers twice as fast as on a 60Hz screen. Lowering your General sensitivity by 3-5% and maintaining a 50-54% fire button in the lower 18% of the display restricts thumb swipe acceleration, causing the crosshair to lock directly onto the head hitbox.'
+      a: 'This issue (called "Over-Drag") happens when your General sensitivity is too high for your phone\'s touch sampling rate, or when your fire button is positioned too high on the screen. On 120Hz/144Hz smartphones, your swipe registers twice as fast as on a 60Hz screen. Lowering your General sensitivity by 3-5% and keeping your fire button within the recommended 40–55% range (such as 50–54%) in the lower 18% of the display helps reduce excessive upward over-drag so manual swipes align more consistently with head level.'
     },
     {
       q: 'What is the exact difference between Free Fire India and Free Fire MAX sensitivity?',
@@ -57,8 +57,8 @@ export const SEOGuideSection: React.FC = () => {
       a: '2-Finger Thumb players must perform all actions (aiming, jumping, shooting, camera rotation) with just two thumbs, which requires higher camera sensitivity to turn 180 degrees quickly. 3-Finger and 4-Finger Claw players have dedicated fingers for shooting and movement, allowing them to use lower, more disciplined sensitivity with better micro-tracking.'
     },
     {
-      q: 'Why does SensiVerse strictly enforce a 40% to 55% Fire Button size range?',
-      a: 'Through extensive touch trajectory testing across 500+ mobile screens, fire buttons smaller than 40% lead to missed inputs and thumb slip during fast-paced encounters, while sizes exceeding 55% reduce vertical drag runway by up to 25mm, causing premature thumb collisions with physical phone bezels.'
+      q: 'Why does SensiVerse recommend a 40% to 55% Fire Button size range?',
+      a: 'Based on SensiVerse’s HUD geometry and hardware-based recommendations, fire buttons smaller than 40% can increase missed taps and thumb slip during fast encounters, while sizes exceeding 55% leave less vertical drag runway before reaching physical phone bezels. You can still customize the slider anywhere from 10% to 100%.'
     }
   ];
 
@@ -79,7 +79,7 @@ export const SEOGuideSection: React.FC = () => {
                 MOBILE ESPORTS SENSITIVITY & TOUCH ARCHITECTURE GUIDES
               </h2>
               <p className="text-xs text-zinc-400 font-mono-code">
-                Scientific calibration principles for Free Fire India 🇮🇳 & Free Fire MAX 🔥
+                Hardware-based calibration principles for Free Fire India 🇮🇳 & Free Fire MAX 🔥
               </p>
             </div>
           </div>
@@ -220,7 +220,7 @@ export const SEOGuideSection: React.FC = () => {
                   Fire Button Sizing (40%–55%)
                 </h4>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Keeping your fire button between 40% and 55% placed in the bottom 16%–18% quadrant guarantees at least 50mm of vertical drag runway. Oversized buttons (60%+) cause premature upward finger stalls, locking bullets onto the chest.
+                  Keeping your fire button within the recommended 40% to 55% range in the bottom 16%–18% quadrant helps preserve generous vertical drag runway (often ~50mm+ on mainstream displays). Oversized buttons (60%+) can restrict upward thumb travel during rapid drag shots.
                 </p>
               </div>
 
@@ -243,7 +243,7 @@ export const SEOGuideSection: React.FC = () => {
             <div className="flex items-center gap-2 text-[#00FF66]">
               <Target className="w-4 h-4" />
               <h3 className="font-cyber font-bold text-sm sm:text-base text-white">
-                Fire Button Science: HUD Button Sizing, Runway Mechanics & Auto-Headshots
+                Fire Button Layout: HUD Button Sizing, Runway Mechanics & Headshot-Focused Settings
               </h3>
             </div>
             
@@ -291,7 +291,7 @@ export const SEOGuideSection: React.FC = () => {
             <div className="flex items-center gap-2 text-[#00FF66]">
               <Cpu className="w-4 h-4" />
               <h3 className="font-cyber font-bold text-sm sm:text-base text-white">
-                Hardware Science: Refresh Rates, Touch Polling & Input Latency
+                Hardware-Based Recommendations: Refresh Rates, Touch Polling & Input Latency
               </h3>
             </div>
             

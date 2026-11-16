@@ -23,6 +23,7 @@ import { exportPresetsToJson, importPresetsFromJson, formatSensitivityForSharing
 import { GAMES_DATA } from '../data/games';
 import { playCyberClick } from '../utils/sound';
 import { WEAPON_CATEGORIES } from '../data/weapons';
+import { PHONE_DATABASE } from '../data/phones';
 
 interface PreviousSensiDrawerProps {
   isOpen: boolean;
@@ -89,19 +90,39 @@ export const PreviousSensiDrawer: React.FC<PreviousSensiDrawerProps> = ({
   const handleCopyPreset = (preset: SavedPreset) => {
     playCyberClick('click');
     const game = GAMES_DATA[preset.gameId];
+    const matchedPhone =
+      PHONE_DATABASE.find(
+        (p) => p.name === preset.phoneModel && p.brand === preset.phoneBrand
+      ) || PHONE_DATABASE.find((p) => p.name === preset.phoneModel);
+    const recommendedDpi = matchedPhone?.recommendedDpi ?? 420;
+    const playstyleLabel =
+      preset.playstyle === 'onetap'
+        ? 'One-Tap Headshot'
+        : preset.playstyle === 'drag'
+          ? 'Drag Headshot'
+          : preset.playstyle === 'recoil'
+            ? 'Recoil Control'
+            : preset.playstyle === 'rusher'
+              ? 'Rusher'
+              : preset.playstyle === 'sniper'
+                ? 'Sniper Specialist'
+                : preset.playstyle === 'balanced'
+                  ? 'Balanced'
+                  : preset.playstyle;
+
     const text = formatSensitivityForSharing(
       game.name,
       preset.phoneModel,
       {
         refreshRate: preset.refreshRate,
         touchSamplingRate: preset.touchSamplingRate,
-        recommendedDpi: 420,
+        recommendedDpi,
       },
       preset.sensitivity,
       preset.fireButton.sizePercent,
       preset.fireButton.dragTip,
       preset.weaponCategory ? WEAPON_CATEGORIES[preset.weaponCategory]?.name : undefined,
-      preset.playstyle
+      playstyleLabel
     );
     navigator.clipboard.writeText(text);
     setCopiedId(preset.id);

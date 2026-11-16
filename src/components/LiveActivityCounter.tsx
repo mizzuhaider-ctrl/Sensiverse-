@@ -134,7 +134,8 @@ export const LiveActivityCounter: React.FC<LiveActivityCounterProps> = ({ classN
 
   return (
     <div
-      aria-label="Live visitors counter"
+      aria-label="Simulated activity preview indicator"
+      title="Client-side activity preview — simulated animation, not verified real visitor telemetry"
       className={`inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/70 border border-zinc-800 hover:border-[#00FF66]/40 transition-colors shadow-sm select-none ${className}`}
     >
       {/* Small glowing green beacon */}
@@ -143,7 +144,7 @@ export const LiveActivityCounter: React.FC<LiveActivityCounterProps> = ({ classN
         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-[#00FF66] shadow-[0_0_8px_#00FF66]" />
       </span>
 
-      {/* LIVE label and Counter number */}
+      {/* LIVE label and simulated preview counter */}
       <div className="flex items-center gap-1.5 text-xs sm:text-sm">
         <span className="text-[#00FF66] font-mono-code font-bold tracking-wider text-[11px] sm:text-xs drop-shadow-[0_0_6px_rgba(0,255,102,0.5)] uppercase">
           LIVE
@@ -156,6 +157,9 @@ export const LiveActivityCounter: React.FC<LiveActivityCounterProps> = ({ classN
           >
             {displayCount.toLocaleString()}
           </span>
+        </span>
+        <span className="text-[9px] sm:text-[10px] font-mono-code text-zinc-400 uppercase tracking-wider border-l border-zinc-800 pl-1.5">
+          SIMULATED
         </span>
       </div>
     </div>

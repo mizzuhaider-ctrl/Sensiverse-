@@ -86,7 +86,7 @@ export const HeadshotOptionCard: React.FC<HeadshotOptionCardProps> = ({
         return {
           title: 'High-Velocity Vertical Drag Headshot Tracking',
           dragArc: 'Continuous Straight-Up Drag through Initial 5 Bullets',
-          focusZone: 'Chest-to-Head Auto-Aim Ramp with High Red Dot',
+          focusZone: 'Chest-to-Head Drag Ramp with High Red Dot',
           runwayRequirement: 'Maximum Vertical Swipe Runway (75mm+)',
           recommendedSize: '46% – 49%',
           explanation: 'Designed for MP40 and UMP continuous drag. High General (135–165) and elevated Red Dot allow smooth upward drag to reach the head before bullet spread bloom kicks in.',
@@ -211,7 +211,7 @@ export const HeadshotOptionCard: React.FC<HeadshotOptionCardProps> = ({
             <div className="flex items-center gap-2">
               <Zap className="w-4 h-4 text-[#00FF66]" />
               <span className="text-xs font-bold text-white font-cyber">
-                VERIFIED HARDWARE FPS CALIBRATION:
+                HARDWARE-BASED FPS CALIBRATION:
               </span>
               <span className="text-xs font-mono-code text-[#00FF66]">{selectedFps} FPS</span>
             </div>
@@ -240,7 +240,7 @@ export const HeadshotOptionCard: React.FC<HeadshotOptionCardProps> = ({
               </button>
             ))}
             <span className="text-[11px] text-zinc-400 font-mono-code ml-auto">
-              Hardware Verified: {fpsCap.reason}
+              Hardware-Based Estimate: {fpsCap.reason}
             </span>
           </div>
         </div>
