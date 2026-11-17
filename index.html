@@ -35,24 +35,23 @@
     <meta property="og:site_name" content="SensiVerse" />
     <script>
       (function () {
-        var ORIGIN = 'https://sensiverse.vercel.app';
-        var path = window.location.pathname === '/index.html' ? '/' : window.location.pathname;
-        var params = new URLSearchParams(window.location.search || '');
-        var game = (params.get('game') || '').toLowerCase();
-        var hasTransient = params.has('phone') || params.has('style') || params.has('weapon') || params.has('fps');
-        var VALID_GAMES = ['freefire_india', 'freefire_max', 'freefire', 'bgmi', 'pubg', 'codm'];
-        var canonical = (path === '/' && !hasTransient && VALID_GAMES.indexOf(game) !== -1)
-          ? ORIGIN + '/?game=' + game
-          : ORIGIN + '/';
+        var canonical = 'https://sensiverse.vercel.app/';
         var links = document.head.querySelectorAll('link[rel="canonical"]');
         if (links.length > 0) {
-          links[0].setAttribute('href', canonical);
+          if (links[0].getAttribute('href') !== canonical) {
+            links[0].setAttribute('href', canonical);
+          }
           for (var i = 1; i < links.length; i++) {
             links[i].parentNode.removeChild(links[i]);
           }
+        } else {
+          var link = document.createElement('link');
+          link.rel = 'canonical';
+          link.href = canonical;
+          document.head.appendChild(link);
         }
         var ogUrl = document.head.querySelector('meta[property="og:url"]');
-        if (ogUrl) {
+        if (ogUrl && ogUrl.getAttribute('content') !== canonical) {
           ogUrl.setAttribute('content', canonical);
         }
       })();

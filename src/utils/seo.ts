@@ -1,43 +1,17 @@
 export const PRODUCTION_CANONICAL_ORIGIN = 'https://sensiverse.vercel.app';
 export const PRODUCTION_CANONICAL_HOME = `${PRODUCTION_CANONICAL_ORIGIN}/`;
 
-const CANONICAL_PUBLIC_GAMES = new Set([
-  'freefire_india',
-  'freefire_max',
-  'freefire',
-  'bgmi',
-  'pubg',
-  'codm',
-]);
-
 /**
- * Resolves the authoritative self-referencing canonical URL for SensiVerse
- * using only the production domain (https://sensiverse.vercel.app/).
+ * Resolves the authoritative canonical URL for SensiVerse using the
+ * Single Canonical URL strategy (always https://sensiverse.vercel.app/).
  */
-export function resolveCanonicalUrl(pathname: string, search: string): string {
-  const normalizedPath = !pathname || pathname === '/index.html' ? '/' : pathname;
-  if (normalizedPath !== '/') {
-    return PRODUCTION_CANONICAL_HOME;
-  }
-
-  const params = new URLSearchParams(search || '');
-  const game = params.get('game')?.toLowerCase() ?? '';
-  const hasTransientShareParams =
-    params.has('phone') ||
-    params.has('style') ||
-    params.has('weapon') ||
-    params.has('fps');
-
-  if (!hasTransientShareParams && CANONICAL_PUBLIC_GAMES.has(game)) {
-    return `${PRODUCTION_CANONICAL_ORIGIN}/?game=${game}`;
-  }
-
+export function resolveCanonicalUrl(_pathname: string = '/', _search: string = ''): string {
   return PRODUCTION_CANONICAL_HOME;
 }
 
 /**
  * Ensures a single <link rel="canonical"> and matching <meta property="og:url">
- * exist in document.head pointing strictly to the production canonical URL.
+ * exist in document.head pointing strictly to https://sensiverse.vercel.app/.
  */
 export function syncDocumentCanonical(
   pathname: string = typeof window !== 'undefined' ? window.location.pathname : '/',

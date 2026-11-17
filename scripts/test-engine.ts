@@ -1527,8 +1527,8 @@ assert(robotsContent.includes('Sitemap: https://sensiverse.vercel.app/sitemap.xm
 const sitemapPath = path.resolve(process.cwd(), 'public/sitemap.xml');
 const sitemapContent = fs.readFileSync(sitemapPath, 'utf-8');
 assert(sitemapContent.includes('<loc>https://sensiverse.vercel.app/</loc>'), 'sitemap.xml contains home URL');
-assert(sitemapContent.includes('<loc>https://sensiverse.vercel.app/?game=freefire_india</loc>'), 'sitemap.xml contains Free Fire India URL');
-assert(sitemapContent.includes('<lastmod>2026-11-12</lastmod>'), 'sitemap.xml contains current lastmod date (2026-11-12)');
+assert(!sitemapContent.includes('?game='), 'sitemap.xml excludes query parameter URLs under Single Canonical URL strategy');
+assert(sitemapContent.includes('<lastmod>2026-11-17</lastmod>'), 'sitemap.xml contains current lastmod date (2026-11-17)');
 
 // ==========================================
 // TEST GROUP 22: Phase 9A iPhone 17e Database Validation
@@ -3974,47 +3974,35 @@ assert(
 );
 
 const sitemapLocMatches = Array.from(sitemapContent.matchAll(/<loc>(.*?)<\/loc>/g)).map((m) => m[1]);
-const expectedAllGameUrls = [
-  PRODUCTION_CANONICAL_HOME,
-  `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire_india`,
-  `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire_max`,
-  `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire`,
-  `${PRODUCTION_CANONICAL_ORIGIN}/?game=bgmi`,
-  `${PRODUCTION_CANONICAL_ORIGIN}/?game=pubg`,
-  `${PRODUCTION_CANONICAL_ORIGIN}/?game=codm`,
-];
 assert(
   sitemapContent.startsWith('<?xml version="1.0" encoding="UTF-8"?>') &&
   sitemapContent.includes('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">') &&
   sitemapContent.trimEnd().endsWith('</urlset>') &&
-  sitemapLocMatches.length === 7 &&
-  new Set(sitemapLocMatches).size === 7 &&
-  expectedAllGameUrls.every((u) => sitemapLocMatches.includes(u)) &&
-  sitemapLocMatches.every((loc) => loc.startsWith(PRODUCTION_CANONICAL_HOME) && !loc.includes('ai.studio')),
-  'sitemap.xml is valid XML with exactly 7 unique production URLs (homepage + all 6 games) on https://sensiverse.vercel.app/'
+  sitemapLocMatches.length === 1 &&
+  sitemapLocMatches[0] === PRODUCTION_CANONICAL_HOME &&
+  !sitemapContent.includes('?game='),
+  'sitemap.xml is valid XML containing ONLY the single canonical homepage URL https://sensiverse.vercel.app/'
 );
 
-sitemapLocMatches.forEach((loc) => {
-  const parsedLoc = new URL(loc);
-  const resolved = resolveCanonicalUrl(parsedLoc.pathname, parsedLoc.search);
-  assert(
-    resolved === loc,
-    `Sitemap URL ${loc} resolves to exact self-referencing canonical (${resolved})`
-  );
-});
+assert(
+  !seoHtmlContent.includes("ORIGIN + '/?game=' + game") &&
+  !seoTsContent.includes('?game=${game}'),
+  'Neither index.html inline script nor src/utils/seo.ts overrides canonical URL to ?game= query parameters'
+);
 
 assert(
   resolveCanonicalUrl('/', '') === PRODUCTION_CANONICAL_HOME &&
   resolveCanonicalUrl('/index.html', '') === PRODUCTION_CANONICAL_HOME &&
-  resolveCanonicalUrl('/', '?game=freefire_india') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire_india` &&
-  resolveCanonicalUrl('/', '?game=freefire_max') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire_max` &&
-  resolveCanonicalUrl('/', '?game=freefire') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=freefire` &&
-  resolveCanonicalUrl('/', '?game=bgmi') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=bgmi` &&
-  resolveCanonicalUrl('/', '?game=pubg') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=pubg` &&
-  resolveCanonicalUrl('/', '?game=codm') === `${PRODUCTION_CANONICAL_ORIGIN}/?game=codm` &&
+  resolveCanonicalUrl('/', '?game=freefire_india') === PRODUCTION_CANONICAL_HOME &&
+  resolveCanonicalUrl('/', '?game=freefire_max') === PRODUCTION_CANONICAL_HOME &&
+  resolveCanonicalUrl('/', '?game=freefire') === PRODUCTION_CANONICAL_HOME &&
+  resolveCanonicalUrl('/', '?game=bgmi') === PRODUCTION_CANONICAL_HOME &&
+  resolveCanonicalUrl('/', '?game=pubg') === PRODUCTION_CANONICAL_HOME &&
+  resolveCanonicalUrl('/', '?game=codm') === PRODUCTION_CANONICAL_HOME &&
   resolveCanonicalUrl('/', '?game=freefire_india&phone=apple-12&style=onetap') === PRODUCTION_CANONICAL_HOME &&
+  resolveCanonicalUrl('/', '?game=freefire_max&phone=apple-13&style=onetap&weapon=smg&fps=120') === PRODUCTION_CANONICAL_HOME &&
   resolveCanonicalUrl('/non-existent-route', '') === PRODUCTION_CANONICAL_HOME,
-  'resolveCanonicalUrl handles home, all 6 game pages, share links, and fallback paths accurately'
+  'resolveCanonicalUrl consistently consolidates home, all 6 game query URLs, share links, and fallback paths to https://sensiverse.vercel.app/'
 );
 
 const distHtmlPath = path.resolve(process.cwd(), 'dist/index.html');
@@ -4023,9 +4011,11 @@ if (fs.existsSync(distHtmlPath)) {
   const distCanonicalMatches = distHtml.match(/<link\s+rel=["']canonical["'][^>]*>/gi) || [];
   assert(
     !distHtml.includes('ai.studio') &&
+    !distHtml.includes("ORIGIN + '/?game=' + game") &&
     distCanonicalMatches.length === 1 &&
-    distCanonicalMatches[0].includes(`href="${PRODUCTION_CANONICAL_HOME}"`),
-    'Production build dist/index.html serves single https://sensiverse.vercel.app/ canonical with zero ai.studio references'
+    distCanonicalMatches[0].includes(`href="${PRODUCTION_CANONICAL_HOME}"`) &&
+    distHtml.includes(`<meta property="og:url" content="${PRODUCTION_CANONICAL_HOME}" />`),
+    'Production build dist/index.html serves single https://sensiverse.vercel.app/ canonical and matching og:url with zero conflicts'
   );
 }
 
