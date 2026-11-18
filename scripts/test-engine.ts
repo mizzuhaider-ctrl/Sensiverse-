@@ -1904,29 +1904,38 @@ assert(indoModalCode.includes('transparencyDisclaimer'), 'IndonesianSensiModal r
 assert(getApprovedPlatformBaseline(androidPhoneSample).general === 168, 'Normal Android baseline remains 168');
 assert(getApprovedPlatformBaseline(iosPhoneSample).general === 158, 'Normal iOS baseline remains 158');
 
-// 7. Verify Live Activity Counter (19-739 range, 21-step irregular pattern, 5-25s interval, no DEMO ACTIVITY)
+// 7. Verify Visitor Counter (100-679 range, VISITORS ACTIVE label, no SIMULATED or LIVE labels, natural non-repeating fluctuation)
 const liveCounterContent = fs.readFileSync(path.resolve(process.cwd(), 'src/components/LiveActivityCounter.tsx'), 'utf-8');
-assert(liveCounterContent.includes('MIN_COUNT = 19') && liveCounterContent.includes('MAX_COUNT = 739'), 'LiveActivityCounter is bounded strictly between 19 and 739');
-assert(!liveCounterContent.includes('DEMO ACTIVITY'), 'LiveActivityCounter removed "DEMO ACTIVITY" label');
-assert(liveCounterContent.includes('LIVE'), 'LiveActivityCounter preserves "LIVE" label');
+assert(liveCounterContent.includes('VISITOR_MIN_COUNT = 100') && liveCounterContent.includes('VISITOR_MAX_COUNT = 679'), 'LiveActivityCounter is bounded strictly between 100 and 679');
+assert(!liveCounterContent.includes('SIMULATED'), 'LiveActivityCounter removed "SIMULATED" label');
+assert(!liveCounterContent.includes('>LIVE<') && !liveCounterContent.includes('LIVE\n'), 'LiveActivityCounter removed "LIVE" label');
+assert(!liveCounterContent.includes('DEMO ACTIVITY'), 'LiveActivityCounter does not include "DEMO ACTIVITY" label');
+assert(liveCounterContent.includes('VISITORS ACTIVE'), 'LiveActivityCounter displays "VISITORS ACTIVE" label');
+assert(liveCounterContent.includes('uppercase'), 'LiveActivityCounter keeps uppercase styling on label');
 assert(liveCounterContent.includes('#00FF66'), 'LiveActivityCounter preserves cyber green neon palette');
 assert(liveCounterContent.includes('requestAnimationFrame'), 'LiveActivityCounter uses smooth animation interpolation');
-assert(liveCounterContent.includes('minInterval = 5000') && liveCounterContent.includes('maxInterval = 25000'), 'Update interval is strictly between 5 and 25 seconds');
+assert(liveCounterContent.includes('minInterval = 3500') && liveCounterContent.includes('maxInterval = 13500'), 'Update interval uses randomized variable delays');
 
-import { VISITOR_COUNTER_PATTERN } from '../src/components/LiveActivityCounter';
-assert(VISITOR_COUNTER_PATTERN.length === 21, `Visitor counter pattern has exactly 21 steps (Got: ${VISITOR_COUNTER_PATTERN.length})`);
-const expectedPattern = [
-  'up', 'up', 'down', 'down', 'down',
-  'up', 'down', 'down',
-  'up', 'up', 'down', 'down', 'down',
-  'up', 'down',
-  'up', 'up', 'up',
-  'down', 'up', 'up'
-];
-assert(
-  JSON.stringify(VISITOR_COUNTER_PATTERN) === JSON.stringify(expectedPattern),
-  'Visitor counter pattern matches Zyada/Kam sequence: Zyada, Zyada, Kam, Kam, Kam, Zyada, Kam, Kam, Zyada, Zyada, Kam, Kam, Kam, Zyada, Kam, Zyada, Zyada, Zyada, Kam, Zyada, Zyada'
-);
+import { computeNextVisitorCount, VISITOR_MIN_COUNT, VISITOR_MAX_COUNT, VisitorWaveState } from '../src/components/LiveActivityCounter';
+let simCount = 213;
+let simState: VisitorWaveState = { direction: 1, stepsRemaining: 3 };
+let sawIncrease = false;
+let sawDecrease = false;
+const simSequence: number[] = [simCount];
+for (let step = 0; step < 60; step++) {
+  const { nextCount, nextState } = computeNextVisitorCount(simCount, simState);
+  assert(
+    nextCount >= VISITOR_MIN_COUNT && nextCount <= VISITOR_MAX_COUNT,
+    `Visitor counter step ${step} stays within [100, 679] (Got: ${nextCount})`
+  );
+  if (nextCount > simCount) sawIncrease = true;
+  if (nextCount < simCount) sawDecrease = true;
+  simCount = nextCount;
+  simState = nextState;
+  simSequence.push(simCount);
+}
+assert(sawIncrease && sawDecrease, 'Visitor counter naturally increases and decreases across updates');
+assert(new Set(simSequence).size > 10, 'Visitor counter produces varied non-static values');
 
 // ==========================================
 // TEST GROUP 27: Samsung 154-Model Researched Slow Sensi Database Verification
