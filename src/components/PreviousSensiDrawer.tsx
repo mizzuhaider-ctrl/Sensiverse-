@@ -23,7 +23,7 @@ import { exportPresetsToJson, importPresetsFromJson, formatSensitivityForSharing
 import { GAMES_DATA } from '../data/games';
 import { playCyberClick } from '../utils/sound';
 import { WEAPON_CATEGORIES } from '../data/weapons';
-import { PHONE_DATABASE } from '../data/phones';
+import { findCachedPhone, findPhoneAsync } from '../data/phones/asyncLoader';
 
 interface PreviousSensiDrawerProps {
   isOpen: boolean;
@@ -87,13 +87,12 @@ export const PreviousSensiDrawer: React.FC<PreviousSensiDrawerProps> = ({
     return matchesGame && (matchesName || matchesModel || matchesWeapon || matchesNotes);
   });
 
-  const handleCopyPreset = (preset: SavedPreset) => {
+  const handleCopyPreset = async (preset: SavedPreset) => {
     playCyberClick('click');
     const game = GAMES_DATA[preset.gameId];
     const matchedPhone =
-      PHONE_DATABASE.find(
-        (p) => p.name === preset.phoneModel && p.brand === preset.phoneBrand
-      ) || PHONE_DATABASE.find((p) => p.name === preset.phoneModel);
+      findCachedPhone({ name: preset.phoneModel, brand: preset.phoneBrand }) ||
+      (await findPhoneAsync({ name: preset.phoneModel, brand: preset.phoneBrand }));
     const recommendedDpi = matchedPhone?.recommendedDpi ?? 420;
     const playstyleLabel =
       preset.playstyle === 'onetap'

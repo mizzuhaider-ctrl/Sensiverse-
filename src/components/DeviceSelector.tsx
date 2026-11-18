@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { 
   Smartphone, 
   Cpu, 
@@ -14,11 +14,16 @@ import {
 } from 'lucide-react';
 import { PhoneModel } from '../types';
 import { 
-  getModelsByBrand, 
-  getBrandsForCategory, 
   CUSTOM_DEVICE_TEMPLATE,
-  ALL_VERIFIED_PHONES
-} from '../data/phones/index';
+  DEFAULT_BOOT_PHONE,
+  getBrandsForCategoryStatic as getBrandsForCategory,
+} from '../data/phones/catalogUtils';
+import {
+  loadBrandPhones,
+  getCachedBrandPhones,
+  loadAllPhonesDatabase,
+  getCachedAllPhones,
+} from '../data/phones/asyncLoader';
 import { playCyberClick } from '../utils/sound';
 
 interface DeviceSelectorProps {
@@ -104,28 +109,100 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
     return getBrandsForCategory(category);
   }, [category]);
 
-  // Compute available models for the current brand and category
-  const availableModels = useMemo(() => {
-    return getModelsByBrand(selectedBrand, category);
+  // Dynamically loaded models for the current brand and category
+  const [availableModels, setAvailableModels] = useState<PhoneModel[]>(() => {
+    const initialBrand = getInitialBrand(selectedPhone);
+    const cached = getCachedBrandPhones(initialBrand, 'all');
+    if (cached && cached.length > 0) return cached;
+    if (selectedPhone.verificationStatus !== 'custom') return [selectedPhone];
+    return [DEFAULT_BOOT_PHONE];
+  });
+  const [isLoadingModels, setIsLoadingModels] = useState<boolean>(false);
+  const selectionRequestRef = useRef<number>(0);
+
+  // Sync dynamically loaded models whenever selectedBrand or category changes
+  useEffect(() => {
+    if (selectedBrand === 'Other / Custom') {
+      setAvailableModels([CUSTOM_DEVICE_TEMPLATE]);
+      setIsLoadingModels(false);
+      return;
+    }
+
+    const cached = getCachedBrandPhones(selectedBrand, category);
+    if (cached) {
+      setAvailableModels(cached);
+      setIsLoadingModels(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoadingModels(true);
+    if (
+      selectedPhone.verificationStatus !== 'custom' &&
+      getInitialBrand(selectedPhone) === selectedBrand &&
+      (category === 'all' || selectedPhone.category === 'gaming')
+    ) {
+      setAvailableModels([selectedPhone]);
+    }
+
+    loadBrandPhones(selectedBrand, category)
+      .then((models) => {
+        if (!cancelled) {
+          setAvailableModels(models);
+          setIsLoadingModels(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIsLoadingModels(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [selectedBrand, category]);
+
+  // Lazy-loaded full database for instant cross-brand search across all 1,089 models
+  const [allSearchPhones, setAllSearchPhones] = useState<PhoneModel[]>(() => getCachedAllPhones() || []);
+  const [isLoadingSearchDb, setIsLoadingSearchDb] = useState<boolean>(false);
+
+  const ensureSearchDatabaseLoaded = () => {
+    const cached = getCachedAllPhones();
+    if (cached) {
+      if (allSearchPhones.length === 0) setAllSearchPhones(cached);
+      return;
+    }
+    if (isLoadingSearchDb) return;
+    setIsLoadingSearchDb(true);
+    loadAllPhonesDatabase()
+      .then((phones) => {
+        setAllSearchPhones(phones);
+        setIsLoadingSearchDb(false);
+      })
+      .catch(() => {
+        setIsLoadingSearchDb(false);
+      });
+  };
 
   // Instant device search query state & matcher across database
   const [searchQuery, setSearchQuery] = useState<string>('');
   const searchResults = useMemo(() => {
     const q = searchQuery.trim().toLowerCase();
-    if (!q) return [];
-    return ALL_VERIFIED_PHONES.filter((p) => {
+    if (!q || allSearchPhones.length === 0) return [];
+    return allSearchPhones.filter((p) => {
       const matchName = p.name.toLowerCase().includes(q);
       const matchBrand = p.brand.toLowerCase().includes(q);
       const matchSeries = p.series ? p.series.toLowerCase().includes(q) : false;
       const matchCombined = `${p.brand} ${p.name}`.toLowerCase().includes(q);
       return matchName || matchBrand || matchSeries || matchCombined;
     });
-  }, [searchQuery]);
+  }, [searchQuery, allSearchPhones]);
 
   // Handle Category Change (All Phones vs Gaming Phones)
-  const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleCategoryChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const newCategory = e.target.value as 'all' | 'gaming';
+    const requestId = ++selectionRequestRef.current;
     playCyberClick('click');
     setCategory(newCategory);
 
@@ -137,10 +214,12 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
 
     // If currently selected brand is valid under the new category
     if (newAvailableBrands.includes(selectedBrand)) {
-      const models = getModelsByBrand(selectedBrand, newCategory);
+      const cached = getCachedBrandPhones(selectedBrand, newCategory);
+      const models = cached || (await loadBrandPhones(selectedBrand, newCategory));
+      if (requestId !== selectionRequestRef.current) return;
       if (models.length > 0) {
         // If current phone is in the filtered list, keep it; otherwise switch to first model
-        const match = models.find(m => m.id === selectedPhone.id);
+        const match = models.find((m) => m.id === selectedPhone.id);
         if (!match) {
           setIsCustomMode(false);
           onSelectPhone(models[0]);
@@ -148,11 +227,13 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
       }
     } else {
       // Brand is not in the new category (e.g. Apple or Samsung under Gaming Phones)
-      // Switch to first available brand (e.g. ASUS ROG or RedMagic)
+      // Switch to first available brand (e.g. Xiaomi or ASUS ROG)
       const fallbackBrand = newAvailableBrands[0] || 'ASUS ROG';
       setSelectedBrand(fallbackBrand);
       setIsCustomMode(false);
-      const models = getModelsByBrand(fallbackBrand, newCategory);
+      const cached = getCachedBrandPhones(fallbackBrand, newCategory);
+      const models = cached || (await loadBrandPhones(fallbackBrand, newCategory));
+      if (requestId !== selectionRequestRef.current) return;
       if (models.length > 0) {
         onSelectPhone(models[0]);
       }
@@ -212,8 +293,9 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
   };
 
   // Handle Brand Change
-  const handleBrandChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleBrandChange = async (e: React.ChangeEvent<HTMLSelectElement>) => {
     const brand = e.target.value;
+    const requestId = ++selectionRequestRef.current;
     playCyberClick('click');
     setSelectedBrand(brand);
 
@@ -234,7 +316,9 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
     }
 
     setIsCustomMode(false);
-    const models = getModelsByBrand(brand, category);
+    const cached = getCachedBrandPhones(brand, category);
+    const models = cached || (await loadBrandPhones(brand, category));
+    if (requestId !== selectionRequestRef.current) return;
     if (models && models.length > 0) {
       onSelectPhone(models[0]);
     }
@@ -310,7 +394,11 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            onFocus={ensureSearchDatabaseLoaded}
+            onChange={(e) => {
+              ensureSearchDatabaseLoaded();
+              setSearchQuery(e.target.value);
+            }}
             placeholder="Quick search any phone (e.g. Edge 70 Pro, G84, S26, iPhone 16)..."
             aria-label="Quick search phone model"
             className="w-full bg-black/60 border border-zinc-800 hover:border-zinc-700 focus:border-[#00FF66] rounded-xl pl-9 pr-8 py-2 text-xs text-white placeholder-zinc-500 focus:outline-none focus:ring-1 focus:ring-[#00FF66]/30 transition-all font-mono-code"
@@ -327,6 +415,14 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
           )}
         </div>
 
+        {/* Loading state while full 1,089-phone index hydrates on first search */}
+        {isLoadingSearchDb && searchQuery.trim() && allSearchPhones.length === 0 && (
+          <div className="mt-1.5 p-2.5 rounded-xl bg-zinc-950/95 border border-[#00FF66]/30 text-[11px] font-mono-code text-zinc-400 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#00FF66] animate-pulse shrink-0" />
+            <span>Loading 1,089 phone models...</span>
+          </div>
+        )}
+
         {/* Live Search Matches List */}
         {searchResults.length > 0 && searchQuery.trim() && (
           <div className="mt-1.5 p-1.5 rounded-xl bg-zinc-950/95 border border-[#00FF66]/40 shadow-2xl max-h-56 overflow-y-auto z-30 space-y-1 backdrop-blur-md">
@@ -340,6 +436,7 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
                 type="button"
                 onClick={() => {
                   playCyberClick('click');
+                  selectionRequestRef.current++;
                   setSelectedBrand(phone.brand);
                   setIsCustomMode(false);
                   onSelectPhone(phone);
@@ -1058,7 +1155,12 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
         {/* Category & Filter Count Subtitle */}
         <div className="flex items-center justify-between mt-2 px-0.5">
           <span className="text-[10px] sm:text-[11px] font-mono-code text-zinc-400 flex items-center gap-1">
-            {category === 'gaming' ? (
+            {isLoadingModels ? (
+              <span className="text-[#00FF66] flex items-center gap-1.5">
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00FF66] animate-pulse" />
+                Loading {selectedBrand} models...
+              </span>
+            ) : category === 'gaming' ? (
               <span className="text-[#00FF66] flex items-center gap-1">
                 <Gamepad2 className="w-3 h-3" />
                 Showing Gaming Phones Only ({availableModels.length} models)
@@ -1254,12 +1356,15 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pt-1">
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
+                const requestId = ++selectionRequestRef.current;
                 playCyberClick('click');
                 setIsCustomMode(false);
                 setSelectedBrand('Apple');
-                const firstApple = getModelsByBrand('Apple')[0];
-                if (firstApple) onSelectPhone(firstApple);
+                const cachedApple = getCachedBrandPhones('Apple');
+                const appleModels = cachedApple || (await loadBrandPhones('Apple'));
+                if (requestId !== selectionRequestRef.current) return;
+                if (appleModels[0]) onSelectPhone(appleModels[0]);
               }}
               className="text-xs text-zinc-400 hover:text-white underline cursor-pointer text-left"
             >

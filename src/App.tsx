@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { 
   GameId, 
   GripStyle, 
@@ -11,8 +11,8 @@ import {
   SavedPreset,
   IssueDiagnosticType
 } from './types';
-import { PHONE_DATABASE } from './data/phones';
-import { ALL_BRANDS } from './data/phones/index';
+import { DEFAULT_BOOT_PHONE, ALL_BRANDS } from './data/phones/catalogUtils';
+import { findCachedPhone, findPhoneAsync } from './data/phones/asyncLoader';
 import { GAMES_DATA } from './data/games';
 import { 
   calculateSensitivity, 
@@ -55,24 +55,46 @@ import { AimTelemetryCard } from './components/AimTelemetryCard';
 import { SensitivityDisplay } from './components/SensitivityDisplay';
 import { TrainingGroundCalibration } from './components/TrainingGroundCalibration';
 import { FireButtonHUDVisualizer } from './components/FireButtonHUDVisualizer';
-import { ImproveSensiModal } from './components/ImproveSensiModal';
-import { BrazilianSensiModal } from './components/BrazilianSensiModal';
-import { IndonesianSensiModal } from './components/IndonesianSensiModal';
-import { PreviousSensiDrawer } from './components/PreviousSensiDrawer';
 import { EthicalDisclaimer } from './components/EthicalDisclaimer';
 import { SEOGuideSection } from './components/SEOGuideSection';
 import { AdSenseUnit } from './components/AdSenseUnit';
 import { Footer } from './components/Footer';
-import { Phase9ApprovedBrazilianProfile } from './data/brazilSensiProfiles';
-import { ApprovedIndonesianProfile } from './data/indonesiaSensiProfiles';
+import type { Phase9ApprovedBrazilianProfile } from './data/brazilSensiProfiles';
+import type { ApprovedIndonesianProfile } from './data/indonesiaSensiProfiles';
+
+const ImproveSensiModal = lazy(() =>
+  import('./components/ImproveSensiModal').then((m) => ({ default: m.ImproveSensiModal }))
+);
+const BrazilianSensiModal = lazy(() =>
+  import('./components/BrazilianSensiModal').then((m) => ({ default: m.BrazilianSensiModal }))
+);
+const IndonesianSensiModal = lazy(() =>
+  import('./components/IndonesianSensiModal').then((m) => ({ default: m.IndonesianSensiModal }))
+);
+const PreviousSensiDrawer = lazy(() =>
+  import('./components/PreviousSensiDrawer').then((m) => ({ default: m.PreviousSensiDrawer }))
+);
+
+const ModalLoadingFallback: React.FC = () => (
+  <div
+    className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 backdrop-blur-sm"
+    role="status"
+    aria-label="Loading panel"
+  >
+    <div className="px-4 py-2.5 rounded-xl bg-[#070e0a] border border-[#00FF66]/40 text-xs font-mono-code text-[#00FF66] flex items-center gap-2 shadow-lg">
+      <span className="w-2 h-2 rounded-full bg-[#00FF66] animate-pulse" />
+      <span>Loading calibration lab...</span>
+    </div>
+  </div>
+);
 
 export default function App() {
   // Primary state: selected device (updated via dropdowns)
-  const [selectedPhone, setSelectedPhone] = useState<PhoneModel>(PHONE_DATABASE[0]);
+  const [selectedPhone, setSelectedPhone] = useState<PhoneModel>(DEFAULT_BOOT_PHONE);
   
   // The specific phone model that the currently displayed calibration was generated for.
   // When the user changes selectedPhone, calibratedPhone remains unchanged until "Try New Sensi" is pressed.
-  const [calibratedPhone, setCalibratedPhone] = useState<PhoneModel>(PHONE_DATABASE[0]);
+  const [calibratedPhone, setCalibratedPhone] = useState<PhoneModel>(DEFAULT_BOOT_PHONE);
 
   // Game Options: Free Fire India (default & first) and Free Fire MAX (second)
   const [selectedGame, setSelectedGame] = useState<GameId>('freefire_india');
@@ -82,7 +104,7 @@ export default function App() {
   const [selectedFps, setSelectedFps] = useState<number>(60);
 
   // Active calibrated data (Free Fire India is default on initial load)
-  const initialResult = calculateSensitivity('freefire_india', PHONE_DATABASE[0], '2finger', 'onetap', 60, 1.0, 'smg');
+  const initialResult = calculateSensitivity('freefire_india', DEFAULT_BOOT_PHONE, '2finger', 'onetap', 60, 1.0, 'smg');
   const [sensitivity, setSensitivity] = useState<SensitivityOutput>(initialResult.sensitivity);
   const [fireButton, setFireButton] = useState<FireButtonConfig>(initialResult.fireButton);
   const [telemetry, setTelemetry] = useState<AimTelemetry>(initialResult.telemetry);
@@ -179,6 +201,7 @@ export default function App() {
 
   // Load saved presets and handle URL parameters (share links) on mount
   useEffect(() => {
+    let cancelled = false;
     const list = getSavedPresets();
     setSavedPresets(list);
 
@@ -195,11 +218,10 @@ export default function App() {
         targetGame = urlGame;
       }
 
-      let targetPhone = PHONE_DATABASE[0];
-      if (urlPhone) {
-        const found = PHONE_DATABASE.find(p => p.id === urlPhone || p.name.toLowerCase() === urlPhone.toLowerCase());
-        if (found) targetPhone = found;
-      }
+      const cachedBootPhone = urlPhone
+        ? findCachedPhone({ id: urlPhone, name: urlPhone })
+        : undefined;
+      const targetPhone = cachedBootPhone || DEFAULT_BOOT_PHONE;
 
       let targetStyle: Playstyle = 'onetap';
       if (urlStyle && ['onetap', 'drag', 'recoil', 'rusher', 'sniper', 'balanced'].includes(urlStyle)) {
@@ -225,9 +247,31 @@ export default function App() {
 
       runCalibration(targetGame, targetPhone, '2finger', targetStyle, targetFps, targetWeapon);
       syncDocumentCanonical(window.location.pathname, window.location.search);
+
+      if (urlPhone && !cachedBootPhone) {
+        findPhoneAsync({ id: urlPhone, name: urlPhone })
+          .then((found) => {
+            if (cancelled || !found) return;
+            const resolvedFps =
+              urlFps && !isNaN(Number(urlFps))
+                ? getValidFpsForDevice(found, targetGame, Number(urlFps))
+                : 60;
+            setSelectedPhone(found);
+            setCalibratedPhone(found);
+            setSelectedFps(resolvedFps);
+            runCalibration(targetGame, found, '2finger', targetStyle, resolvedFps, targetWeapon);
+          })
+          .catch(() => {
+            // Keep default boot device on lookup error
+          });
+      }
     } catch {
       // Safe no-op if URL parsing fails
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const showToast = (msg: string) => {
@@ -613,8 +657,7 @@ export default function App() {
     // Restore device profile (preserving full specs for custom devices)
     const isCustomPreset = preset.verificationStatus === 'custom';
     const matchedDbPhone = !isCustomPreset
-      ? PHONE_DATABASE.find(p => p.name === preset.phoneModel && p.brand === preset.phoneBrand) ||
-        PHONE_DATABASE.find(p => p.name === preset.phoneModel)
+      ? findCachedPhone({ name: preset.phoneModel, brand: preset.phoneBrand })
       : undefined;
 
     const foundPhone: PhoneModel = matchedDbPhone || {
@@ -645,6 +688,18 @@ export default function App() {
     setSelectedPhone(foundPhone);
     setCalibratedPhone(foundPhone);
     showToast(`Loaded preset "${preset.name}"!`);
+
+    if (!isCustomPreset && !matchedDbPhone) {
+      findPhoneAsync({ name: preset.phoneModel, brand: preset.phoneBrand })
+        .then((asyncMatch) => {
+          if (!asyncMatch) return;
+          setSelectedPhone((prev) => (prev.id === foundPhone.id ? asyncMatch : prev));
+          setCalibratedPhone((prev) => (prev.id === foundPhone.id ? asyncMatch : prev));
+        })
+        .catch(() => {
+          // Keep synthesized preset device profile if chunk fails
+        });
+    }
   };
 
   const handleDeletePreset = (id: string) => {
@@ -1110,48 +1165,64 @@ export default function App() {
 
       </main>
 
-      {/* Improve My Sensi Diagnostic Modal */}
-      <ImproveSensiModal
-        isOpen={isImproveModalOpen}
-        onClose={() => setIsImproveModalOpen(false)}
-        onApplyImprovement={handleApplyImprovement}
-        onRevertImprovement={handleRevertImprovement}
-        gameName={GAMES_DATA[selectedGame].name}
-        currentSensitivity={sensitivity}
-        currentFireButton={fireButton}
-      />
+      {/* Improve My Sensi Diagnostic Modal (Lazy Loaded) */}
+      {isImproveModalOpen && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <ImproveSensiModal
+            isOpen={isImproveModalOpen}
+            onClose={() => setIsImproveModalOpen(false)}
+            onApplyImprovement={handleApplyImprovement}
+            onRevertImprovement={handleRevertImprovement}
+            gameName={GAMES_DATA[selectedGame].name}
+            currentSensitivity={sensitivity}
+            currentFireButton={fireButton}
+          />
+        </Suspense>
+      )}
 
-      {/* Brazilian Sensi Reference Modal (Optional, isolated) */}
-      <BrazilianSensiModal
-        isOpen={isBrazilianModalOpen}
-        onClose={() => setIsBrazilianModalOpen(false)}
-        onApplyProfile={handleApplyBrazilianProfile}
-        currentDeviceName={calibratedPhone.name}
-        isIosDevice={(calibratedPhone.brand || '').trim().toLowerCase() === 'apple'}
-      />
+      {/* Brazilian Sensi Reference Modal (Optional, Lazy Loaded) */}
+      {isBrazilianModalOpen && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <BrazilianSensiModal
+            isOpen={isBrazilianModalOpen}
+            onClose={() => setIsBrazilianModalOpen(false)}
+            onApplyProfile={handleApplyBrazilianProfile}
+            currentDeviceName={calibratedPhone.name}
+            isIosDevice={(calibratedPhone.brand || '').trim().toLowerCase() === 'apple'}
+          />
+        </Suspense>
+      )}
 
-      {/* Indonesian Sensi Reference Modal (Optional, isolated) */}
-      <IndonesianSensiModal
-        isOpen={isIndonesianModalOpen}
-        onClose={() => setIsIndonesianModalOpen(false)}
-        onApplyProfile={handleApplyIndonesianProfile}
-        currentDeviceName={calibratedPhone.name}
-      />
+      {/* Indonesian Sensi Reference Modal (Optional, Lazy Loaded) */}
+      {isIndonesianModalOpen && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <IndonesianSensiModal
+            isOpen={isIndonesianModalOpen}
+            onClose={() => setIsIndonesianModalOpen(false)}
+            onApplyProfile={handleApplyIndonesianProfile}
+            currentDeviceName={calibratedPhone.name}
+          />
+        </Suspense>
+      )}
 
-      {/* My Previous Sensi History Drawer */}
-      <PreviousSensiDrawer
-        isOpen={isHistoryDrawerOpen}
-        onClose={() => setIsHistoryDrawerOpen(false)}
-        presets={savedPresets}
-        onLoadPreset={handleLoadPreset}
-        onDeletePreset={handleDeletePreset}
-        onImportPresets={(newPresets) => setSavedPresets(newPresets)}
-        onUpdatePreset={handleUpdatePreset}
-        currentSensitivity={sensitivity}
-        currentFireButton={fireButton}
-        previousSnapshot={previousProfileSnapshot}
-        onRestoreSnapshot={handleRevertImprovement}
-      />
+      {/* My Previous Sensi History Drawer (Lazy Loaded) */}
+      {isHistoryDrawerOpen && (
+        <Suspense fallback={<ModalLoadingFallback />}>
+          <PreviousSensiDrawer
+            isOpen={isHistoryDrawerOpen}
+            onClose={() => setIsHistoryDrawerOpen(false)}
+            presets={savedPresets}
+            onLoadPreset={handleLoadPreset}
+            onDeletePreset={handleDeletePreset}
+            onImportPresets={(newPresets) => setSavedPresets(newPresets)}
+            onUpdatePreset={handleUpdatePreset}
+            currentSensitivity={sensitivity}
+            currentFireButton={fireButton}
+            previousSnapshot={previousProfileSnapshot}
+            onRestoreSnapshot={handleRevertImprovement}
+          />
+        </Suspense>
+      )}
 
       {/* Footer */}
       <Footer />

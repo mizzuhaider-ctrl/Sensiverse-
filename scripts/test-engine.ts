@@ -1,4 +1,11 @@
-import { ALL_VERIFIED_PHONES, ALL_BRANDS, getModelsForBrand, getDatabaseStatistics } from '../src/data/phones/index';
+import { ALL_VERIFIED_PHONES, ALL_BRANDS, getModelsForBrand, getBrandsForCategory, getDatabaseStatistics } from '../src/data/phones/index';
+import { DEFAULT_BOOT_PHONE, GAMING_CATEGORY_BRANDS } from '../src/data/phones/catalogUtils';
+import {
+  loadBrandPhones,
+  getCachedBrandPhones,
+  loadAllPhonesDatabase,
+  findPhoneAsync,
+} from '../src/data/phones/asyncLoader';
 import { 
   calculateSensitivity, 
   calculateCustomDeviceSensitivity,
@@ -4177,12 +4184,13 @@ assert(
 
 const prevDrawerCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/PreviousSensiDrawer.tsx'), 'utf-8');
 assert(
-  prevDrawerCode.includes('PHONE_DATABASE') &&
+  prevDrawerCode.includes('findPhoneAsync') &&
+  !prevDrawerCode.includes('PHONE_DATABASE') &&
   prevDrawerCode.includes('recommendedDpi ?? 420') &&
   prevDrawerCode.includes("'One-Tap Headshot'") &&
   prevDrawerCode.includes("'Drag Headshot'") &&
   prevDrawerCode.includes("'Recoil Control'"),
-  'PreviousSensiDrawer resolves actual device recommendedDpi (fallback 420) and formats playstyle labels on copy'
+  'PreviousSensiDrawer resolves actual device recommendedDpi asynchronously (fallback 420) and formats playstyle labels on copy'
 );
 
 const storageCode = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/storage.ts'), 'utf-8');
@@ -4191,6 +4199,101 @@ assert(
   importFnBody.includes('writeStorageItem(STORAGE_KEY') && !importFnBody.includes('localStorage.setItem'),
   'storage.ts importPresetsFromJson uses writeStorageItem instead of direct localStorage.setItem'
 );
+
+console.log('\n[TEST GROUP 48] Phase 2 P0 Code Splitting & Lazy Modal Loading Verification');
+
+// 1. Default boot phone & static gaming brand list match synchronous database 1:1
+assert(
+  JSON.stringify(DEFAULT_BOOT_PHONE) === JSON.stringify(ALL_VERIFIED_PHONES[0]),
+  'DEFAULT_BOOT_PHONE matches ALL_VERIFIED_PHONES[0] identically'
+);
+const syncGamingBrands = getBrandsForCategory('gaming');
+assert(
+  JSON.stringify(GAMING_CATEGORY_BRANDS) === JSON.stringify(syncGamingBrands),
+  `GAMING_CATEGORY_BRANDS matches getBrandsForCategory("gaming") (${syncGamingBrands.length} brands)`
+);
+
+// 2. Dynamic per-brand chunk loader matches synchronous getModelsForBrand and caches results
+const asyncApple = await loadBrandPhones('Apple', 'all');
+const syncApple = getModelsForBrand('Apple', 'all');
+assert(
+  asyncApple.length === 52 &&
+  JSON.stringify(asyncApple.map((p) => p.id)) === JSON.stringify(syncApple.map((p) => p.id)),
+  `loadBrandPhones("Apple", "all") returns all ${asyncApple.length} models in exact order`
+);
+assert(
+  getCachedBrandPhones('Apple', 'all')?.length === 52,
+  'getCachedBrandPhones returns cached Apple models synchronously after initial load'
+);
+
+// Multi-chunk brand (Black Shark spans xiaomi.ts and other_brands.ts)
+const asyncBlackShark = await loadBrandPhones('Black Shark', 'all');
+const syncBlackShark = getModelsForBrand('Black Shark', 'all');
+assert(
+  asyncBlackShark.length === syncBlackShark.length &&
+  asyncBlackShark.length > 0 &&
+  JSON.stringify(asyncBlackShark.map((p) => p.id)) === JSON.stringify(syncBlackShark.map((p) => p.id)),
+  `loadBrandPhones("Black Shark", "all") matches synchronous multi-chunk result (${asyncBlackShark.length} models)`
+);
+
+// 3. Async full database loader preserves all 1,089 models and order
+const asyncAllPhones = await loadAllPhonesDatabase();
+assert(
+  asyncAllPhones.length === ALL_VERIFIED_PHONES.length &&
+  asyncAllPhones.length === 1089 &&
+  asyncAllPhones[0].id === ALL_VERIFIED_PHONES[0].id &&
+  asyncAllPhones[asyncAllPhones.length - 1].id === ALL_VERIFIED_PHONES[ALL_VERIFIED_PHONES.length - 1].id,
+  `loadAllPhonesDatabase() preserves all ${asyncAllPhones.length} verified models in exact order`
+);
+
+// 4. Targeted phone resolution for ?phone= share links and preset DPI lookups
+const lookupApple = await findPhoneAsync({ id: 'apple-17e', name: 'iPhone 17e' });
+const lookupSamsung = ALL_VERIFIED_PHONES.find((p) => p.brand === 'Samsung')!;
+const resolvedSamsung = await findPhoneAsync({ id: lookupSamsung.id, name: lookupSamsung.name });
+const lookupRedmi = ALL_VERIFIED_PHONES.find((p) => p.brand === 'Redmi')!;
+const resolvedRedmi = await findPhoneAsync({ name: lookupRedmi.name, brand: lookupRedmi.brand });
+assert(
+  lookupApple?.id === 'apple-17e' &&
+  resolvedSamsung?.id === lookupSamsung.id &&
+  resolvedRedmi?.recommendedDpi === lookupRedmi.recommendedDpi,
+  'findPhoneAsync accurately resolves shared ?phone= targets and preset recommendedDpi across chunks'
+);
+
+// 5. Static source checks: no eager PHONE_DATABASE / ALL_VERIFIED_PHONES in runtime UI & all 4 modals lazy-loaded
+assert(
+  !appTsxSource.includes('PHONE_DATABASE') &&
+  !appTsxSource.includes('ALL_VERIFIED_PHONES') &&
+  !selectorCode.includes('ALL_VERIFIED_PHONES') &&
+  !selectorCode.includes('PHONE_DATABASE'),
+  'App.tsx and DeviceSelector.tsx have zero eager imports of PHONE_DATABASE / ALL_VERIFIED_PHONES'
+);
+assert(
+  appTsxSource.includes("lazy(() =>") &&
+  appTsxSource.includes('<Suspense') &&
+  appTsxSource.includes("import('./components/ImproveSensiModal')") &&
+  appTsxSource.includes("import('./components/BrazilianSensiModal')") &&
+  appTsxSource.includes("import('./components/IndonesianSensiModal')") &&
+  appTsxSource.includes("import('./components/PreviousSensiDrawer')"),
+  'App.tsx lazy-loads all 4 heavy modals/drawers using React.lazy and Suspense'
+);
+
+// 6. Built dist/ verification when production assets exist
+const distAssetsDir = path.resolve(process.cwd(), 'dist/assets');
+if (fs.existsSync(distAssetsDir)) {
+  const jsChunks = fs.readdirSync(distAssetsDir).filter((f) => f.endsWith('.js'));
+  const mainEntryChunk = jsChunks.find((f) => f.startsWith('index-'));
+  assert(
+    jsChunks.length >= 20 && Boolean(mainEntryChunk),
+    `Production dist/assets contains ${jsChunks.length} code-split JS chunks (including main entry ${mainEntryChunk})`
+  );
+  if (mainEntryChunk) {
+    const mainBytes = fs.statSync(path.join(distAssetsDir, mainEntryChunk)).size;
+    assert(
+      mainBytes < 850 * 1024,
+      `Main entry chunk (${mainEntryChunk}) reduced to ${(mainBytes / 1024).toFixed(1)} KiB (< 850 KiB vs 1,772.4 kB baseline)`
+    );
+  }
+}
 
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;
