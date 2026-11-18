@@ -1430,8 +1430,8 @@ const titleMatch = seoHtmlContent.match(/<title>(.*?)<\/title>/);
 assert(Boolean(titleMatch), 'index.html contains a valid <title> tag');
 const pageTitle = titleMatch ? titleMatch[1] : '';
 assert(
-  pageTitle === 'SensiVerse – Free Fire &amp; Free Fire MAX Sensitivity Generator',
-  `Title matches approved brand format: "${pageTitle}"`
+  pageTitle === 'SensiVerse – Free Fire India &amp; MAX Headshot Sensitivity, DPI',
+  `Title matches Phase 1 SEO brand format: "${pageTitle}"`
 );
 assert(
   pageTitle.replace('&amp;', '&').length >= 30 && pageTitle.replace('&amp;', '&').length <= 60,
@@ -1447,12 +1447,22 @@ assert(
   `Meta description length is between 120 and 160 chars (Got: ${metaDesc.length} chars)`
 );
 assert(
-  metaDesc.includes('Free Fire') && metaDesc.includes('Free Fire MAX'),
-  'Meta description naturally incorporates Free Fire and Free Fire MAX keywords'
+  metaDesc.includes('Free Fire') &&
+  metaDesc.includes('Free Fire India') &&
+  metaDesc.includes('Free Fire MAX') &&
+  metaDesc.includes('DPI'),
+  'Meta description naturally incorporates Free Fire India, Free Fire MAX, headshot, and DPI keywords'
 );
 assert(
   !metaDesc.toLowerCase().includes('100% headshot') && !metaDesc.toLowerCase().includes('guaranteed headshot'),
   'Meta description makes no unrealistic "100% headshot" or "guaranteed headshot" claims'
+);
+
+// 2b. Verify no legacy BGMI, PUBG, or CODM references remain in index.html or manifest.json
+const manifestContent = fs.readFileSync(path.resolve(process.cwd(), 'public/manifest.json'), 'utf-8');
+assert(
+  !/bgmi|pubg|cod mobile|codm/i.test(seoHtmlContent) && !/bgmi|pubg|cod mobile|codm/i.test(manifestContent),
+  'index.html and public/manifest.json contain zero outdated BGMI, PUBG, or CODM references'
 );
 
 // 3. Viewport & Mobile Indexability
@@ -1471,11 +1481,11 @@ assert(
 
 // 4. Social Card & Open Graph Verification
 assert(
-  seoHtmlContent.includes('<meta property="og:title" content="SensiVerse – Free Fire &amp; Free Fire MAX Sensitivity Generator" />'),
+  seoHtmlContent.includes('<meta property="og:title" content="SensiVerse – Free Fire India &amp; MAX Headshot Sensitivity, DPI" />'),
   'og:title matches page title'
 );
 assert(
-  seoHtmlContent.includes('<meta property="og:description" content="Calibrate optimized Free Fire and Free Fire MAX sensitivity settings'),
+  seoHtmlContent.includes('<meta property="og:description" content="Calibrate Free Fire India and Free Fire MAX headshot sensitivity, DPI, fire button sizes'),
   'og:description matches meta description'
 );
 assert(
@@ -1483,7 +1493,7 @@ assert(
   'twitter:card uses summary_large_image'
 );
 assert(
-  seoHtmlContent.includes('<meta name="twitter:title" content="SensiVerse – Free Fire &amp; Free Fire MAX Sensitivity Generator" />'),
+  seoHtmlContent.includes('<meta name="twitter:title" content="SensiVerse – Free Fire India &amp; MAX Headshot Sensitivity, DPI" />'),
   'twitter:title is configured'
 );
 
@@ -1501,10 +1511,53 @@ assert(
   'JSON-LD contains HowTo structured schema'
 );
 
-// Verify FAQ question 4 explains calibration
+// Verify FAQPage JSON-LD has 7 questions matching SEOGuideSection visible FAQs 1:1
+const jsonLdMatch = seoHtmlContent.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
+assert(Boolean(jsonLdMatch), 'index.html has parseable JSON-LD script block');
+if (jsonLdMatch) {
+  const parsedJsonLd = JSON.parse(jsonLdMatch[1]);
+  const faqNode = parsedJsonLd['@graph']?.find((n: any) => n['@type'] === 'FAQPage');
+  const howToNode = parsedJsonLd['@graph']?.find((n: any) => n['@type'] === 'HowTo');
+  const webAppNode = parsedJsonLd['@graph']?.find((n: any) => n['@type'] === 'WebApplication');
+  assert(
+    Array.isArray(faqNode?.mainEntity) && faqNode.mainEntity.length === 7,
+    `FAQPage JSON-LD contains all 7 visible FAQs (Got: ${faqNode?.mainEntity?.length})`
+  );
+  assert(
+    Boolean(webAppNode?.inLanguage === 'en' && webAppNode?.browserRequirements && webAppNode?.screenshot),
+    'WebApplication schema includes inLanguage, browserRequirements, and screenshot'
+  );
+  assert(
+    howToNode?.step?.[1]?.text?.includes('Free Fire India') && howToNode?.step?.[1]?.text?.includes('Free Fire MAX'),
+    'HowTo step 2 accurately specifies Free Fire India and Free Fire MAX'
+  );
+}
+
+// Verify all 4 guide tabs and 7 FAQ answers stay mounted in SEOGuideSection DOM
+const seoGuideTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/SEOGuideSection.tsx'), 'utf-8');
 assert(
-  seoHtmlContent.includes('How does SensiVerse calibrate sensitivity for Free Fire and Free Fire MAX?'),
-  'JSON-LD FAQ explains SensiVerse calibration accurately'
+  !seoGuideTsx.includes("{activeTab === 'ff_india' &&") &&
+  !seoGuideTsx.includes("{activeTab === 'ff_max' &&") &&
+  !seoGuideTsx.includes("{activeTab === 'firebutton' &&") &&
+  !seoGuideTsx.includes("{activeTab === 'hardware' &&") &&
+  !seoGuideTsx.includes('{isOpen && ('),
+  'SEOGuideSection renders all 4 guide articles and 7 FAQ answers in DOM using CSS visibility toggling'
+);
+
+// Verify heading hierarchy & internal anchor links
+const aimCardTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/AimTelemetryCard.tsx'), 'utf-8');
+const ethicalTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/EthicalDisclaimer.tsx'), 'utf-8');
+const footerTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/Footer.tsx'), 'utf-8');
+const navbarTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/Navbar.tsx'), 'utf-8');
+assert(
+  aimCardTsx.includes('<h2') && ethicalTsx.includes('<h2'),
+  'AimTelemetryCard and EthicalDisclaimer use proper h2 headings'
+);
+assert(
+  navbarTsx.includes('href="#top"') &&
+  footerTsx.includes('href="#device-selector"') &&
+  footerTsx.includes('href="#faq"'),
+  'Navbar and Footer include semantic internal anchor links'
 );
 
 // Verify Schema.org Fire Button approved constraints

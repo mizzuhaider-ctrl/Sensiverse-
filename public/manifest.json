@@ -1,7 +1,7 @@
 {
   "name": "SensiVerse - Gaming Sensitivity & HUD Generator",
   "short_name": "SensiVerse",
-  "description": "Esports device touch and sensitivity calibrator for Free Fire MAX, BGMI, PUBG Mobile, and COD Mobile.",
+  "description": "Hardware-calibrated headshot sensitivity, DPI, and fire button HUD generator for Free Fire India and Free Fire MAX.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#030704",

@@ -44,7 +44,7 @@ export const FireButtonHUDVisualizer: React.FC<FireButtonHUDVisualizerProps> = (
   const buttonDiameterPx = Math.round((config.sizePercent / 100) * 88);
 
   return (
-    <div className="w-full bg-[#08100b]/90 border border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
+    <div id="fire-button-hud" className="w-full bg-[#08100b]/90 border border-zinc-800 rounded-2xl p-4 sm:p-6 shadow-xl relative overflow-hidden">
       {/* Cyber corner accents */}
       <div className="absolute top-0 right-0 w-12 h-12 border-t-2 border-r-2 border-[#00FF66]/40 pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-12 h-12 border-b-2 border-l-2 border-[#00FF66]/40 pointer-events-none" />

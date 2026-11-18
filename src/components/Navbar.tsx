@@ -31,7 +31,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 h-16 flex items-center justify-between gap-1.5 sm:gap-4">
         
         {/* Brand */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+        <a href="#top" aria-label="SensiVerse Home" className="flex items-center gap-2 sm:gap-3 shrink-0 group">
           <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-black border border-[#00FF66]/50 shadow-[0_0_15px_rgba(0,255,102,0.3)] shrink-0 overflow-hidden p-0.5">
             <img 
               src="/favicon-48x48.png" 
@@ -52,7 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               Device Touch & Sensitivity Calibrator
             </p>
           </div>
-        </div>
+        </a>
 
         {/* Game Quick Switcher (Desktop) */}
         <div className="hidden lg:flex items-center gap-1.5 p-1 bg-black/60 rounded-lg border border-zinc-800 shrink-0">

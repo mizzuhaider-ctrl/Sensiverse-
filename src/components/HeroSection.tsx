@@ -17,7 +17,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   fireButtonSize,
 }) => {
   return (
-    <section className="relative w-full py-8 md:py-14 px-4 sm:px-6 overflow-hidden cyber-grid border-b border-zinc-900" style={{ isolation: 'isolate' }}>
+    <section id="top" className="relative w-full py-8 md:py-14 px-4 sm:px-6 overflow-hidden cyber-grid border-b border-zinc-900" style={{ isolation: 'isolate' }}>
       {/* Background ambient neon glows */}
       <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-72 sm:w-96 h-72 sm:h-96 bg-[#00FF66]/10 rounded-full blur-[70px] sm:blur-[110px] pointer-events-none" />
       <div className="absolute top-0 right-4 sm:right-10 w-48 sm:w-64 h-48 sm:h-64 bg-[#00cc52]/5 rounded-full blur-[60px] sm:blur-[80px] pointer-events-none" />
@@ -39,9 +39,13 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-black font-cyber tracking-tight text-white leading-[1.05] w-full">
-            FREE FIRE<br />
-            <span className="text-[#00FF66] drop-shadow-[0_0_20px_rgba(0,255,102,0.6)]">SENSITIVITY</span>
+            FREE FIRE INDIA &amp; MAX<br />
+            <span className="text-[#00FF66] drop-shadow-[0_0_20px_rgba(0,255,102,0.6)]">HEADSHOT SENSITIVITY</span>
           </h1>
+
+          <p className="text-xs sm:text-sm font-mono-code text-[#00FF66]/90 uppercase tracking-wider">
+            Phone-Calibrated Sensitivity, DPI &amp; Fire Button HUD Generator
+          </p>
 
           <p className="text-sm sm:text-base text-zinc-300 w-full max-w-2xl mx-auto lg:mx-0 leading-relaxed">
             Stop copying random sensitivity settings. SensiVerse delivers Advanced Sensitivity Calibration with Brazilian 🇧🇷 and Indonesian 🇮🇩 headshot-focused presets tailored to your device hardware.
@@ -92,6 +96,28 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <span>No login • 100% Free • Safe & Fair-Play</span>
             </div>
           </div>
+
+          <nav aria-label="Sensitivity Tool Sections" className="flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-1.5 pt-1 text-[11px] font-mono-code text-zinc-400">
+            <a href="#device-selector" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+              Phone Settings
+            </a>
+            <span aria-hidden="true" className="text-zinc-700">•</span>
+            <a href="#step-6-results" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+              Sensitivity &amp; DPI
+            </a>
+            <span aria-hidden="true" className="text-zinc-700">•</span>
+            <a href="#fire-button-hud" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+              Fire Button Size
+            </a>
+            <span aria-hidden="true" className="text-zinc-700">•</span>
+            <a href="#seo-guides-heading" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+              Headshot Guides
+            </a>
+            <span aria-hidden="true" className="text-zinc-700">•</span>
+            <a href="#faq" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+              FAQ
+            </a>
+          </nav>
 
         </div>
 

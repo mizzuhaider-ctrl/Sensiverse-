@@ -55,9 +55,9 @@ export const AimTelemetryCard: React.FC<AimTelemetryCardProps> = ({
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-zinc-800/80">
         <div className="flex items-center gap-2">
           <Activity className="w-4 h-4 text-[#00FF66]" />
-          <h3 className="text-sm sm:text-base font-bold font-cyber text-white">
+          <h2 className="text-sm sm:text-base font-bold font-cyber text-white">
             AIM MOVEMENT & TOUCH TELEMETRY
-          </h3>
+          </h2>
         </div>
 
         {/* Evidence Category Badge */}

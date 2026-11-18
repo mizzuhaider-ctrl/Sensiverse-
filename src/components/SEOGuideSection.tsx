@@ -130,8 +130,10 @@ export const SEOGuideSection: React.FC = () => {
         </div>
 
         {/* Tab 1: Free Fire India */}
-        {activeTab === 'ff_india' && (
-          <article className="space-y-4 animate-in fade-in duration-200">
+        <article
+          aria-hidden={activeTab !== 'ff_india'}
+          className={activeTab === 'ff_india' ? 'space-y-4 animate-in fade-in duration-200' : 'hidden'}
+        >
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-zinc-800/80 pb-2">
               <div className="flex items-center gap-2 text-[#00FF66]">
                 <span className="text-base">🇮🇳</span>
@@ -187,11 +189,12 @@ export const SEOGuideSection: React.FC = () => {
               </div>
             </div>
           </article>
-        )}
 
         {/* Tab 2: Free Fire MAX */}
-        {activeTab === 'ff_max' && (
-          <article className="space-y-4 animate-in fade-in duration-200">
+        <article
+          aria-hidden={activeTab !== 'ff_max'}
+          className={activeTab === 'ff_max' ? 'space-y-4 animate-in fade-in duration-200' : 'hidden'}
+        >
             <div className="flex items-center gap-2 text-[#00FF66]">
               <Flame className="w-4 h-4" />
               <h3 className="font-cyber font-bold text-sm sm:text-base text-white">
@@ -235,11 +238,12 @@ export const SEOGuideSection: React.FC = () => {
               </div>
             </div>
           </article>
-        )}
 
         {/* Tab 3: Fire Button Science & Drag Headshot Mechanics */}
-        {activeTab === 'firebutton' && (
-          <article className="space-y-4 animate-in fade-in duration-200">
+        <article
+          aria-hidden={activeTab !== 'firebutton'}
+          className={activeTab === 'firebutton' ? 'space-y-4 animate-in fade-in duration-200' : 'hidden'}
+        >
             <div className="flex items-center gap-2 text-[#00FF66]">
               <Target className="w-4 h-4" />
               <h3 className="font-cyber font-bold text-sm sm:text-base text-white">
@@ -283,11 +287,12 @@ export const SEOGuideSection: React.FC = () => {
               </div>
             </div>
           </article>
-        )}
 
         {/* Tab 4: Hardware Physics */}
-        {activeTab === 'hardware' && (
-          <article className="space-y-4 animate-in fade-in duration-200">
+        <article
+          aria-hidden={activeTab !== 'hardware'}
+          className={activeTab === 'hardware' ? 'space-y-4 animate-in fade-in duration-200' : 'hidden'}
+        >
             <div className="flex items-center gap-2 text-[#00FF66]">
               <Cpu className="w-4 h-4" />
               <h3 className="font-cyber font-bold text-sm sm:text-base text-white">
@@ -321,12 +326,11 @@ export const SEOGuideSection: React.FC = () => {
               </div>
             </div>
           </article>
-        )}
 
       </div>
 
       {/* SEO FAQ Accordion */}
-      <div className="bg-[#08100b]/90 border border-zinc-800 rounded-2xl p-5 sm:p-7 shadow-xl">
+      <div id="faq" className="bg-[#08100b]/90 border border-zinc-800 rounded-2xl p-5 sm:p-7 shadow-xl">
         <div className="flex items-center gap-2 mb-4">
           <HelpCircle className="w-5 h-5 text-[#00FF66]" />
           <h2 className="text-lg sm:text-xl font-bold font-cyber text-white">
@@ -352,11 +356,12 @@ export const SEOGuideSection: React.FC = () => {
                   </div>
                 </button>
 
-                {isOpen && (
-                  <div className="mt-2 text-xs sm:text-sm text-zinc-400 leading-relaxed pr-4 animate-in fade-in duration-200">
-                    {faq.a}
-                  </div>
-                )}
+                <div
+                  aria-hidden={!isOpen}
+                  className={isOpen ? 'mt-2 text-xs sm:text-sm text-zinc-400 leading-relaxed pr-4 animate-in fade-in duration-200' : 'hidden'}
+                >
+                  {faq.a}
+                </div>
               </div>
             );
           })}

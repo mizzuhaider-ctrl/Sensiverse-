@@ -11,12 +11,12 @@ export const EthicalDisclaimer: React.FC = () => {
           <ShieldCheck className="w-5 h-5" />
         </div>
         <div>
-          <h3 className="text-sm sm:text-base font-bold font-cyber text-white flex items-center gap-2">
+          <h2 className="text-sm sm:text-base font-bold font-cyber text-white flex items-center gap-2">
             <span>FAIR-PLAY ESPORTS & REALISTIC CALIBRATION POLICY</span>
             <span className="text-[10px] font-mono-code px-2 py-0.5 rounded bg-zinc-900 text-zinc-400 border border-zinc-800">
               ANTI-CLICKBAIT
             </span>
-          </h3>
+          </h2>
           <p className="text-xs text-zinc-400 mt-0.5">
             SensiVerse provides mathematical calibration based on hardware screen physics, not fake guarantees.
           </p>
