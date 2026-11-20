@@ -9,6 +9,7 @@ interface NavbarProps {
   savedCount: number;
   onOpenHistory: () => void;
   onQuickNewSensi: () => void;
+  onNavigateHome?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,6 +18,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   savedCount,
   onOpenHistory,
   onQuickNewSensi,
+  onNavigateHome,
 }) => {
   const [soundOn, setSoundOn] = React.useState(isSoundEnabled());
 
@@ -31,7 +33,18 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="w-full max-w-7xl mx-auto px-2.5 sm:px-6 h-16 flex items-center justify-between gap-1.5 sm:gap-4">
         
         {/* Brand */}
-        <a href="#top" aria-label="SensiVerse Home" className="flex items-center gap-2 sm:gap-3 shrink-0 group">
+        <a
+          href="#top"
+          aria-label="SensiVerse Home"
+          onClick={(e) => {
+            if (!onNavigateHome) return;
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
+            playCyberClick('click');
+            onNavigateHome();
+          }}
+          className="flex items-center gap-2 sm:gap-3 shrink-0 group"
+        >
           <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-black border border-[#00FF66]/50 shadow-[0_0_15px_rgba(0,255,102,0.3)] shrink-0 overflow-hidden p-0.5">
             <picture className="w-full h-full flex items-center justify-center">
               <source srcSet="/favicon-48x48.webp" type="image/webp" />

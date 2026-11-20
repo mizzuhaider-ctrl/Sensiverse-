@@ -33,7 +33,33 @@
     <meta property="og:site_name" content="SensiVerse" />
     <script>
       (function () {
-        var canonical = 'https://sensiverse.vercel.app/';
+        var origin = 'https://sensiverse.vercel.app';
+        var routeMetaMap = {
+          '/privacy-policy': {
+            title: 'Privacy Policy | SensiVerse',
+            description: 'Learn how SensiVerse handles browser localStorage presets, advertising slots, Google AdSense cookies, and user privacy rights.'
+          },
+          '/terms-and-conditions': {
+            title: 'Terms & Conditions | SensiVerse',
+            description: 'Review the Terms & Conditions for using SensiVerse, including fair-play sensitivity guidelines and non-affiliation notices.'
+          },
+          '/about-us': {
+            title: 'About Us | SensiVerse',
+            description: 'About SensiVerse: hardware-calibrated Free Fire India & Free Fire MAX sensitivity, Android DPI, and fire button HUD utility.'
+          },
+          '/contact-us': {
+            title: 'Contact Us | SensiVerse',
+            description: 'Contact SensiVerse for device database updates, calibration feedback, privacy questions, and website inquiries.'
+          },
+          '/cookie-policy': {
+            title: 'Cookie Policy | SensiVerse',
+            description: 'Understand how SensiVerse uses localStorage and how Google AdSense and third-party vendors use advertising cookies.'
+          }
+        };
+        var rawPath = (window.location && window.location.pathname) ? window.location.pathname : '/';
+        var cleanPath = (rawPath.replace(/\/+$/, '') || '/').toLowerCase();
+        var routeMeta = Object.prototype.hasOwnProperty.call(routeMetaMap, cleanPath) ? routeMetaMap[cleanPath] : null;
+        var canonical = routeMeta ? (origin + cleanPath) : (origin + '/');
         var links = document.head.querySelectorAll('link[rel="canonical"]');
         if (links.length > 0) {
           if (links[0].getAttribute('href') !== canonical) {
@@ -58,6 +84,15 @@
           meta.setAttribute('property', 'og:url');
           meta.content = canonical;
           document.head.appendChild(meta);
+        }
+        if (routeMeta) {
+          document.title = routeMeta.title;
+          var descEl = document.head.querySelector('meta[name="description"]');
+          if (descEl) descEl.setAttribute('content', routeMeta.description);
+          var ogTitleEl = document.head.querySelector('meta[property="og:title"]');
+          if (ogTitleEl) ogTitleEl.setAttribute('content', routeMeta.title);
+          var ogDescEl = document.head.querySelector('meta[property="og:description"]');
+          if (ogDescEl) ogDescEl.setAttribute('content', routeMeta.description);
         }
       })();
     </script>

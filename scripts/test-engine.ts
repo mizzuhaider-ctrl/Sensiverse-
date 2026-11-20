@@ -4065,15 +4065,23 @@ assert(
   'vercel.json rewrite uses valid path-to-regexp negative lookahead excluding API, assets, robots.txt, sitemap.xml, and Google verification files'
 );
 
+const expectedLegalSitemapUrls = [
+  `${PRODUCTION_CANONICAL_ORIGIN}/about-us`,
+  `${PRODUCTION_CANONICAL_ORIGIN}/contact-us`,
+  `${PRODUCTION_CANONICAL_ORIGIN}/privacy-policy`,
+  `${PRODUCTION_CANONICAL_ORIGIN}/terms-and-conditions`,
+  `${PRODUCTION_CANONICAL_ORIGIN}/cookie-policy`,
+];
 const sitemapLocMatches = Array.from(sitemapContent.matchAll(/<loc>(.*?)<\/loc>/g)).map((m) => m[1]);
 assert(
   sitemapContent.startsWith('<?xml version="1.0" encoding="UTF-8"?>') &&
   sitemapContent.includes('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">') &&
   sitemapContent.trimEnd().endsWith('</urlset>') &&
-  sitemapLocMatches.length === 1 &&
-  sitemapLocMatches[0] === PRODUCTION_CANONICAL_HOME &&
+  sitemapLocMatches.length === 6 &&
+  sitemapLocMatches.includes(PRODUCTION_CANONICAL_HOME) &&
+  expectedLegalSitemapUrls.every((u) => sitemapLocMatches.includes(u)) &&
   !sitemapContent.includes('?game='),
-  'sitemap.xml is valid XML containing ONLY the single canonical homepage URL https://sensiverse.vercel.app/'
+  'sitemap.xml is valid XML containing homepage URL + all 5 indexable legal/info URLs with zero query URLs'
 );
 
 assert(
@@ -4093,8 +4101,14 @@ assert(
   resolveCanonicalUrl('/', '?game=codm') === PRODUCTION_CANONICAL_HOME &&
   resolveCanonicalUrl('/', '?game=freefire_india&phone=apple-12&style=onetap') === PRODUCTION_CANONICAL_HOME &&
   resolveCanonicalUrl('/', '?game=freefire_max&phone=apple-13&style=onetap&weapon=smg&fps=120') === PRODUCTION_CANONICAL_HOME &&
-  resolveCanonicalUrl('/non-existent-route', '') === PRODUCTION_CANONICAL_HOME,
-  'resolveCanonicalUrl consistently consolidates home, all 6 game query URLs, share links, and fallback paths to https://sensiverse.vercel.app/'
+  resolveCanonicalUrl('/non-existent-route', '') === PRODUCTION_CANONICAL_HOME &&
+  resolveCanonicalUrl('/privacy-policy', '') === `${PRODUCTION_CANONICAL_ORIGIN}/privacy-policy` &&
+  resolveCanonicalUrl('/privacy-policy/', '') === `${PRODUCTION_CANONICAL_ORIGIN}/privacy-policy` &&
+  resolveCanonicalUrl('/terms-and-conditions', '') === `${PRODUCTION_CANONICAL_ORIGIN}/terms-and-conditions` &&
+  resolveCanonicalUrl('/about-us', '') === `${PRODUCTION_CANONICAL_ORIGIN}/about-us` &&
+  resolveCanonicalUrl('/contact-us', '') === `${PRODUCTION_CANONICAL_ORIGIN}/contact-us` &&
+  resolveCanonicalUrl('/cookie-policy', '') === `${PRODUCTION_CANONICAL_ORIGIN}/cookie-policy`,
+  'resolveCanonicalUrl consolidates home/query/fallback routes to https://sensiverse.vercel.app/ and resolves self-canonical URLs for all 5 legal/info pages'
 );
 
 const distHtmlPath = path.resolve(process.cwd(), 'dist/index.html');
@@ -4383,6 +4397,52 @@ assert(
 assert(
   vercelConfigContent.includes('sensiverse-logo'),
   'vercel.json cache headers cover sensiverse-logo.png alongside favicon and apple-touch-icon assets'
+);
+
+console.log('\n[TEST GROUP 50] AdSense Readiness Pages, Footer Links, Self-Canonicals & Routing');
+
+const legalPagesCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/LegalPages.tsx'), 'utf-8');
+const appRouterCode = fs.readFileSync(path.resolve(process.cwd(), 'src/App.tsx'), 'utf-8');
+
+assert(
+  legalPagesCode.includes('PRIVACY POLICY') &&
+  legalPagesCode.includes('TERMS & CONDITIONS') &&
+  legalPagesCode.includes('ABOUT US') &&
+  legalPagesCode.includes('CONTACT US') &&
+  legalPagesCode.includes('COOKIE POLICY'),
+  'LegalPages component renders all 5 required AdSense readiness pages'
+);
+
+assert(
+  legalPagesCode.includes('sensiverse_saved_presets_v1') &&
+  legalPagesCode.includes('sensiverse_gen_history_v1') &&
+  legalPagesCode.includes('https://adssettings.google.com/') &&
+  legalPagesCode.includes('https://policies.google.com/technologies/partner-sites') &&
+  legalPagesCode.includes('non-personalized ads') &&
+  legalPagesCode.includes('no first-party behavioral analytics SDK') &&
+  !legalPagesCode.includes('mailto:'),
+  'LegalPages accurately documents verified localStorage keys, AdSense cookie/opt-out policies, honest analytics status, and invents zero fake contact emails'
+);
+
+assert(
+  p1FooterCode.includes('href="/about-us"') &&
+  p1FooterCode.includes('href="/contact-us"') &&
+  p1FooterCode.includes('href="/privacy-policy"') &&
+  p1FooterCode.includes('href="/terms-and-conditions"') &&
+  p1FooterCode.includes('href="/cookie-policy"'),
+  'Footer links directly to all 5 legal and information pages'
+);
+
+assert(
+  appRouterCode.includes('normalizeRoutePath') &&
+  appRouterCode.includes('popstate') &&
+  appRouterCode.includes('<LegalPages') &&
+  p1HtmlContent.includes("'/privacy-policy'") &&
+  p1HtmlContent.includes("'/terms-and-conditions'") &&
+  p1HtmlContent.includes("'/about-us'") &&
+  p1HtmlContent.includes("'/contact-us'") &&
+  p1HtmlContent.includes("'/cookie-policy'"),
+  'App.tsx and index.html support lightweight SPA routing and per-page self-canonicals for all 5 legal routes'
 );
 
 const totalTests = results.length;

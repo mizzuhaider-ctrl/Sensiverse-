@@ -42,7 +42,7 @@ import {
 import { playCyberClick } from './utils/sound';
 import { getValidFpsForDevice } from './utils/fpsEngine';
 import { WEAPON_CATEGORIES } from './data/weapons';
-import { syncDocumentCanonical } from './utils/seo';
+import { syncDocumentCanonical, normalizeRoutePath, AppRoutePath } from './utils/seo';
 
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
@@ -59,6 +59,7 @@ import { EthicalDisclaimer } from './components/EthicalDisclaimer';
 import { SEOGuideSection } from './components/SEOGuideSection';
 import { AdSenseUnit } from './components/AdSenseUnit';
 import { Footer } from './components/Footer';
+import { LegalPages } from './components/LegalPages';
 import type { Phase9ApprovedBrazilianProfile } from './data/brazilSensiProfiles';
 import type { ApprovedIndonesianProfile } from './data/indonesiaSensiProfiles';
 
@@ -122,6 +123,9 @@ export default function App() {
   const [feedbackCumulativeDeltas, setFeedbackCumulativeDeltas] = useState<Record<string, number>>({});
 
   // UI state
+  const [currentRoute, setCurrentRoute] = useState<AppRoutePath>(() =>
+    typeof window !== 'undefined' ? normalizeRoutePath(window.location.pathname) : '/'
+  );
   const [isRecalculating, setIsRecalculating] = useState(false);
   const [isImproveModalOpen, setIsImproveModalOpen] = useState(false);
   const [isBrazilianModalOpen, setIsBrazilianModalOpen] = useState(false);
@@ -269,10 +273,46 @@ export default function App() {
       // Safe no-op if URL parsing fails
     }
 
+    const handlePopState = () => {
+      const nextRoute = normalizeRoutePath(window.location.pathname);
+      setCurrentRoute(nextRoute);
+      syncDocumentCanonical(window.location.pathname, window.location.search);
+    };
+    window.addEventListener('popstate', handlePopState);
+
     return () => {
       cancelled = true;
+      window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+  const navigateTo = (path: string, hash?: string) => {
+    const normalized = normalizeRoutePath(path);
+    const nextUrl = `${normalized}${hash ? hash : ''}`;
+    if (typeof window !== 'undefined') {
+      const currentFull = `${window.location.pathname}${window.location.hash}`;
+      if (currentFull !== nextUrl) {
+        window.history.pushState({}, '', nextUrl);
+      }
+      syncDocumentCanonical(normalized, normalized === '/' ? window.location.search : '');
+    }
+    setCurrentRoute(normalized);
+
+    if (typeof window !== 'undefined') {
+      if (hash) {
+        setTimeout(() => {
+          const target = document.getElementById(hash.replace(/^#/, ''));
+          if (target) {
+            target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+          } else {
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        }, 60);
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+    }
+  };
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -487,6 +527,20 @@ export default function App() {
     setSelectedFps(validFps);
     // When switching game, switch the displayed game schema using the currently calibrated phone profile
     runCalibration(targetGame, calibratedPhone, gripStyle, playstyle, validFps, weaponCategory);
+
+    if (currentRoute !== '/') {
+      setCurrentRoute('/');
+      try {
+        const params = new URLSearchParams();
+        params.set('game', targetGame);
+        window.history.pushState({}, '', `/?${params.toString()}`);
+        syncDocumentCanonical('/', `?${params.toString()}`);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } catch {
+        // ignore
+      }
+      return;
+    }
 
     try {
       const params = new URLSearchParams(window.location.search);
@@ -1035,10 +1089,20 @@ export default function App() {
         onSelectGame={handleSelectGame}
         savedCount={savedPresets.length}
         onOpenHistory={handleOpenPreviousSensi}
-        onQuickNewSensi={handleTryNewSensi}
+        onQuickNewSensi={() => {
+          if (currentRoute !== '/') {
+            navigateTo('/', '#step-6-results');
+          }
+          handleTryNewSensi();
+        }}
+        onNavigateHome={currentRoute !== '/' ? () => navigateTo('/', '#top') : undefined}
       />
 
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
+        {currentRoute !== '/' ? (
+          <LegalPages route={currentRoute} onNavigate={navigateTo} />
+        ) : (
+          <>
         
         {/* Hero Section */}
         <HeroSection
@@ -1163,6 +1227,8 @@ export default function App() {
 
         </div>
 
+          </>
+        )}
       </main>
 
       {/* Improve My Sensi Diagnostic Modal (Lazy Loaded) */}
@@ -1225,7 +1291,7 @@ export default function App() {
       )}
 
       {/* Footer */}
-      <Footer />
+      <Footer onNavigate={navigateTo} />
 
     </div>
   );
