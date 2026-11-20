@@ -1437,8 +1437,8 @@ const titleMatch = seoHtmlContent.match(/<title>(.*?)<\/title>/);
 assert(Boolean(titleMatch), 'index.html contains a valid <title> tag');
 const pageTitle = titleMatch ? titleMatch[1] : '';
 assert(
-  pageTitle === 'SensiVerse – Free Fire India &amp; MAX Headshot Sensitivity, DPI',
-  `Title matches Phase 1 SEO brand format: "${pageTitle}"`
+  pageTitle === 'Free Fire India &amp; MAX Headshot Sensitivity, DPI | SensiVerse',
+  `Title matches Phase 3 Free Fire India & MAX SEO format: "${pageTitle}"`
 );
 assert(
   pageTitle.replace('&amp;', '&').length >= 30 && pageTitle.replace('&amp;', '&').length <= 60,
@@ -1488,11 +1488,14 @@ assert(
 
 // 4. Social Card & Open Graph Verification
 assert(
-  seoHtmlContent.includes('<meta property="og:title" content="SensiVerse – Free Fire India &amp; MAX Headshot Sensitivity, DPI" />'),
-  'og:title matches page title'
+  seoHtmlContent.includes('<meta property="og:title" content="Free Fire India &amp; MAX Headshot Sensitivity, DPI | SensiVerse" />') &&
+  seoHtmlContent.includes('<meta property="og:locale" content="en_IN" />') &&
+  seoHtmlContent.includes('<meta property="og:image:width" content="590" />') &&
+  seoHtmlContent.includes('<meta property="og:image:height" content="365" />'),
+  'og:title, locale, and image dimensions are properly configured'
 );
 assert(
-  seoHtmlContent.includes('<meta property="og:description" content="Calibrate Free Fire India and Free Fire MAX headshot sensitivity, DPI, fire button sizes'),
+  seoHtmlContent.includes('<meta property="og:description" content="Generate 0–200 Free Fire India and Free Fire MAX one-tap and drag headshot sensitivity, Android DPI, and fire button size calibrated for your phone." />'),
   'og:description matches meta description'
 );
 assert(
@@ -1500,8 +1503,9 @@ assert(
   'twitter:card uses summary_large_image'
 );
 assert(
-  seoHtmlContent.includes('<meta name="twitter:title" content="SensiVerse – Free Fire India &amp; MAX Headshot Sensitivity, DPI" />'),
-  'twitter:title is configured'
+  seoHtmlContent.includes('<meta name="twitter:title" content="Free Fire India &amp; MAX Headshot Sensitivity, DPI | SensiVerse" />') &&
+  seoHtmlContent.includes('<meta name="twitter:description" content="Generate 0–200 Free Fire India and Free Fire MAX one-tap and drag headshot sensitivity, Android DPI, and fire button size calibrated for your phone." />'),
+  'twitter:title and twitter:description match metadata'
 );
 
 // 5. Schema.org JSON-LD Structured Data
@@ -1523,16 +1527,28 @@ const jsonLdMatch = seoHtmlContent.match(/<script type="application\/ld\+json">(
 assert(Boolean(jsonLdMatch), 'index.html has parseable JSON-LD script block');
 if (jsonLdMatch) {
   const parsedJsonLd = JSON.parse(jsonLdMatch[1]);
+  const webSiteNode = parsedJsonLd['@graph']?.find((n: any) => n['@type'] === 'WebSite');
   const faqNode = parsedJsonLd['@graph']?.find((n: any) => n['@type'] === 'FAQPage');
   const howToNode = parsedJsonLd['@graph']?.find((n: any) => n['@type'] === 'HowTo');
   const webAppNode = parsedJsonLd['@graph']?.find((n: any) => n['@type'] === 'WebApplication');
+  assert(
+    Boolean(webSiteNode?.url === 'https://sensiverse.vercel.app/' && webSiteNode?.publisher?.['@id']),
+    'JSON-LD includes WebSite node linked to Organization publisher'
+  );
   assert(
     Array.isArray(faqNode?.mainEntity) && faqNode.mainEntity.length === 7,
     `FAQPage JSON-LD contains all 7 visible FAQs (Got: ${faqNode?.mainEntity?.length})`
   );
   assert(
-    Boolean(webAppNode?.inLanguage === 'en' && webAppNode?.browserRequirements && webAppNode?.screenshot),
-    'WebApplication schema includes inLanguage, browserRequirements, and screenshot'
+    Boolean(
+      webAppNode?.inLanguage === 'en' &&
+      webAppNode?.browserRequirements &&
+      webAppNode?.screenshot &&
+      webAppNode?.isAccessibleForFree === true &&
+      webAppNode?.softwareVersion === '3.4' &&
+      webAppNode?.dateModified === '2026-11-20'
+    ),
+    'WebApplication schema includes inLanguage, browserRequirements, screenshot, isAccessibleForFree, softwareVersion, and dateModified'
   );
   assert(
     howToNode?.step?.[1]?.text?.includes('Free Fire India') && howToNode?.step?.[1]?.text?.includes('Free Fire MAX'),
@@ -1560,11 +1576,18 @@ assert(
   aimCardTsx.includes('<h2') && ethicalTsx.includes('<h2'),
   'AimTelemetryCard and EthicalDisclaimer use proper h2 headings'
 );
+const trainingGroundTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/TrainingGroundCalibration.tsx'), 'utf-8');
+const heroTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/HeroSection.tsx'), 'utf-8');
 assert(
   navbarTsx.includes('href="#top"') &&
+  heroTsx.includes('href="#training-ground"') &&
+  trainingGroundTsx.includes('id="training-ground"') &&
   footerTsx.includes('href="#device-selector"') &&
-  footerTsx.includes('href="#faq"'),
-  'Navbar and Footer include semantic internal anchor links'
+  footerTsx.includes('href="#training-ground"') &&
+  footerTsx.includes('href="#faq"') &&
+  seoGuideTsx.includes('href="#device-selector"') &&
+  seoGuideTsx.includes('href="#fire-button-hud"'),
+  'Navbar, Hero, Footer, TrainingGround, and SEOGuideSection include cohesive semantic internal anchor links'
 );
 
 // Verify Schema.org Fire Button approved constraints
@@ -1588,7 +1611,7 @@ const sitemapPath = path.resolve(process.cwd(), 'public/sitemap.xml');
 const sitemapContent = fs.readFileSync(sitemapPath, 'utf-8');
 assert(sitemapContent.includes('<loc>https://sensiverse.vercel.app/</loc>'), 'sitemap.xml contains home URL');
 assert(!sitemapContent.includes('?game='), 'sitemap.xml excludes query parameter URLs under Single Canonical URL strategy');
-assert(sitemapContent.includes('<lastmod>2026-11-17</lastmod>'), 'sitemap.xml contains current lastmod date (2026-11-17)');
+assert(sitemapContent.includes('<lastmod>2026-11-20</lastmod>'), 'sitemap.xml contains current lastmod date (2026-11-20)');
 
 // ==========================================
 // TEST GROUP 22: Phase 9A iPhone 17e Database Validation

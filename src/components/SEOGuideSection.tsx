@@ -147,13 +147,13 @@ export const SEOGuideSection: React.FC = () => {
             </div>
             
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              Free Fire India sensitivity settings provide a balanced starting point calculated around your phone's screen size and refresh rate. Engineered for responsive drag-headshot control, these baseline values help prevent your crosshair from dragging over enemy heads or locking onto chest armor. Test your settings for 5–10 minutes in the Training Ground to dial in your thumb flick before jumping into ranked games.
+              Free Fire India sensitivity settings provide a balanced starting point calculated around your <a href="#device-selector" className="text-[#00FF66] hover:underline underline-offset-2">phone&apos;s screen size and refresh rate</a>. Engineered for responsive drag-headshot control, these <a href="#step-6-results" className="text-[#00FF66] hover:underline underline-offset-2">baseline values</a> help prevent your crosshair from dragging over enemy heads or locking onto chest armor. Test your settings for 5–10 minutes in the <a href="#training-ground" className="text-[#00FF66] hover:underline underline-offset-2">Training Ground</a> to dial in your thumb flick before jumping into ranked games.
             </p>
 
             <div className="p-3 rounded-xl bg-[#00FF66]/5 border border-[#00FF66]/30 text-xs text-zinc-300 flex items-start gap-2.5">
               <CheckCircle2 className="w-4 h-4 text-[#00FF66] shrink-0 mt-0.5" />
               <span>
-                <strong className="text-white">Starting Point Notice:</strong> Every player's thumb pressure, screen protector, and swipe distance are unique. Apply these recommendations first, then make gradual 2–3 point micro-adjustments in practice matches.
+                <strong className="text-white">Starting Point Notice:</strong> Every player&apos;s thumb pressure, screen protector, and swipe distance are unique. Apply these recommendations first, then make gradual 2–3 point micro-adjustments in practice matches.
               </span>
             </div>
 
@@ -164,7 +164,7 @@ export const SEOGuideSection: React.FC = () => {
                   Phone-Specific Settings
                 </h4>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Calculated directly from your screen dimensions and display refresh rate. High refresh displays receive stabilized General sensitivity to keep your swipe steady and responsive.
+                  Calculated directly from your screen dimensions and display refresh rate. High refresh displays receive stabilized <a href="#step-6-results" className="text-zinc-200 hover:text-[#00FF66] underline underline-offset-2">General sensitivity</a> to keep your swipe steady and responsive.
                 </p>
               </div>
 
@@ -184,7 +184,7 @@ export const SEOGuideSection: React.FC = () => {
                   Training Ground Testing
                 </h4>
                 <p className="text-xs text-zinc-400 leading-relaxed">
-                  Spend 5 to 10 minutes testing stationary one-taps and running drag-shots. Confirm your fire button size and fine-tune your upward thumb flick with target dummies.
+                  Spend 5 to 10 minutes testing stationary one-taps and running drag-shots. Confirm your <a href="#fire-button-hud" className="text-zinc-200 hover:text-[#00FF66] underline underline-offset-2">fire button size</a> and fine-tune your upward thumb flick with target dummies.
                 </p>
               </div>
             </div>
@@ -252,7 +252,7 @@ export const SEOGuideSection: React.FC = () => {
             </div>
             
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-              In Free Fire and Free Fire MAX, the size and screen coordinate placement of your right-hand fire button dictate drag distance, initial contact acceleration, and target locking consistency.
+              In Free Fire and Free Fire MAX, the size and screen coordinate placement of your <a href="#fire-button-hud" className="text-[#00FF66] hover:underline underline-offset-2">right-hand fire button</a> dictate drag distance, initial contact acceleration, and target locking consistency.
             </p>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-2">

@@ -39,8 +39,13 @@ export function syncDocumentCanonical(
       canonicalTags[i].remove();
     }
 
-    const ogUrlTag = document.head.querySelector<HTMLMetaElement>('meta[property="og:url"]');
-    if (ogUrlTag && ogUrlTag.getAttribute('content') !== canonicalUrl) {
+    let ogUrlTag = document.head.querySelector<HTMLMetaElement>('meta[property="og:url"]');
+    if (!ogUrlTag) {
+      ogUrlTag = document.createElement('meta');
+      ogUrlTag.setAttribute('property', 'og:url');
+      document.head.appendChild(ogUrlTag);
+    }
+    if (ogUrlTag.getAttribute('content') !== canonicalUrl) {
       ogUrlTag.setAttribute('content', canonicalUrl);
     }
   }

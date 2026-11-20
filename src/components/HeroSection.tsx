@@ -98,23 +98,27 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           <nav aria-label="Sensitivity Tool Sections" className="flex flex-wrap items-center justify-center lg:justify-start gap-x-3 gap-y-1.5 pt-1 text-[11px] font-mono-code text-zinc-400">
-            <a href="#device-selector" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
-              Phone Settings
+            <a href="#device-selector" title="Select phone hardware for Free Fire sensitivity calibration" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+              Phone Hardware
             </a>
             <span aria-hidden="true" className="text-zinc-700">•</span>
-            <a href="#step-6-results" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
-              Sensitivity &amp; DPI
+            <a href="#step-6-results" title="Generate 0-200 Free Fire India and Free Fire MAX sensitivity and DPI" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+              0–200 Sensitivity &amp; DPI
             </a>
             <span aria-hidden="true" className="text-zinc-700">•</span>
-            <a href="#fire-button-hud" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+            <a href="#fire-button-hud" title="Calibrate Free Fire fire button size and HUD runway" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
               Fire Button Size
             </a>
             <span aria-hidden="true" className="text-zinc-700">•</span>
-            <a href="#seo-guides-heading" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
-              Headshot Guides
+            <a href="#training-ground" title="Verify Free Fire headshot settings in Training Ground drills" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+              Training Ground
             </a>
             <span aria-hidden="true" className="text-zinc-700">•</span>
-            <a href="#faq" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+            <a href="#seo-guides-heading" title="Free Fire India and Free Fire MAX headshot and DPI guides" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
+              Headshot &amp; DPI Guides
+            </a>
+            <span aria-hidden="true" className="text-zinc-700">•</span>
+            <a href="#faq" title="Frequently asked questions on Free Fire sensitivity, DPI and fire button" className="hover:text-[#00FF66] underline-offset-4 hover:underline transition-colors">
               FAQ
             </a>
           </nav>

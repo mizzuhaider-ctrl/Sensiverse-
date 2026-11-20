@@ -40,23 +40,27 @@ export const Footer: React.FC = () => {
           </div>
 
           <nav aria-label="Footer Quick Links" className="flex items-center justify-center flex-wrap gap-2 sm:gap-4 text-xs font-mono-code text-zinc-400">
-            <a href="#device-selector" className="text-white hover:text-[#00FF66] transition-colors font-medium">
+            <a href="#device-selector" title="Phone selector for Free Fire India sensitivity and DPI" className="text-white hover:text-[#00FF66] transition-colors font-medium">
               Free Fire India 🇮🇳
             </a>
             <span aria-hidden="true">•</span>
-            <a href="#step-6-results" className="text-white hover:text-[#00FF66] transition-colors font-medium">
+            <a href="#step-6-results" title="Generated Free Fire MAX 0-200 sensitivity settings" className="text-white hover:text-[#00FF66] transition-colors font-medium">
               Free Fire MAX 🔥
             </a>
             <span aria-hidden="true">•</span>
-            <a href="#fire-button-hud" className="text-zinc-300 hover:text-[#00FF66] transition-colors">
+            <a href="#fire-button-hud" title="Free Fire fire button size and claw/thumb HUD layout" className="text-zinc-300 hover:text-[#00FF66] transition-colors">
               Fire Button HUD
             </a>
             <span aria-hidden="true">•</span>
-            <a href="#seo-guides-heading" className="text-zinc-300 hover:text-[#00FF66] transition-colors">
+            <a href="#training-ground" title="Free Fire Training Ground sensitivity verification workflow" className="text-zinc-300 hover:text-[#00FF66] transition-colors">
+              Training Ground
+            </a>
+            <span aria-hidden="true">•</span>
+            <a href="#seo-guides-heading" title="Free Fire sensitivity, Android DPI and touch physics guides" className="text-zinc-300 hover:text-[#00FF66] transition-colors">
               DPI &amp; Sensitivity Guides
             </a>
             <span aria-hidden="true">•</span>
-            <a href="#faq" className="text-zinc-300 hover:text-[#00FF66] transition-colors">
+            <a href="#faq" title="Free Fire India and MAX sensitivity FAQ" className="text-zinc-300 hover:text-[#00FF66] transition-colors">
               FAQ
             </a>
           </nav>
