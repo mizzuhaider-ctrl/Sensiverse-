@@ -33,11 +33,18 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Brand */}
         <a href="#top" aria-label="SensiVerse Home" className="flex items-center gap-2 sm:gap-3 shrink-0 group">
           <div className="flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 rounded-lg bg-black border border-[#00FF66]/50 shadow-[0_0_15px_rgba(0,255,102,0.3)] shrink-0 overflow-hidden p-0.5">
-            <img 
-              src="/favicon-48x48.png" 
-              alt="SensiVerse Official Logo" 
-              className="w-full h-full object-contain" 
-            />
+            <picture className="w-full h-full flex items-center justify-center">
+              <source srcSet="/favicon-48x48.webp" type="image/webp" />
+              <img
+                src="/favicon-48x48.png"
+                alt="SensiVerse Official Logo"
+                width={48}
+                height={48}
+                loading="eager"
+                decoding="async"
+                className="w-full h-full object-contain"
+              />
+            </picture>
           </div>
           <div className="flex flex-col justify-center">
             <div className="flex items-center gap-1.5 sm:gap-2">

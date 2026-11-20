@@ -4295,6 +4295,73 @@ if (fs.existsSync(distAssetsDir)) {
   }
 }
 
+console.log('\n[TEST GROUP 49] Phase 2 P1 Fonts, Icons & Image Optimization Verification');
+
+const p1HtmlContent = fs.readFileSync(path.resolve(process.cwd(), 'index.html'), 'utf-8');
+const p1ManifestContent = fs.readFileSync(path.resolve(process.cwd(), 'public/manifest.json'), 'utf-8');
+const p1Manifest = JSON.parse(p1ManifestContent);
+const p1NavbarCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/Navbar.tsx'), 'utf-8');
+const p1FooterCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/Footer.tsx'), 'utf-8');
+
+assert(
+  p1HtmlContent.includes('Orbitron:wght@400..900&family=Plus+Jakarta+Sans:wght@400..700&family=JetBrains+Mono:wght@400..800&display=swap') &&
+  p1HtmlContent.includes('rel="preload"') &&
+  p1HtmlContent.includes('media="print"') &&
+  p1HtmlContent.includes("onload=\"this.onload=null;this.media='all'\"") &&
+  p1HtmlContent.includes('<noscript>') &&
+  !p1HtmlContent.includes('/fonts/'),
+  'index.html loads variable Google Fonts non-blockingly via Option A with noscript fallback and no self-hosted font files'
+);
+
+assert(
+  !p1HtmlContent.includes('favicon.svg') &&
+  !p1HtmlContent.includes('shortcut icon') &&
+  !p1HtmlContent.includes('apple-touch-icon-precomposed') &&
+  p1HtmlContent.includes('href="/apple-touch-icon.png"') &&
+  p1HtmlContent.includes('href="/favicon-48x48.png"') &&
+  p1HtmlContent.includes('href="/favicon-192x192.png"') &&
+  !fs.existsSync(path.resolve(process.cwd(), 'public/favicon.svg')) &&
+  !fs.existsSync(path.resolve(process.cwd(), 'public/favicon.png')) &&
+  !fs.existsSync(path.resolve(process.cwd(), 'public/assets/aistudio')),
+  'Oversized raster-in-SVG favicon, redundant tab icon links, and unused duplicate image files are removed'
+);
+
+const p1IconSrcs: string[] = (p1Manifest.icons || []).map((i: any) => i.src);
+assert(
+  !p1IconSrcs.includes('/favicon.svg') &&
+  p1IconSrcs.includes('/favicon-192x192.png') &&
+  p1IconSrcs.includes('/favicon-512x512.png') &&
+  p1IconSrcs.includes('/apple-touch-icon.png') &&
+  p1Manifest.icons.some((i: any) => i.src === '/favicon-512x512.png' && i.purpose === 'any maskable'),
+  'public/manifest.json preserves all required PNG PWA icons including 512x512 any maskable and apple-touch-icon'
+);
+
+assert(
+  fs.existsSync(path.resolve(process.cwd(), 'public/favicon-48x48.webp')) &&
+  fs.statSync(path.resolve(process.cwd(), 'public/sensiverse-logo.png')).size < 80 * 1024 &&
+  fs.statSync(path.resolve(process.cwd(), 'public/favicon-512x512.png')).size < 80 * 1024 &&
+  fs.statSync(path.resolve(process.cwd(), 'public/favicon-48x48.webp')).size < 2 * 1024,
+  'Optimized PNGs (sensiverse-logo.png & favicon-512x512.png < 80 KiB) and WebP logo (< 2 KiB) are generated'
+);
+
+assert(
+  p1NavbarCode.includes('srcSet="/favicon-48x48.webp"') &&
+  p1NavbarCode.includes('width={48}') &&
+  p1NavbarCode.includes('height={48}') &&
+  p1NavbarCode.includes('decoding="async"') &&
+  p1FooterCode.includes('srcSet="/favicon-48x48.webp"') &&
+  p1FooterCode.includes('width={48}') &&
+  p1FooterCode.includes('height={48}') &&
+  p1FooterCode.includes('loading="lazy"') &&
+  p1FooterCode.includes('decoding="async"'),
+  'Navbar and Footer render WebP+PNG picture logos with explicit dimensions, async decode, and lazy footer loading'
+);
+
+assert(
+  vercelConfigContent.includes('sensiverse-logo'),
+  'vercel.json cache headers cover sensiverse-logo.png alongside favicon and apple-touch-icon assets'
+);
+
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;
 const failedTests = totalTests - passedTests;

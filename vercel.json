@@ -4,7 +4,7 @@
   "trailingSlash": false,
   "headers": [
     {
-      "source": "/(favicon.*|apple-touch-icon.*)",
+      "source": "/(favicon.*|apple-touch-icon.*|sensiverse-logo\\.png)",
       "headers": [
         {
           "key": "Cache-Control",

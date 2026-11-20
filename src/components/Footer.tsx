@@ -16,11 +16,18 @@ export const Footer: React.FC = () => {
           
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-black border border-[#00FF66]/40 flex items-center justify-center overflow-hidden p-0.5 shadow-[0_0_12px_rgba(0,255,102,0.3)] shrink-0">
-              <img 
-                src="/favicon-48x48.png" 
-                alt="SensiVerse Official Logo" 
-                className="w-full h-full object-contain" 
-              />
+              <picture className="w-full h-full flex items-center justify-center">
+                <source srcSet="/favicon-48x48.webp" type="image/webp" />
+                <img
+                  src="/favicon-48x48.png"
+                  alt="SensiVerse Official Logo"
+                  width={48}
+                  height={48}
+                  loading="lazy"
+                  decoding="async"
+                  className="w-full h-full object-contain"
+                />
+              </picture>
             </div>
             <div>
               <span className="font-cyber font-black text-lg text-white tracking-wider">
