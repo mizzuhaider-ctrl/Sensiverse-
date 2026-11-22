@@ -42,7 +42,16 @@ import {
   isKnownAppRoute,
   INDEXABLE_LEGAL_PATHS,
   LEGAL_ROUTES_SEO,
+  parseAppRoute,
 } from '../src/utils/seo';
+import {
+  BRAND_SLUG_ENTRIES,
+  PRIMARY_CATALOG_BRANDS,
+  TOP_50_PHONE_ROUTES,
+  slugifyBrand,
+  slugifyModel,
+  slugifySegment,
+} from '../src/utils/slugs';
 
 interface TestSummary {
   name: string;
@@ -4080,11 +4089,12 @@ assert(
   sitemapContent.startsWith('<?xml version="1.0" encoding="UTF-8"?>') &&
   sitemapContent.includes('<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">') &&
   sitemapContent.trimEnd().endsWith('</urlset>') &&
-  sitemapLocMatches.length === 6 &&
+  sitemapLocMatches.length === 83 &&
   sitemapLocMatches.includes(PRODUCTION_CANONICAL_HOME) &&
+  sitemapLocMatches.includes(`${PRODUCTION_CANONICAL_ORIGIN}/phones`) &&
   expectedLegalSitemapUrls.every((u) => sitemapLocMatches.includes(u)) &&
   !sitemapContent.includes('?game='),
-  'sitemap.xml is valid XML containing homepage URL + all 5 indexable legal/info URLs with zero query URLs'
+  'sitemap.xml is valid XML containing homepage + 5 legal + /phones + 26 brand + 50 popular phone URLs (83 total) with zero query URLs'
 );
 
 assert(
@@ -4527,6 +4537,193 @@ if (fs.existsSync(distHtmlPath)) {
     );
   }
 }
+
+console.log('\n[TEST GROUP 52] Phase B Phone & Brand SEO: Slugs, 26 Brands, Top 50 Phones, Sitemap & Prerendering');
+
+// 1. Collision-safe slugs across all 26 brands and all 1,089 phones
+assert(
+  PRIMARY_CATALOG_BRANDS.length === 26 &&
+  BRAND_SLUG_ENTRIES.length === 26 &&
+  new Set(BRAND_SLUG_ENTRIES.map((b) => b.slug)).size === 26,
+  'All 26 primary catalog brands produce unique URL slugs'
+);
+
+assert(
+  slugifySegment('Samsung Galaxy S24+') !== slugifySegment('Samsung Galaxy S24') &&
+  slugifySegment('Note 14 Pro+ 5G (2024)') !== slugifySegment('Note 14 Pro 5G (2024)') &&
+  slugifySegment('Realme 13 Pro+') === 'realme-13-pro-plus',
+  'slugifySegment prevents "+" collisions across Plus/Pro+ variants'
+);
+
+const allPhoneSlugSet = new Set(
+  ALL_VERIFIED_PHONES.map((p) => `${slugifyBrand(p.brand)}/${slugifyModel(p.name)}`)
+);
+assert(
+  allPhoneSlugSet.size === ALL_VERIFIED_PHONES.length && allPhoneSlugSet.size === 1089,
+  `All ${ALL_VERIFIED_PHONES.length} verified phones produce 1,089 collision-free brand/model slugs`
+);
+
+// 2. Top 50 popular phone routes verification
+const catalogById = new Map(ALL_VERIFIED_PHONES.map((p) => [p.id, p]));
+assert(
+  TOP_50_PHONE_ROUTES.length === 50 &&
+  new Set(TOP_50_PHONE_ROUTES.map((r) => r.path)).size === 50 &&
+  TOP_50_PHONE_ROUTES.every((r) => {
+    const match = catalogById.get(r.id);
+    return Boolean(match) && match!.brand === r.brand && match!.name === r.name;
+  }),
+  'All 50 popular phone routes map 1:1 to real verified models in the 1,089-phone database'
+);
+
+// 3. Routing, canonicals & noindex rules
+assert(
+  isKnownAppRoute('/phones') &&
+  BRAND_SLUG_ENTRIES.every((b) => isKnownAppRoute(b.path) && resolveCanonicalUrl(b.path) === `${PRODUCTION_CANONICAL_ORIGIN}${b.path}`) &&
+  TOP_50_PHONE_ROUTES.every((p) => isKnownAppRoute(p.path) && resolveCanonicalUrl(p.path) === `${PRODUCTION_CANONICAL_ORIGIN}${p.path}`) &&
+  !isKnownAppRoute('/phones/unknown-brand') &&
+  !isKnownAppRoute('/phones/apple/non-existent-iphone') &&
+  parseAppRoute('/phones/apple').type === 'brand' &&
+  parseAppRoute('/phones/samsung/samsung-galaxy-s24-ultra').type === 'phone',
+  'seo.ts resolves canonicals for /phones, 26 brands, and 50 popular phones while marking invalid /phones/* routes noindex'
+);
+
+// 4. Phase 2 P0 bundle preservation checks
+const slugsTsCode = fs.readFileSync(path.resolve(process.cwd(), 'src/utils/slugs.ts'), 'utf-8');
+assert(
+  !slugsTsCode.includes('ALL_VERIFIED_PHONES') &&
+  !seoTsContent.includes('ALL_VERIFIED_PHONES') &&
+  appRouterCode.includes("import('./components/PhoneCatalogPages')"),
+  'slugs.ts and seo.ts import zero full phone datasets and App.tsx lazy-loads PhoneCatalogPages'
+);
+
+// 5. Internal crawlable link checks
+assert(
+  p1FooterCode.includes('href={buildPhonesHubPath()}') &&
+  p1FooterCode.includes('BRAND_SLUG_ENTRIES.map') &&
+  selectorCode.includes('All 26 Brands Directory') &&
+  selectorCode.includes('findTopPhoneRouteById'),
+  'Footer and DeviceSelector surface crawlable links to /phones, brand charts, and popular phone pages'
+);
+
+// 6. Sitemap covers all 83 indexable routes (1 home + 5 legal + 1 /phones + 26 brands + 50 phones)
+assert(
+  BRAND_SLUG_ENTRIES.every((b) => sitemapLocMatches.includes(`${PRODUCTION_CANONICAL_ORIGIN}${b.path}`)) &&
+  TOP_50_PHONE_ROUTES.every((p) => sitemapLocMatches.includes(`${PRODUCTION_CANONICAL_ORIGIN}${p.path}`)),
+  'public/sitemap.xml includes /phones, all 26 brand URLs, and all 50 popular phone URLs'
+);
+
+// 7. Prerendered static HTML checks for /phones, 26 brands, and 50 phones
+if (fs.existsSync(distHtmlPath)) {
+  const distPhonesHubPath = path.resolve(process.cwd(), 'dist/phones.html');
+  assert(
+    fs.existsSync(distPhonesHubPath),
+    'Prerendered static HTML exists for /phones at dist/phones.html'
+  );
+  if (fs.existsSync(distPhonesHubPath)) {
+    const hubHtml = fs.readFileSync(distPhonesHubPath, 'utf-8');
+    assert(
+      hubHtml.includes(`<link rel="canonical" href="${PRODUCTION_CANONICAL_ORIGIN}/phones"`) &&
+      hubHtml.includes('data-schema="breadcrumb"') &&
+      !hubHtml.includes('"@type": "WebApplication"') &&
+      hubHtml.includes('href="/phones/apple"') &&
+      hubHtml.includes('href="/phones/samsung/samsung-galaxy-s24-ultra"'),
+      'dist/phones.html serves self-canonical, BreadcrumbList JSON-LD, no homepage schema, and crawlable brand/phone links'
+    );
+  }
+
+  let brandFilesPass = 0;
+  for (const b of BRAND_SLUG_ENTRIES) {
+    const p = path.resolve(process.cwd(), `dist/phones/${b.slug}.html`);
+    if (fs.existsSync(p)) {
+      const h = fs.readFileSync(p, 'utf-8');
+      if (
+        h.includes(`<link rel="canonical" href="${PRODUCTION_CANONICAL_ORIGIN}${b.path}"`) &&
+        h.includes('<h1') &&
+        h.includes('data-schema="breadcrumb"') &&
+        !h.includes('"@type": "WebApplication"') &&
+        !/<div\s+id="root">\s*<\/div>/i.test(h)
+      ) {
+        brandFilesPass++;
+      }
+    }
+  }
+  assert(
+    brandFilesPass === 26,
+    `All 26 brand pages prerendered cleanly with self-canonicals and populated #root HTML (${brandFilesPass}/26)`
+  );
+
+  let phoneFilesPass = 0;
+  for (const ph of TOP_50_PHONE_ROUTES) {
+    const p = path.resolve(process.cwd(), `dist/phones/${ph.brandSlug}/${ph.modelSlug}.html`);
+    if (fs.existsSync(p)) {
+      const h = fs.readFileSync(p, 'utf-8');
+      if (
+        h.includes(`<link rel="canonical" href="${PRODUCTION_CANONICAL_ORIGIN}${ph.path}"`) &&
+        h.includes('<h1') &&
+        h.includes('data-schema="breadcrumb"') &&
+        !h.includes('"@type": "WebApplication"') &&
+        !h.includes('"@type": "FAQPage"') &&
+        h.includes('One-Tap Headshot') &&
+        !/<div\s+id="root">\s*<\/div>/i.test(h)
+      ) {
+        phoneFilesPass++;
+      }
+    }
+  }
+  assert(
+    phoneFilesPass === 50,
+    `All 50 popular phone pages prerendered cleanly with self-canonicals, BreadcrumbList schema, and engine outputs (${phoneFilesPass}/50)`
+  );
+
+  // 8. Apple iOS vs Android DPI wording accuracy
+  const appleBrandHtml = fs.readFileSync(path.resolve(process.cwd(), 'dist/phones/apple.html'), 'utf-8');
+  const appleBrandMain = appleBrandHtml.split('<main')[1]?.split('</main>')[0] || '';
+  const applePhoneRoutes = TOP_50_PHONE_ROUTES.filter((r) => r.brand === 'Apple');
+  const applePhonesClean = applePhoneRoutes.every((ph) => {
+    const h = fs.readFileSync(path.resolve(process.cwd(), `dist/phones/${ph.brandSlug}/${ph.modelSlug}.html`), 'utf-8');
+    const title = h.match(/<title>([^<]+)<\/title>/i)?.[1] || '';
+    const desc = h.match(/<meta\s+name="description"\s+content="([^"]+)"/i)?.[1] || '';
+    const main = h.split('<main')[1]?.split('</main>')[0] || '';
+    return (
+      title.includes('iOS Settings') &&
+      !title.includes('DPI') &&
+      desc.includes('PPI Retina scaling') &&
+      !desc.includes('DPI') &&
+      main.includes('iOS Display Scaling') &&
+      main.includes('Native iOS Retina Display') &&
+      !main.includes('Android Smallest Width') &&
+      !main.includes('Recommended DPI')
+    );
+  });
+  const samsungPhoneHtml = fs.readFileSync(
+    path.resolve(process.cwd(), 'dist/phones/samsung/samsung-galaxy-s24-ultra.html'),
+    'utf-8'
+  );
+  assert(
+    appleBrandHtml.includes('Apple iPhone Free Fire Sensitivity &amp; iOS Touch | SensiVerse') &&
+    !appleBrandMain.includes('Android Smallest Width') &&
+    !appleBrandMain.includes('Recommended DPI') &&
+    applePhonesClean &&
+    samsungPhoneHtml.includes('Android Smallest Width') &&
+    samsungPhoneHtml.includes('Recommended DPI'),
+    'Apple brand and all 6 Apple iPhone pages use iOS Retina PPI wording (zero Android Smallest Width/DPI), while Android pages preserve DPI recommendations'
+  );
+}
+
+// 9. Vercel rewrite exclusion test against all 82 static routes + unknown fallbacks
+const vercelRewriteRegex = new RegExp(`^${spaRewrite.source}$`);
+const excludedStaticPaths = [
+  ...INDEXABLE_LEGAL_PATHS,
+  '/phones',
+  ...BRAND_SLUG_ENTRIES.map((b) => b.path),
+  ...TOP_50_PHONE_ROUTES.map((p) => p.path),
+];
+const unknownFallbackPaths = ['/non-existent-route', '/phones/unknown-brand', '/phones/apple/non-existent-iphone', '/phones/apple/iphone-16'];
+assert(
+  excludedStaticPaths.every((p) => !vercelRewriteRegex.test(p) && !vercelRewriteRegex.test(`${p}.html`)) &&
+  unknownFallbackPaths.every((p) => vercelRewriteRegex.test(p)),
+  `vercel.json SPA rewrite excludes all ${excludedStaticPaths.length} static routes (5 legal + 77 /phones) while catching unknown routes`
+);
 
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;

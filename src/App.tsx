@@ -42,7 +42,14 @@ import {
 import { playCyberClick } from './utils/sound';
 import { getValidFpsForDevice } from './utils/fpsEngine';
 import { WEAPON_CATEGORIES } from './data/weapons';
-import { syncDocumentCanonical, normalizeRoutePath, AppRoutePath } from './utils/seo';
+import { 
+  syncDocumentCanonical, 
+  normalizeRoutePath, 
+  parseAppRoute, 
+  AppRoutePath, 
+  LegalRoutePath,
+  LEGAL_ROUTES_SEO
+} from './utils/seo';
 
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
@@ -63,6 +70,9 @@ import { LegalPages } from './components/LegalPages';
 import type { Phase9ApprovedBrazilianProfile } from './data/brazilSensiProfiles';
 import type { ApprovedIndonesianProfile } from './data/indonesiaSensiProfiles';
 
+const PhoneCatalogPages = lazy(() =>
+  import('./components/PhoneCatalogPages').then((m) => ({ default: m.PhoneCatalogPages }))
+);
 const ImproveSensiModal = lazy(() =>
   import('./components/ImproveSensiModal').then((m) => ({ default: m.ImproveSensiModal }))
 );
@@ -285,6 +295,20 @@ export default function App() {
       window.removeEventListener('popstate', handlePopState);
     };
   }, []);
+
+  const handleLaunchPhoneInGenerator = (phone: PhoneModel, targetGame: GameId = selectedGame) => {
+    const validFps = getValidFpsForDevice(phone, targetGame, selectedFps);
+    setSelectedGame(targetGame);
+    setSelectedPhone(phone);
+    setCalibratedPhone(phone);
+    setSelectedFps(validFps);
+    setVariationIndex(0);
+    setFeedbackCumulativeDeltas({});
+    hasGeneratedCurrentRef.current = false;
+    runCalibration(targetGame, phone, gripStyle, playstyle, validFps, weaponCategory, 0);
+    navigateTo('/', '#step-6-results');
+    showToast(`Loaded ${phone.name} (${GAMES_DATA[targetGame].name}) in live generator!`);
+  };
 
   const navigateTo = (path: string, hash?: string) => {
     const normalized = normalizeRoutePath(path);
@@ -1100,7 +1124,28 @@ export default function App() {
 
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
         {currentRoute !== '/' ? (
-          <LegalPages route={currentRoute} onNavigate={navigateTo} />
+          currentRoute in LEGAL_ROUTES_SEO ? (
+            <LegalPages route={currentRoute as LegalRoutePath} onNavigate={navigateTo} />
+          ) : (
+            <Suspense
+              fallback={
+                <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-12 text-center text-xs font-mono-code text-zinc-400">
+                  Loading hardware directory...
+                </div>
+              }
+            >
+              <PhoneCatalogPages
+                route={
+                  parseAppRoute(currentRoute) as Extract<
+                    ReturnType<typeof parseAppRoute>,
+                    { type: 'phones_hub' | 'brand' | 'phone' }
+                  >
+                }
+                onNavigate={navigateTo}
+                onSelectPhoneInGenerator={handleLaunchPhoneInGenerator}
+              />
+            </Suspense>
+          )
         ) : (
           <>
         
@@ -1124,6 +1169,7 @@ export default function App() {
           <DeviceSelector
             selectedPhone={selectedPhone}
             onSelectPhone={handleSelectPhone}
+            onNavigate={navigateTo}
           />
 
           {/* STEP 3: Select Playstyle (One-Tap Headshot or Drag Headshot) */}

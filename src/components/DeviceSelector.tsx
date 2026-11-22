@@ -25,15 +25,24 @@ import {
   getCachedAllPhones,
 } from '../data/phones/asyncLoader';
 import { playCyberClick } from '../utils/sound';
+import {
+  buildBrandPath,
+  buildPhonesHubPath,
+  findTopPhoneRouteById,
+  resolveBrandFromSlug,
+  slugifyBrand,
+} from '../utils/slugs';
 
 interface DeviceSelectorProps {
   selectedPhone: PhoneModel;
   onSelectPhone: (phone: PhoneModel) => void;
+  onNavigate?: (path: string, hash?: string) => void;
 }
 
 export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
   selectedPhone,
   onSelectPhone,
+  onNavigate,
 }) => {
   // Category state: 'all' or 'gaming'
   const [category, setCategory] = useState<'all' | 'gaming'>('all');
@@ -1478,6 +1487,57 @@ export const DeviceSelector: React.FC<DeviceSelectorProps> = ({
             <span className="font-mono-code text-zinc-300">{selectedPhone.recommendedDpi} (Est. Dev Opt)</span>
           </div>
         </div>
+
+        {(() => {
+          const validBrand =
+            selectedBrand !== 'Other / Custom' && resolveBrandFromSlug(slugifyBrand(selectedBrand))
+              ? selectedBrand
+              : null;
+          const topPhoneRoute = findTopPhoneRouteById(selectedPhone.id);
+          const handleSeoNav = (e: React.MouseEvent<HTMLAnchorElement>, path: string) => {
+            if (!onNavigate) return;
+            if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+            e.preventDefault();
+            playCyberClick('click');
+            onNavigate(path);
+          };
+
+          return (
+            <div className="pt-2.5 mt-2.5 border-t border-zinc-800/70 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] font-mono-code text-zinc-400">
+              <a
+                href={buildPhonesHubPath()}
+                onClick={(e) => handleSeoNav(e, buildPhonesHubPath())}
+                className="hover:text-[#00FF66] transition-colors"
+              >
+                All 26 Brands Directory
+              </a>
+              {validBrand && (
+                <>
+                  <span aria-hidden="true" className="text-zinc-700">•</span>
+                  <a
+                    href={buildBrandPath(validBrand)}
+                    onClick={(e) => handleSeoNav(e, buildBrandPath(validBrand))}
+                    className="hover:text-[#00FF66] transition-colors"
+                  >
+                    {validBrand} Sensitivity &amp; DPI Chart
+                  </a>
+                </>
+              )}
+              {topPhoneRoute && (
+                <>
+                  <span aria-hidden="true" className="text-zinc-700">•</span>
+                  <a
+                    href={topPhoneRoute.path}
+                    onClick={(e) => handleSeoNav(e, topPhoneRoute.path)}
+                    className="text-[#00FF66] hover:underline"
+                  >
+                    {selectedPhone.name} Full Guide →
+                  </a>
+                </>
+              )}
+            </div>
+          );
+        })()}
       </div>
     </div>
   );

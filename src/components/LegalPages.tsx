@@ -178,7 +178,7 @@ export const LegalPages: React.FC<LegalPagesProps> = ({ route, onNavigate }) => 
             5. Advertising &amp; Google AdSense Cookies
           </h2>
           <p>
-            SensiVerse contains dedicated advertising placement units (<code className="text-zinc-200 font-mono-code">AdSenseUnit</code>) prepared for Google AdSense to keep the tool 100% free for players without subscriptions or paywalls. Currently, those slots display sponsor placement containers until live Google AdSense serving is enabled by the site administrator.
+            SensiVerse includes the Google AdSense site verification script in the page header and renders dedicated advertising placement containers (<code className="text-zinc-200 font-mono-code">AdSenseUnit</code>) prepared for Google AdSense to keep the tool 100% free for players without subscriptions or paywalls. Currently, those on-page containers display static sponsor placement placeholders until live Google AdSense ad units are enabled by the site administrator.
           </p>
           <p>
             When Google AdSense and its certified third-party ad vendors serve advertisements on SensiVerse:
@@ -572,7 +572,7 @@ export const LegalPages: React.FC<LegalPagesProps> = ({ route, onNavigate }) => 
             3. Google AdSense &amp; Third-Party Advertising Cookies
           </h2>
           <p>
-            SensiVerse renders ad container slots (<code className="font-mono-code text-zinc-200">AdSenseUnit</code>) prepared for Google AdSense. Right now, these slots display static sponsor placeholders until live AdSense publisher scripts are activated.
+            SensiVerse includes the Google AdSense site verification script in the page header and renders ad container slots (<code className="font-mono-code text-zinc-200">AdSenseUnit</code>) prepared for Google AdSense. Right now, those visual ad slots display static sponsor placeholders until live ad placements are activated.
           </p>
           <p>
             When Google AdSense serves live ads on SensiVerse, third-party vendors—including Google—may set and read cookies or device identifiers in your browser (such as Google advertising cookies like <code className="font-mono-code text-zinc-200">IDE</code>, <code className="font-mono-code text-zinc-200">__gads</code>, <code className="font-mono-code text-zinc-200">__gpi</code>, or <code className="font-mono-code text-zinc-200">NID</code>) for:

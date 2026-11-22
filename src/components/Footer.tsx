@@ -1,6 +1,7 @@
 import React from 'react';
 import { ArrowUp, Shield } from 'lucide-react';
 import { playCyberClick } from '../utils/sound';
+import { BRAND_SLUG_ENTRIES, buildPhonesHubPath } from '../utils/slugs';
 
 interface FooterProps {
   onNavigate?: (path: string, hash?: string) => void;
@@ -96,6 +97,31 @@ export const Footer: React.FC<FooterProps> = ({ onNavigate }) => {
           </button>
 
         </div>
+
+        <nav
+          aria-label="Browse by Phone Brand"
+          className="flex items-center justify-center flex-wrap gap-x-3 gap-y-1.5 pb-4 border-b border-zinc-900/80 text-[11px] font-mono-code text-zinc-400"
+        >
+          <a
+            href={buildPhonesHubPath()}
+            onClick={(e) => handleLinkClick(e, buildPhonesHubPath())}
+            className="text-[#00FF66] font-semibold hover:underline"
+          >
+            All 26 Brands
+          </a>
+          {BRAND_SLUG_ENTRIES.map((entry) => (
+            <React.Fragment key={entry.slug}>
+              <span aria-hidden="true" className="text-zinc-800">•</span>
+              <a
+                href={entry.path}
+                onClick={(e) => handleLinkClick(e, entry.path)}
+                className="hover:text-[#00FF66] transition-colors"
+              >
+                {entry.brand}
+              </a>
+            </React.Fragment>
+          ))}
+        </nav>
 
         <nav
           aria-label="Legal and Information Links"
