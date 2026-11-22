@@ -39,6 +39,9 @@ import {
   PRODUCTION_CANONICAL_HOME,
   PRODUCTION_CANONICAL_ORIGIN,
   resolveCanonicalUrl,
+  isKnownAppRoute,
+  INDEXABLE_LEGAL_PATHS,
+  LEGAL_ROUTES_SEO,
 } from '../src/utils/seo';
 
 interface TestSummary {
@@ -1579,7 +1582,7 @@ assert(
 const trainingGroundTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/TrainingGroundCalibration.tsx'), 'utf-8');
 const heroTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/HeroSection.tsx'), 'utf-8');
 assert(
-  navbarTsx.includes('href="#top"') &&
+  navbarTsx.includes('href="/"') &&
   heroTsx.includes('href="#training-ground"') &&
   trainingGroundTsx.includes('id="training-ground"') &&
   footerTsx.includes('href="#device-selector"') &&
@@ -4444,6 +4447,86 @@ assert(
   p1HtmlContent.includes("'/cookie-policy'"),
   'App.tsx and index.html support lightweight SPA routing and per-page self-canonicals for all 5 legal routes'
 );
+
+console.log('\n[TEST GROUP 51] Phase A Technical SEO Fixes: Prerendering, Schema Isolation & Noindex');
+
+assert(
+  p1NavbarCode.includes('href="/"') && !p1NavbarCode.includes('href="#top"'),
+  'Navbar logo link uses canonical href="/" instead of "#top"'
+);
+
+assert(
+  isKnownAppRoute('/') &&
+  isKnownAppRoute('/index.html') &&
+  INDEXABLE_LEGAL_PATHS.every((route) => isKnownAppRoute(route) && isKnownAppRoute(`${route}/`)) &&
+  !isKnownAppRoute('/non-existent-route') &&
+  !isKnownAppRoute('/phone/iphone-15') &&
+  !isKnownAppRoute('/brands/apple'),
+  'isKnownAppRoute distinguishes all 6 sitemap routes from unknown fallback paths'
+);
+
+assert(
+  p1HtmlContent.includes("'noindex, follow'") &&
+  seoTsContent.includes("'noindex, follow'") &&
+  p1HtmlContent.includes('window.__SENSIVERSE_IS_HOMEPAGE__') &&
+  seoTsContent.includes('isHomepageStructuredDataScript'),
+  'index.html and src/utils/seo.ts implement noindex, follow for unknown routes and homepage-only structured data isolation'
+);
+
+if (fs.existsSync(distHtmlPath)) {
+  const distHomeHtml = fs.readFileSync(distHtmlPath, 'utf-8');
+  assert(
+    distHomeHtml.includes('<link rel="canonical" href="https://sensiverse.vercel.app/"') &&
+    distHomeHtml.includes('"@type": "WebApplication"') &&
+    distHomeHtml.includes('"@type": "FAQPage"') &&
+    distHomeHtml.includes('<h1') &&
+    !/<div\s+id="root">\s*<\/div>/i.test(distHomeHtml),
+    'Prerendered dist/index.html contains populated #root HTML, homepage canonical, and homepage JSON-LD structured data'
+  );
+
+  for (const route of INDEXABLE_LEGAL_PATHS) {
+    const slug = route.replace(/^\//, '');
+    const subHtmlPath = path.resolve(process.cwd(), `dist/${slug}.html`);
+    assert(
+      fs.existsSync(subHtmlPath),
+      `Prerendered static HTML file exists for ${route} at dist/${slug}.html`
+    );
+    if (fs.existsSync(subHtmlPath)) {
+      const subHtml = fs.readFileSync(subHtmlPath, 'utf-8');
+      const expectedMeta = LEGAL_ROUTES_SEO[route];
+      const escapedTitle = expectedMeta.title.replace(/&/g, '&amp;');
+      const escapedDesc = expectedMeta.description.replace(/&/g, '&amp;');
+      const canonicalTagCount = (subHtml.match(/<link\s+rel=["']canonical["'][^>]*>/gi) || []).length;
+      assert(
+        canonicalTagCount === 1 &&
+        subHtml.includes(`<link rel="canonical" href="${expectedMeta.canonicalUrl}"`) &&
+        subHtml.includes(`<meta property="og:url" content="${expectedMeta.canonicalUrl}"`) &&
+        subHtml.includes(`<title>${escapedTitle}</title>`) &&
+        subHtml.includes(`name="description" content="${escapedDesc}"`) &&
+        subHtml.includes('<meta name="robots" content="index, follow') &&
+        subHtml.includes('<h1') &&
+        !/<div\s+id="root">\s*<\/div>/i.test(subHtml),
+        `dist/${slug}.html serves unique self-canonical, title, description, indexable robots tag, and populated #root HTML`
+      );
+      assert(
+        !subHtml.includes('"@type": "WebApplication"') &&
+        !subHtml.includes('"@type": "FAQPage"') &&
+        !subHtml.includes('"@type": "HowTo"') &&
+        !/<script[^>]+type=["']application\/ld\+json["']/i.test(subHtml),
+        `dist/${slug}.html omits homepage-only JSON-LD structured data`
+      );
+    }
+  }
+
+  const distContactPath = path.resolve(process.cwd(), 'dist/contact-us.html');
+  if (fs.existsSync(distContactPath)) {
+    const distContact = fs.readFileSync(distContactPath, 'utf-8');
+    assert(
+      distContact.includes('Contact Email Setup Required') && !distContact.includes('mailto:'),
+      'Prerendered dist/contact-us.html preserves Contact Us email placeholder unchanged'
+    );
+  }
+}
 
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;

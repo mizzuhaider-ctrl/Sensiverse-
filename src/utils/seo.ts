@@ -71,6 +71,25 @@ export const INDEXABLE_LEGAL_PATHS: LegalRoutePath[] = [
   '/cookie-policy',
 ];
 
+export const DEFAULT_INDEX_ROBOTS =
+  'index, follow, max-image-preview:large, max-snippet:-1, max-video-preview:-1';
+export const NOINDEX_FOLLOW_ROBOTS = 'noindex, follow';
+
+let cachedHomepageSchemaJson: string | null = null;
+
+/**
+ * Checks whether a pathname corresponds to an explicit known route
+ * ('/', '/index.html', or one of the 5 dedicated legal/info routes).
+ */
+export function isKnownAppRoute(pathname: string = '/'): boolean {
+  const cleaned = (pathname || '/').trim().replace(/\/+$/, '') || '/';
+  const lower = cleaned.toLowerCase();
+  if (lower === '/' || lower === '/index.html') {
+    return true;
+  }
+  return lower in LEGAL_ROUTES_SEO;
+}
+
 /**
  * Normalizes a browser pathname to either a supported dedicated route
  * or '/' for the main homepage / fallback SPA view.
@@ -106,16 +125,30 @@ export function resolveCanonicalUrl(pathname: string = '/', _search: string = ''
   return PRODUCTION_CANONICAL_HOME;
 }
 
+function isHomepageStructuredDataScript(scriptEl: HTMLScriptElement): boolean {
+  const raw = scriptEl.textContent || '';
+  return (
+    raw.includes('"@type": "WebApplication"') ||
+    raw.includes('"@type":"WebApplication"') ||
+    raw.includes('"@type": "FAQPage"') ||
+    raw.includes('"@type":"FAQPage"')
+  );
+}
+
 /**
- * Synchronizes <link rel="canonical">, <meta property="og:url">, document title,
- * meta description, and social title/description tags for the active route.
+ * Synchronizes <link rel="canonical">, <meta property="og:url">, <meta name="robots">,
+ * document title, meta description, social title/description tags, and ensures
+ * homepage structured data only lives on the homepage.
  */
 export function syncDocumentCanonical(
   pathname: string = typeof window !== 'undefined' ? window.location.pathname : '/',
   search: string = typeof window !== 'undefined' ? window.location.search : ''
 ): string {
+  const knownRoute = isKnownAppRoute(pathname);
+  const normalizedRoute = normalizeRoutePath(pathname);
   const canonicalUrl = resolveCanonicalUrl(pathname, search);
   const routeMeta = getRouteSeoMetadata(pathname);
+  const expectedRobots = knownRoute ? DEFAULT_INDEX_ROBOTS : NOINDEX_FOLLOW_ROBOTS;
 
   if (typeof document !== 'undefined' && document.head) {
     const canonicalTags = Array.from(
@@ -135,6 +168,16 @@ export function syncDocumentCanonical(
 
     for (let i = 1; i < canonicalTags.length; i++) {
       canonicalTags[i].remove();
+    }
+
+    let robotsTag = document.head.querySelector<HTMLMetaElement>('meta[name="robots"]');
+    if (!robotsTag) {
+      robotsTag = document.createElement('meta');
+      robotsTag.setAttribute('name', 'robots');
+      document.head.appendChild(robotsTag);
+    }
+    if (robotsTag.getAttribute('content') !== expectedRobots) {
+      robotsTag.setAttribute('content', expectedRobots);
     }
 
     let ogUrlTag = document.head.querySelector<HTMLMetaElement>('meta[property="og:url"]');
@@ -164,6 +207,25 @@ export function syncDocumentCanonical(
       if (el && el.getAttribute('content') !== item.content) {
         el.setAttribute('content', item.content);
       }
+    }
+
+    const jsonLdScripts = Array.from(
+      document.head.querySelectorAll<HTMLScriptElement>('script[type="application/ld+json"]')
+    );
+    const activeHomepageSchema = jsonLdScripts.find(isHomepageStructuredDataScript);
+    if (activeHomepageSchema && activeHomepageSchema.textContent) {
+      cachedHomepageSchemaJson = activeHomepageSchema.textContent;
+    }
+
+    if (normalizedRoute === '/' && knownRoute) {
+      if (!activeHomepageSchema && cachedHomepageSchemaJson) {
+        const script = document.createElement('script');
+        script.type = 'application/ld+json';
+        script.textContent = cachedHomepageSchemaJson;
+        document.head.appendChild(script);
+      }
+    } else if (activeHomepageSchema) {
+      activeHomepageSchema.remove();
     }
   }
 

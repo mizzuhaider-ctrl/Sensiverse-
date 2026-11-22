@@ -32,7 +32,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api/|assets/|favicon|apple-touch-icon|manifest\\.json|robots\\.txt|sitemap\\.xml|sensiverse-logo|google).*)",
+      "source": "/((?!api/|assets/|favicon|apple-touch-icon|manifest\\.json|robots\\.txt|sitemap\\.xml|sensiverse-logo|google|(?:about-us|contact-us|privacy-policy|terms-and-conditions|cookie-policy)(?:\\.html)?$).*)",
       "destination": "/index.html"
     }
   ]

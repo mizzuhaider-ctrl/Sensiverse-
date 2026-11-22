@@ -34,14 +34,17 @@ export const Navbar: React.FC<NavbarProps> = ({
         
         {/* Brand */}
         <a
-          href="#top"
+          href="/"
           aria-label="SensiVerse Home"
           onClick={(e) => {
-            if (!onNavigateHome) return;
             if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
             e.preventDefault();
             playCyberClick('click');
-            onNavigateHome();
+            if (onNavigateHome) {
+              onNavigateHome();
+            } else if (typeof window !== 'undefined') {
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
           }}
           className="flex items-center gap-2 sm:gap-3 shrink-0 group"
         >
