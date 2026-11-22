@@ -43,11 +43,14 @@ import {
   INDEXABLE_LEGAL_PATHS,
   LEGAL_ROUTES_SEO,
   parseAppRoute,
+  getPhoneSeoMetadata,
+  getBrandSeoMetadata,
 } from '../src/utils/seo';
 import {
   BRAND_SLUG_ENTRIES,
   PRIMARY_CATALOG_BRANDS,
   TOP_50_PHONE_ROUTES,
+  buildPhonePath,
   slugifyBrand,
   slugifyModel,
   slugifySegment,
@@ -4724,6 +4727,146 @@ assert(
   unknownFallbackPaths.every((p) => vercelRewriteRegex.test(p)),
   `vercel.json SPA rewrite excludes all ${excludedStaticPaths.length} static routes (5 legal + 77 /phones) while catching unknown routes`
 );
+
+console.log('\n[TEST GROUP 53] Phase C P0 SEO Fixes: Concise Unique Titles, Descriptions, No Duplicate Brand Tokens & Dual-Game Initial HTML');
+
+// 1. Zero duplicate adjacent brand words & concise <= 60 char titles across all 1,089 phones + Top 50 routes
+const allGeneratedPhoneTitles = ALL_VERIFIED_PHONES.map((p) => {
+  const cap = getDeviceFpsCapability(p, 'freefire_india');
+  const fps = cap.availableFps.includes(60) ? 60 : cap.recommendedDefaultFps || 60;
+  const out = p.customSensitivityPreset
+    ? calculatePresetVariation('freefire_india', p, '2finger', 'onetap', fps, 'smg', 0)
+    : calculateSensitivity('freefire_india', p, '2finger', 'onetap', fps, 1.0, 'smg', 0);
+  return {
+    phone: p,
+    meta: getPhoneSeoMetadata(p.name, p.brand, buildPhonePath(p.brand, p.name), {
+      dpi: p.recommendedDpi,
+      ppi: p.nativePpi ?? undefined,
+      hz: p.refreshRate ?? undefined,
+      screenSize: p.screenSize ?? undefined,
+      fireBtn: out.fireButton.sizePercent,
+    }),
+  };
+});
+
+const dupWordRegex = /\b([a-z0-9]+)\s+\1\b/i;
+assert(
+  allGeneratedPhoneTitles.every(
+    ({ meta }) => meta.title.length <= 60 && !dupWordRegex.test(meta.title) && !dupWordRegex.test(meta.description)
+  ),
+  `All ${allGeneratedPhoneTitles.length} phone SEO titles are <= 60 chars and free of duplicate adjacent brand tokens`
+);
+
+const rogMeta = getPhoneSeoMetadata('ROG Phone 9 Pro', 'ASUS ROG', '/phones/asus-rog/rog-phone-9-pro');
+const pixelMeta = getPhoneSeoMetadata('Pixel 9 Pro', 'Google Pixel', '/phones/google-pixel/pixel-9-pro');
+assert(
+  rogMeta.title.startsWith('ASUS ROG Phone 9 Pro ') &&
+  !rogMeta.title.includes('ROG ROG') &&
+  pixelMeta.title.startsWith('Google Pixel 9 Pro ') &&
+  !pixelMeta.title.includes('Pixel Pixel'),
+  'ASUS ROG and Google Pixel titles fix duplicate brand tokens ("ASUS ROG Phone 9 Pro", "Google Pixel 9 Pro")'
+);
+
+const top50Titles = TOP_50_PHONE_ROUTES.map((r) => {
+  const match = catalogById.get(r.id)!;
+  return getPhoneSeoMetadata(match.name, match.brand, r.path, {
+    dpi: match.recommendedDpi,
+    ppi: match.nativePpi ?? undefined,
+    hz: match.refreshRate ?? undefined,
+    screenSize: match.screenSize ?? undefined,
+    fireBtn: 45,
+  }).title;
+});
+assert(
+  new Set(top50Titles).size === 50 && top50Titles.every((t) => t.length <= 60),
+  'All 50 popular phone routes produce 50 unique, concise titles (<= 60 chars)'
+);
+
+// 2. Contact Us email placeholder remains untouched
+const contactPageHtmlCheck = legalPagesCode.includes('Contact Email Setup Required');
+assert(
+  contactPageHtmlCheck,
+  'Contact Us placeholder remains unchanged pending owner-confirmed email address'
+);
+
+// 3. Prerendered dist/ verification for all 83 pages: concise titles, <=160 descriptions, and both FF India + FF MAX matrices
+if (fs.existsSync(distHtmlPath)) {
+  const decodeEntities = (v: string) =>
+    v.replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, '<').replace(/&gt;/g, '>');
+
+  const all83HtmlPaths = [
+    path.resolve(process.cwd(), 'dist/index.html'),
+    ...INDEXABLE_LEGAL_PATHS.map((p) => path.resolve(process.cwd(), `dist${p}.html`)),
+    path.resolve(process.cwd(), 'dist/phones.html'),
+    ...BRAND_SLUG_ENTRIES.map((b) => path.resolve(process.cwd(), `dist/phones/${b.slug}.html`)),
+    ...TOP_50_PHONE_ROUTES.map((ph) => path.resolve(process.cwd(), `dist/phones/${ph.brandSlug}/${ph.modelSlug}.html`)),
+  ];
+
+  let all83DescOk = true;
+  const distTitleList: string[] = [];
+  for (const filePath of all83HtmlPaths) {
+    const html = fs.readFileSync(filePath, 'utf-8');
+    const t = decodeEntities(html.match(/<title>([^<]*)<\/title>/i)?.[1] || '');
+    const d = decodeEntities(html.match(/<meta\s+name="description"\s+content="([^"]*)"/i)?.[1] || '');
+    distTitleList.push(t);
+    if (!d || d.length > 160 || dupWordRegex.test(t)) {
+      all83DescOk = false;
+    }
+  }
+  assert(
+    all83HtmlPaths.length === 83 && new Set(distTitleList).size === 83 && all83DescOk,
+    'All 83 prerendered pages have unique titles without duplicate tokens and meta descriptions <= 160 chars'
+  );
+
+  let dualEngineBrandPass = 0;
+  for (const b of BRAND_SLUG_ENTRIES) {
+    const bh = fs.readFileSync(path.resolve(process.cwd(), `dist/phones/${b.slug}.html`), 'utf-8');
+    if (bh.includes('FF India (Gen/RD)') && bh.includes('FF MAX (Gen/RD)')) {
+      dualEngineBrandPass++;
+    }
+  }
+  assert(
+    dualEngineBrandPass === 26,
+    `All 26 prerendered brand pages include both Free Fire India and Free Fire MAX baseline values (${dualEngineBrandPass}/26)`
+  );
+
+  let dualEnginePhonePass = 0;
+  for (const ph of TOP_50_PHONE_ROUTES) {
+    const pHtml = fs.readFileSync(path.resolve(process.cwd(), `dist/phones/${ph.brandSlug}/${ph.modelSlug}.html`), 'utf-8');
+    const phoneObj = catalogById.get(ph.id)!;
+    const capIndia = getDeviceFpsCapability(phoneObj, 'freefire_india');
+    const fpsIndia = capIndia.availableFps.includes(60) ? 60 : capIndia.recommendedDefaultFps || 60;
+    const outIndia = phoneObj.customSensitivityPreset
+      ? calculatePresetVariation('freefire_india', phoneObj, '2finger', 'onetap', fpsIndia, 'smg', 0)
+      : calculateSensitivity('freefire_india', phoneObj, '2finger', 'onetap', fpsIndia, 1.0, 'smg', 0);
+
+    const capMax = getDeviceFpsCapability(phoneObj, 'freefire_max');
+    const fpsMax = capMax.availableFps.includes(60) ? 60 : capMax.recommendedDefaultFps || 60;
+    const outMax = phoneObj.customSensitivityPreset
+      ? calculatePresetVariation('freefire_max', phoneObj, '2finger', 'onetap', fpsMax, 'smg', 0)
+      : calculateSensitivity('freefire_max', phoneObj, '2finger', 'onetap', fpsMax, 1.0, 'smg', 0);
+
+    const dIndia = outIndia.sensitivity.data as FreeFireSensi;
+    const dMax = outMax.sensitivity.data as FreeFireSensi;
+
+    const hasDualMatrix =
+      pHtml.includes('data-testid="dual-game-sensitivity-matrix"') &&
+      pHtml.includes('data-game-engine="freefire_india"') &&
+      pHtml.includes('data-game-engine="freefire_max"') &&
+      pHtml.includes(`>${dIndia.general}<`) &&
+      pHtml.includes(`>${dMax.general}<`) &&
+      pHtml.includes(`>${dMax.redDot}<`);
+
+    const titleText = decodeEntities(pHtml.match(/<title>([^<]*)<\/title>/i)?.[1] || '');
+    if (hasDualMatrix && titleText.length <= 60 && !dupWordRegex.test(titleText)) {
+      dualEnginePhonePass++;
+    }
+  }
+  assert(
+    dualEnginePhonePass === 50,
+    `All 50 prerendered phone pages render both Free Fire India and Free Fire MAX calibrated values in initial HTML (${dualEnginePhonePass}/50)`
+  );
+}
 
 const totalTests = results.length;
 const passedTests = results.filter(r => r.passed).length;

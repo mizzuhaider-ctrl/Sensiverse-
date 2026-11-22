@@ -147,7 +147,7 @@ export function getBrandSeoMetadata(
       path,
       canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
       title: 'Apple iPhone Free Fire Sensitivity & iOS Touch | SensiVerse',
-      description: `Hardware-calibrated 0–200 Free Fire India and Free Fire MAX sensitivity, iOS Retina PPI touch scaling, and fire button size for ${countText}Apple iPhone models${hzText}.`,
+      description: `Calibrated 0–200 Free Fire India & MAX sensitivity, iOS Retina PPI scaling, and fire button size for ${countText}Apple iPhone models${hzText}.`,
     };
   }
 
@@ -159,6 +159,34 @@ export function getBrandSeoMetadata(
   };
 }
 
+function formatModelTitleName(phoneName: string, brand: string): string {
+  const cleanName = phoneName.trim();
+  const cleanBrand = brand.trim();
+  const lowerName = cleanName.toLowerCase();
+  const lowerBrand = cleanBrand.toLowerCase();
+
+  if (lowerName.includes(lowerBrand)) {
+    return cleanName;
+  }
+
+  // Prevent duplicate tokens for multi-word brands (e.g., "ASUS ROG" + "ROG Phone 9 Pro" -> "ASUS ROG Phone 9 Pro")
+  const brandParts = cleanBrand.split(/\s+/);
+  if (brandParts.length > 1) {
+    const subBrand = brandParts[brandParts.length - 1];
+    if (lowerName.startsWith(subBrand.toLowerCase())) {
+      const parentBrand = brandParts.slice(0, -1).join(' ');
+      return `${parentBrand} ${cleanName}`;
+    }
+  }
+
+  // Keep iPhone titles concise while preserving model specificity
+  if (lowerBrand === 'apple' && lowerName.startsWith('iphone')) {
+    return cleanName;
+  }
+
+  return `${cleanBrand} ${cleanName}`;
+}
+
 export function getPhoneSeoMetadata(
   phoneName: string,
   brand: string,
@@ -167,9 +195,7 @@ export function getPhoneSeoMetadata(
 ): RouteSeoMetadata {
   const path = canonicalPath || buildPhonePath(brand, phoneName);
   const isIos = brand.trim().toLowerCase() === 'apple';
-  const fullPrefix = phoneName.toLowerCase().includes(brand.toLowerCase())
-    ? phoneName
-    : `${brand} ${phoneName}`;
+  const displayName = formatModelTitleName(phoneName, brand);
   const specSummary =
     specs?.screenSize && specs?.hz
       ? ` (${specs.screenSize}" ${specs.hz}Hz)`
@@ -180,23 +206,41 @@ export function getPhoneSeoMetadata(
 
   if (isIos) {
     const ppiValue = specs?.ppi ?? specs?.dpi;
-    const iosScalePart = ppiValue ? `, native ${ppiValue} PPI Retina scaling` : '';
+    const iosScalePart = ppiValue ? `, ${ppiValue} PPI Retina scaling` : '';
+    const fullIosTitle = `${displayName} Free Fire Sensitivity & iOS Settings | SensiVerse`;
+    const conciseIosTitle = `${displayName} Free Fire Sensitivity & iOS Settings`;
+    const fallbackIosTitle = `${displayName} Free Fire iOS Settings`;
+    const title =
+      fullIosTitle.length <= 60
+        ? fullIosTitle
+        : conciseIosTitle.length <= 60
+          ? conciseIosTitle
+          : fallbackIosTitle;
+
     return {
       path,
       canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
-      title: `${fullPrefix} Free Fire Sensitivity & iOS Settings | SensiVerse`,
-      description: `Calibrated 0–200 Free Fire India & MAX one-tap and drag headshot sensitivity${iosScalePart}${firePart} tailored for ${fullPrefix}${specSummary} with native iOS touch calibration.`,
+      title,
+      description: `Calibrated 0–200 Free Fire India & MAX headshot sensitivity${iosScalePart}${firePart} for ${displayName}${specSummary} on iOS.`,
     };
   }
 
-  const title = `${fullPrefix} Free Fire Sensitivity & DPI | SensiVerse`;
+  const fullTitle = `${displayName} Free Fire Sensitivity & DPI | SensiVerse`;
+  const conciseTitle = `${displayName} Free Fire Sensitivity & DPI`;
+  const fallbackTitle = `${displayName} Free Fire Sensitivity`;
+  const title =
+    fullTitle.length <= 60
+      ? fullTitle
+      : conciseTitle.length <= 60
+        ? conciseTitle
+        : fallbackTitle;
   const dpiPart = specs?.dpi ? `, ${specs.dpi} DPI` : '';
 
   return {
     path,
     canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
     title,
-    description: `Calibrated 0–200 Free Fire India & MAX one-tap and drag headshot sensitivity${dpiPart}${firePart} tailored for ${fullPrefix}${specSummary}.`,
+    description: `Calibrated 0–200 Free Fire India & MAX headshot sensitivity${dpiPart}${firePart} for ${displayName}${specSummary}.`,
   };
 }
 

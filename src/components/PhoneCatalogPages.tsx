@@ -445,7 +445,9 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
               {popularModels.map((phone) => {
                 const topRoute = findTopPhoneRouteById(phone.id)!;
                 const baseline = computePhoneDefaultOutput(phone, 'freefire_india', '2finger', 'onetap');
+                const maxBaseline = computePhoneDefaultOutput(phone, 'freefire_max', '2finger', 'onetap');
                 const ffData = baseline.sensitivity.data as FreeFireSensi;
+                const ffMaxData = maxBaseline.sensitivity.data as FreeFireSensi;
                 return (
                   <a
                     key={phone.id}
@@ -462,8 +464,8 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
                       </span>
                     </div>
                     <div className="text-[11px] font-mono-code text-zinc-400 flex flex-wrap gap-x-3 gap-y-1">
-                      <span>General: <strong className="text-zinc-200">{ffData.general}</strong></span>
-                      <span>Red Dot: <strong className="text-zinc-200">{ffData.redDot}</strong></span>
+                      <span>FF India: <strong className="text-zinc-200">{ffData.general}/{ffData.redDot}</strong></span>
+                      <span>FF MAX: <strong className="text-zinc-200">{ffMaxData.general}/{ffMaxData.redDot}</strong></span>
                       <span>
                         {isAppleBrand ? 'Retina:' : 'DPI:'}{' '}
                         <strong className="text-zinc-200">
@@ -483,7 +485,7 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 id="brand-models-table-heading" className="text-base sm:text-lg font-bold font-cyber text-white flex items-center gap-2">
               <Sliders className="w-4 h-4 text-[#00FF66]" />
-              <span>All {brandRoute.brand} Models — Free Fire India Baseline Chart</span>
+              <span>All {brandRoute.brand} Models — Free Fire India &amp; MAX Baseline Chart</span>
             </h2>
             <span className="text-[11px] font-mono-code text-zinc-400">
               2-Finger Thumb • One-Tap Headshot • 0–200 Scale
@@ -501,8 +503,8 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
                   <tr className="border-b border-zinc-800 bg-zinc-950/90 text-[10px] font-mono-code uppercase text-zinc-400">
                     <th className="py-3 px-3.5">Phone Model</th>
                     <th className="py-3 px-2.5">Display</th>
-                    <th className="py-3 px-2.5">General</th>
-                    <th className="py-3 px-2.5">Red Dot</th>
+                    <th className="py-3 px-2.5">FF India (Gen/RD)</th>
+                    <th className="py-3 px-2.5">FF MAX (Gen/RD)</th>
                     <th className="py-3 px-2.5">2x / 4x</th>
                     <th className="py-3 px-2.5">{isAppleBrand ? 'iOS PPI' : 'DPI'}</th>
                     <th className="py-3 px-2.5">Fire Btn</th>
@@ -512,7 +514,9 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
                 <tbody className="divide-y divide-zinc-800/70">
                   {brandModels.map((phone) => {
                     const out = computePhoneDefaultOutput(phone, 'freefire_india', '2finger', 'onetap');
+                    const maxOut = computePhoneDefaultOutput(phone, 'freefire_max', '2finger', 'onetap');
                     const data = out.sensitivity.data as FreeFireSensi;
+                    const maxData = maxOut.sensitivity.data as FreeFireSensi;
                     const topRoute = findTopPhoneRouteById(phone.id);
                     return (
                       <tr key={phone.id} className="hover:bg-zinc-900/40 transition-colors">
@@ -537,10 +541,12 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
                         <td className="py-2.5 px-2.5 font-mono-code text-zinc-300 whitespace-nowrap">
                           {phone.screenSize}&quot; • {phone.refreshRate}Hz
                         </td>
-                        <td className="py-2.5 px-2.5 font-mono-code font-bold text-[#00FF66]">
-                          {data.general}
+                        <td className="py-2.5 px-2.5 font-mono-code font-bold text-[#00FF66] whitespace-nowrap">
+                          {data.general} / {data.redDot}
                         </td>
-                        <td className="py-2.5 px-2.5 font-mono-code text-zinc-200">{data.redDot}</td>
+                        <td className="py-2.5 px-2.5 font-mono-code text-zinc-200 whitespace-nowrap">
+                          {maxData.general} / {maxData.redDot}
+                        </td>
                         <td className="py-2.5 px-2.5 font-mono-code text-zinc-300 whitespace-nowrap">
                           {data.scope2x} / {data.scope4x}
                         </td>
@@ -877,6 +883,64 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
                 </div>
               );
             })}
+          </div>
+
+          {/* Static Dual-Engine Matrix: Both Free Fire India & Free Fire MAX rendered in initial HTML */}
+          <div className="pt-2 space-y-3" data-testid="dual-game-sensitivity-matrix">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <h3 className="text-sm sm:text-base font-cyber font-bold text-white flex items-center gap-2">
+                <Flame className="w-4 h-4 text-[#00FF66]" />
+                <span>Free Fire India &amp; Free Fire MAX Complete 0–200 Matrix ({phone.name})</span>
+              </h3>
+              <span className="text-[11px] font-mono-code text-zinc-400">
+                2-Finger Thumb • Direct Engine Comparison
+              </span>
+            </div>
+
+            <div className="overflow-x-auto rounded-xl border border-zinc-800 bg-black/50">
+              <table className="w-full text-left border-collapse text-xs font-mono-code">
+                <thead>
+                  <tr className="border-b border-zinc-800 bg-zinc-950/90 text-[10px] uppercase text-zinc-400">
+                    <th className="py-2.5 px-3">Game Engine</th>
+                    <th className="py-2.5 px-2.5">Playstyle</th>
+                    <th className="py-2.5 px-2">General</th>
+                    <th className="py-2.5 px-2">Red Dot</th>
+                    <th className="py-2.5 px-2">2x</th>
+                    <th className="py-2.5 px-2">4x</th>
+                    <th className="py-2.5 px-2">Sniper</th>
+                    <th className="py-2.5 px-2">Free Look</th>
+                    <th className="py-2.5 px-3 text-right">Fire Btn</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-zinc-800/70">
+                  {(['freefire_india', 'freefire_max'] as const).map((gId) =>
+                    activePlaystyles.map((style) => {
+                      const out = computePhoneDefaultOutput(phone, gId, '2finger', style.id);
+                      const d = out.sensitivity.data as FreeFireSensi;
+                      const gameLabel = gId === 'freefire_india' ? 'Free Fire India' : 'Free Fire MAX';
+                      return (
+                        <tr
+                          key={`${gId}-${style.id}`}
+                          data-game-engine={gId}
+                          data-playstyle={style.id}
+                          className="hover:bg-zinc-900/40 transition-colors"
+                        >
+                          <td className="py-2 px-3 font-semibold text-white whitespace-nowrap">{gameLabel}</td>
+                          <td className="py-2 px-2.5 text-zinc-300 whitespace-nowrap">{style.label}</td>
+                          <td className="py-2 px-2 font-bold text-[#00FF66]">{d.general}</td>
+                          <td className="py-2 px-2 text-white">{d.redDot}</td>
+                          <td className="py-2 px-2 text-zinc-200">{d.scope2x}</td>
+                          <td className="py-2 px-2 text-zinc-200">{d.scope4x}</td>
+                          <td className="py-2 px-2 text-zinc-300">{d.sniperScope}</td>
+                          <td className="py-2 px-2 text-zinc-300">{d.freeLook}</td>
+                          <td className="py-2 px-3 text-right text-[#00FF66] font-bold">{out.fireButton.sizePercent}%</td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </section>
 
