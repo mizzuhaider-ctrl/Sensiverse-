@@ -19,7 +19,7 @@ import {
 } from '../src/utils/sensitivityEngine';
 import { getDeviceFpsCapability, getValidFpsForDevice } from '../src/utils/fpsEngine';
 import { PhoneModel, WeaponCategory, GameId, SensitivityOutput, FreeFireSensi, FireButtonConfig, Playstyle } from '../src/types';
-import { WEAPON_CATEGORIES } from '../src/data/weapons';
+import { WEAPON_CATEGORIES, WEAPON_CATEGORY_LIST } from '../src/data/weapons';
 import { 
   buildShareableProfileUrl,
   formatSensitivityForSharing,
@@ -51,6 +51,7 @@ import {
   PRIMARY_CATALOG_BRANDS,
   TOP_50_PHONE_ROUTES,
   buildPhonePath,
+  getComparableTopPhoneRoutes,
   slugifyBrand,
   slugifyModel,
   slugifySegment,
@@ -4865,6 +4866,125 @@ if (fs.existsSync(distHtmlPath)) {
   assert(
     dualEnginePhonePass === 50,
     `All 50 prerendered phone pages render both Free Fire India and Free Fire MAX calibrated values in initial HTML (${dualEnginePhonePass}/50)`
+  );
+}
+
+console.log('\n[TEST GROUP 54] Phase C P1 Priority 1: Phone SEO Enrichments, Verified Hardware, Weapon Guidance & Comparable Links');
+
+// 1. TOP_50_PHONE_ROUTES refreshRate & category parity with ALL_VERIFIED_PHONES (without importing full catalog into slugs.ts)
+assert(
+  TOP_50_PHONE_ROUTES.every((r) => {
+    const m = catalogById.get(r.id);
+    return Boolean(m) && m!.refreshRate === r.refreshRate && m!.category === r.category;
+  }),
+  'All 50 TOP_50_PHONE_ROUTES entries match database refreshRate and category 1:1'
+);
+
+// 2. Comparable cross-brand fallback helper excludes self/same-brand and respects OS & tier priority
+const redmagicComparable = getComparableTopPhoneRoutes('redmagic-10pro', 'RedMagic', 144, 'gaming', 6);
+assert(
+  redmagicComparable.length === 6 &&
+  redmagicComparable.every((c) => c.id !== 'redmagic-10pro' && c.brand !== 'RedMagic' && c.brand !== 'Apple') &&
+  redmagicComparable[0].category === 'gaming' &&
+  redmagicComparable[0].refreshRate === 144,
+  'getComparableTopPhoneRoutes returns deterministic comparable Android gaming/144Hz alternatives for RedMagic 10 Pro'
+);
+
+// 3. Verify all 50 prerendered phone pages include latency, HUD, GPU/gyro fidelity, all 6 weapon classes, and >= 4 related links
+if (fs.existsSync(distHtmlPath)) {
+  const decodeHtmlText = (v: string) =>
+    v
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>');
+
+  let enrichedPhonePass = 0;
+  let gpuFidelityPass = 0;
+  let weaponGuidancePass = 0;
+  let comparableLinksPass = 0;
+
+  for (const ph of TOP_50_PHONE_ROUTES) {
+    const rawHtml = fs.readFileSync(
+      path.resolve(process.cwd(), `dist/phones/${ph.brandSlug}/${ph.modelSlug}.html`),
+      'utf-8'
+    );
+    const decodedMain = decodeHtmlText(rawHtml.split('<main')[1]?.split('</main>')[0] || '');
+    const phoneObj = catalogById.get(ph.id)!;
+    const capIndia = getDeviceFpsCapability(phoneObj, 'freefire_india');
+    const fpsIndia = capIndia.availableFps.includes(60) ? 60 : capIndia.recommendedDefaultFps || 60;
+    const primaryOut = phoneObj.customSensitivityPreset
+      ? calculatePresetVariation('freefire_india', phoneObj, '2finger', 'onetap', fpsIndia, 'smg', 0)
+      : calculateSensitivity('freefire_india', phoneObj, '2finger', 'onetap', fpsIndia, 1.0, 'smg', 0);
+
+    const expectedGyro =
+      phoneObj.gyroscopeType === 'PHYSICAL_HARDWARE'
+        ? 'Physical Hardware Gyro'
+        : phoneObj.hasHardwareGyro === true
+          ? 'Hardware Gyroscope'
+          : null;
+
+    const hasHudAndLatency =
+      decodedMain.includes('data-testid="hud-positioning-panel"') &&
+      decodedMain.includes('data-testid="device-latency-telemetry"') &&
+      decodedMain.includes(`${primaryOut.fireButton.positionX}% from right, ${primaryOut.fireButton.positionY}% from bottom`) &&
+      decodedMain.includes(primaryOut.telemetry.latencyEstimationExplanation) &&
+      decodedMain.includes(`${primaryOut.telemetry.screenDragRunwayMm}mm`) &&
+      (!expectedGyro || decodedMain.includes(expectedGyro)) &&
+      !/\b\d+\s*GB\s*RAM\b/i.test(decodedMain);
+
+    if (hasHudAndLatency) enrichedPhonePass++;
+
+    const gpuOk = phoneObj.gpu
+      ? decodedMain.includes(`GPU: ${phoneObj.gpu}`)
+      : !decodedMain.includes('GPU:') && !/\b(Adreno|Mali-|Immortalis)\b/i.test(decodedMain);
+    if (gpuOk) gpuFidelityPass++;
+
+    const hasAllWeapons =
+      decodedMain.includes('data-testid="weapon-class-guidance"') &&
+      WEAPON_CATEGORY_LIST.every((w) => decodedMain.includes(`data-weapon-category="${w}"`));
+    if (hasAllWeapons) weaponGuidancePass++;
+
+    const siblingMatches = rawHtml.match(/href="\/phones\/[^/"]+\/[^/"]+"/g) || [];
+    const sameBrandCount = catalogById.size > 0
+      ? TOP_50_PHONE_ROUTES.filter((r) => r.brand === ph.brand && r.id !== ph.id).length
+      : 0;
+    const needsComparableSection = sameBrandCount < 4;
+    const hasComparableOk =
+      siblingMatches.length >= 4 &&
+      (!needsComparableSection || decodedMain.includes('data-testid="comparable-phone-links"'));
+    if (hasComparableOk) comparableLinksPass++;
+  }
+
+  assert(
+    enrichedPhonePass === 50,
+    `All 50 prerendered phone pages include device latency telemetry, HUD placement coordinates, verified gyro status, and zero fabricated RAM (${enrichedPhonePass}/50)`
+  );
+  assert(
+    gpuFidelityPass === 50,
+    `All 50 prerendered phone pages preserve conditional GPU fidelity (44 verified GPUs shown, 6 unverified omitted) (${gpuFidelityPass}/50)`
+  );
+  assert(
+    weaponGuidancePass === 50,
+    `All 50 prerendered phone pages include weapon-class calibration guidance across all 6 categories (${weaponGuidancePass}/50)`
+  );
+  assert(
+    comparableLinksPass === 50,
+    `All 50 prerendered phone pages render >= 4 internal phone links including comparable cross-brand fallback where needed (${comparableLinksPass}/50)`
+  );
+
+  // Check multi-FPS scaling strip on POCO X7 Pro (60 / 90 FPS)
+  const pocoX7Html = decodeHtmlText(
+    fs.readFileSync(path.resolve(process.cwd(), 'dist/phones/poco/poco-x7-pro.html'), 'utf-8')
+  );
+  assert(
+    pocoX7Html.includes('Multi-FPS Scaling:') &&
+    pocoX7Html.includes('60 FPS') &&
+    pocoX7Html.includes('90 FPS'),
+    'POCO X7 Pro page renders verified Multi-FPS Scaling comparison for 60 FPS and 90 FPS'
   );
 }
 

@@ -19,6 +19,7 @@ import {
   GripStyle,
   PhoneModel,
   Playstyle,
+  WeaponCategory,
 } from '../types';
 import {
   BRAND_SLUG_ENTRIES,
@@ -26,6 +27,7 @@ import {
   buildBrandPath,
   buildPhonesHubPath,
   findTopPhoneRouteById,
+  getComparableTopPhoneRoutes,
 } from '../utils/slugs';
 import {
   getCachedBrandPhones,
@@ -36,6 +38,7 @@ import {
   calculateSensitivity,
 } from '../utils/sensitivityEngine';
 import { getDeviceFpsCapability } from '../utils/fpsEngine';
+import { WEAPON_CATEGORIES, WEAPON_CATEGORY_LIST } from '../data/weapons';
 import {
   getBrandSeoMetadata,
   getPhoneSeoMetadata,
@@ -58,15 +61,27 @@ function computePhoneDefaultOutput(
   phone: PhoneModel,
   gameId: GameId = 'freefire_india',
   grip: GripStyle = '2finger',
-  playstyle: Playstyle = 'onetap'
+  playstyle: Playstyle = 'onetap',
+  weaponCategory: WeaponCategory = 'smg',
+  explicitFps?: number
 ) {
   const capability = getDeviceFpsCapability(phone, gameId);
-  const targetFps = capability.availableFps.includes(60)
-    ? 60
-    : capability.recommendedDefaultFps || 60;
+  const targetFps =
+    explicitFps ??
+    (capability.availableFps.includes(60)
+      ? 60
+      : capability.recommendedDefaultFps || 60);
   return phone.customSensitivityPreset
-    ? calculatePresetVariation(gameId, phone, grip, playstyle, targetFps, 'smg', 0)
-    : calculateSensitivity(gameId, phone, grip, playstyle, targetFps, 1.0, 'smg', 0);
+    ? calculatePresetVariation(gameId, phone, grip, playstyle, targetFps, weaponCategory, 0)
+    : calculateSensitivity(gameId, phone, grip, playstyle, targetFps, 1.0, weaponCategory, 0);
+}
+
+function getVerifiedGyroLabel(phone: PhoneModel): string | null {
+  if (phone.gyroscopeType === 'PHYSICAL_HARDWARE') return 'Physical Hardware Gyro';
+  if (phone.gyroscopeType === 'VIRTUAL_SOFTWARE_ONLY') return 'Virtual / Software Gyro';
+  if (phone.hasHardwareGyro === true) return 'Hardware Gyroscope';
+  if (phone.hasHardwareGyro === false) return 'No Hardware Gyroscope';
+  return null;
 }
 
 export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
@@ -663,9 +678,20 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
     ];
 
     const primaryOutput = computePhoneDefaultOutput(phone, activeGameTab, '2finger', 'onetap');
+    const verifiedGyroLabel = getVerifiedGyroLabel(phone);
     const siblingPopular = brandModels
       .filter((m) => m.id !== phone.id && findTopPhoneRouteById(m.id) !== null)
       .slice(0, 6);
+    const comparablePhones =
+      siblingPopular.length < 4
+        ? getComparableTopPhoneRoutes(
+            phone.id,
+            phone.brand,
+            hz,
+            phone.category,
+            Math.max(0, 6 - siblingPopular.length)
+          )
+        : [];
 
     const refreshAdvice =
       hz >= 144
@@ -796,15 +822,25 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
               <span className="text-[10px] font-mono-code text-zinc-500 block">Safe 40%–55% Zone</span>
             </div>
             <div className="p-3 rounded-xl bg-black/60 border border-zinc-800">
-              <span className="text-[10px] font-mono-code text-zinc-400 uppercase block">Target FPS</span>
+              <span className="text-[10px] font-mono-code text-zinc-400 uppercase block">Target FPS &amp; Sensors</span>
               <span className="text-sm font-cyber font-bold text-white">{validFps.join(' / ')} FPS</span>
-              <span className="text-[10px] font-mono-code text-zinc-500 block">{phone.aspectRatio || '20:9'} Ratio</span>
+              <span className="text-[10px] font-mono-code text-zinc-500 block">
+                {phone.aspectRatio || '20:9'} Ratio
+                {verifiedGyroLabel ? ` • ${verifiedGyroLabel}` : ''}
+              </span>
             </div>
             <div className="p-3 rounded-xl bg-black/60 border border-zinc-800">
-              <span className="text-[10px] font-mono-code text-zinc-400 uppercase block">Processor</span>
+              <span className="text-[10px] font-mono-code text-zinc-400 uppercase block">
+                Processor{phone.gpu ? ' & GPU' : ''}
+              </span>
               <span className="text-xs font-semibold text-white block truncate" title={phone.chipset || 'Mobile SoC'}>
                 {phone.chipset || 'Verified Mobile SoC'}
               </span>
+              {phone.gpu && (
+                <span className="text-[10px] font-mono-code text-[#00FF66]/90 block truncate" title={phone.gpu}>
+                  GPU: {phone.gpu}
+                </span>
+              )}
               <span className="text-[10px] font-mono-code text-zinc-500 block">
                 {phone.nativePpi ? `${phone.nativePpi} PPI` : `${phone.category} tier`}
               </span>
@@ -944,21 +980,22 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
           </div>
         </section>
 
-        {/* Grip Style & Aim Telemetry Comparison */}
+        {/* Grip Style, HUD Positioning & Aim Telemetry */}
         <section aria-labelledby="grip-comparison-heading" className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <div className="p-4 sm:p-5 rounded-xl bg-black/50 border border-zinc-800 space-y-3">
+          <div className="p-4 sm:p-5 rounded-xl bg-black/50 border border-zinc-800 space-y-3" data-testid="hud-positioning-panel">
             <h2 id="grip-comparison-heading" className="text-sm sm:text-base font-cyber font-bold text-white flex items-center gap-2">
               <Crosshair className="w-4 h-4 text-[#00FF66]" />
-              <span>Thumb vs Claw Grip Profiles</span>
+              <span>Thumb vs Claw Grip &amp; HUD Positioning</span>
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono-code border-collapse">
                 <thead>
                   <tr className="border-b border-zinc-800 text-[10px] uppercase text-zinc-400">
                     <th className="py-2 pr-2">Grip Style</th>
-                    <th className="py-2 px-2">General</th>
-                    <th className="py-2 px-2">Red Dot</th>
-                    <th className="py-2 pl-2">Fire Btn</th>
+                    <th className="py-2 px-2">Gen / RD</th>
+                    <th className="py-2 px-2">Fire Btn</th>
+                    <th className="py-2 px-2">HUD Placement</th>
+                    <th className="py-2 pl-2">Joystick</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-zinc-800/60">
@@ -967,55 +1004,207 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
                     const d = out.sensitivity.data as FreeFireSensi;
                     return (
                       <tr key={grip.id}>
-                        <td className="py-2 pr-2 text-zinc-200">{grip.label}</td>
-                        <td className="py-2 px-2 text-[#00FF66] font-bold">{d.general}</td>
-                        <td className="py-2 px-2 text-white">{d.redDot}</td>
-                        <td className="py-2 pl-2 text-zinc-300">{out.fireButton.sizePercent}%</td>
+                        <td className="py-2 pr-2 text-zinc-200 whitespace-nowrap">{grip.label}</td>
+                        <td className="py-2 px-2 text-[#00FF66] font-bold whitespace-nowrap">
+                          {d.general} / <span className="text-white">{d.redDot}</span>
+                        </td>
+                        <td className="py-2 px-2 text-zinc-200 whitespace-nowrap">{out.fireButton.sizePercent}%</td>
+                        <td className="py-2 px-2 text-zinc-300 whitespace-nowrap">
+                          {out.fireButton.positionX}% R / {out.fireButton.positionY}% B
+                        </td>
+                        <td className="py-2 pl-2 text-zinc-300 whitespace-nowrap">{out.fireButton.joystickSize}%</td>
                       </tr>
                     );
                   })}
                 </tbody>
               </table>
             </div>
+            <div className="p-3 rounded-lg bg-zinc-950/80 border border-zinc-800/80 text-xs text-zinc-300 space-y-1.5">
+              <div className="flex flex-wrap items-center justify-between gap-2 font-mono-code text-[11px]">
+                <span>
+                  Recommended HUD:{' '}
+                  <strong className="text-[#00FF66]">
+                    {primaryOutput.fireButton.positionX}% from right, {primaryOutput.fireButton.positionY}% from bottom
+                  </strong>
+                </span>
+                <span className="text-zinc-400">
+                  Safe Zone: {primaryOutput.fireButton.recommendedRange.min}%–{primaryOutput.fireButton.recommendedRange.max}%
+                </span>
+              </div>
+              <p className="text-zinc-300 leading-relaxed">
+                <strong className="text-white">{primaryOutput.fireButton.dragTechniqueName}:</strong>{' '}
+                {primaryOutput.fireButton.dragTip}
+              </p>
+            </div>
           </div>
 
-          <div className="p-4 sm:p-5 rounded-xl bg-black/50 border border-zinc-800 space-y-2.5 text-xs sm:text-sm text-zinc-300 leading-relaxed">
+          <div className="p-4 sm:p-5 rounded-xl bg-black/50 border border-zinc-800 space-y-2.5 text-xs sm:text-sm text-zinc-300 leading-relaxed" data-testid="device-latency-telemetry">
             <h2 className="text-sm sm:text-base font-cyber font-bold text-white flex items-center gap-2">
               <Gauge className="w-4 h-4 text-[#00FF66]" />
-              <span>Device Touch &amp; Drag Calibration Notes</span>
+              <span>Device Touch, Latency &amp; Drag Telemetry</span>
             </h2>
             <p>{refreshAdvice}</p>
             <p>{runwayAdvice}</p>
-            <p className="text-xs font-mono-code text-zinc-400">
-              Drag Runway: {primaryOutput.telemetry.screenDragRunwayMm}mm • Overshoot Risk:{' '}
-              <span className="text-[#00FF66]">{primaryOutput.telemetry.overshootRisk}</span> • Calibration Confidence:{' '}
-              <span className="text-white">{primaryOutput.telemetry.confidenceScore}%</span>
+            <p className="text-xs font-mono-code text-zinc-200 bg-zinc-950/80 border border-zinc-800/80 rounded-lg p-2.5">
+              {primaryOutput.telemetry.latencyEstimationExplanation}
             </p>
+            {primaryOutput.telemetry.reasons.length > 0 && (
+              <ul className="space-y-1 text-xs text-zinc-300 pl-1">
+                {primaryOutput.telemetry.reasons.map((reason, idx) => (
+                  <li key={idx} className="flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#00FF66] mt-1.5 shrink-0" />
+                    <span>{reason}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+            <div className="text-xs font-mono-code text-zinc-400 flex flex-wrap gap-x-3 gap-y-1 pt-1">
+              <span>Drag Runway: <strong className="text-white">{primaryOutput.telemetry.screenDragRunwayMm}mm</strong></span>
+              <span>Aim Speed: <strong className="text-white uppercase">{primaryOutput.telemetry.aimSpeed}</strong></span>
+              <span>Drag Control: <strong className="text-white uppercase">{primaryOutput.telemetry.dragControl}</strong></span>
+              <span>Overshoot Risk: <strong className="text-[#00FF66] uppercase">{primaryOutput.telemetry.overshootRisk}</strong></span>
+              <span>Confidence: <strong className="text-white">{primaryOutput.telemetry.confidenceScore}%</strong></span>
+              {phone.gpu && <span>GPU: <strong className="text-white">{phone.gpu}</strong></span>}
+              {verifiedGyroLabel && <span>Gyro: <strong className="text-white">{verifiedGyroLabel}</strong></span>}
+            </div>
+            {validFps.length > 1 && (
+              <div className="pt-1 text-[11px] font-mono-code text-zinc-300 border-t border-zinc-800/80 flex flex-wrap gap-x-3 gap-y-1">
+                <span className="text-zinc-400">Multi-FPS Scaling:</span>
+                {validFps.map((fpsVal) => {
+                  const fOut = computePhoneDefaultOutput(phone, activeGameTab, '2finger', 'onetap', 'smg', fpsVal);
+                  const fd = fOut.sensitivity.data as FreeFireSensi;
+                  return (
+                    <span key={fpsVal}>
+                      <strong className="text-[#00FF66]">{fpsVal} FPS</strong> ({fd.general}/{fd.redDot}, Fire {fOut.fireButton.sizePercent}%)
+                    </span>
+                  );
+                })}
+              </div>
+            )}
           </div>
         </section>
 
-        {/* Related Models under Same Brand */}
-        {siblingPopular.length > 0 && (
-          <section aria-labelledby="sibling-models-heading" className="pt-4 border-t border-zinc-800/80 space-y-3">
-            <h2 id="sibling-models-heading" className="text-sm font-cyber font-bold text-white flex items-center gap-2">
-              <Monitor className="w-4 h-4 text-[#00FF66]" />
-              <span>More Popular {phone.brand} Sensitivity Profiles</span>
+        {/* Weapon-Class Calibration Guidance */}
+        <section aria-labelledby="weapon-class-guidance-heading" className="space-y-3" data-testid="weapon-class-guidance">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 id="weapon-class-guidance-heading" className="text-base sm:text-lg font-bold font-cyber text-white flex items-center gap-2">
+              <Sliders className="w-4 h-4 text-[#00FF66]" />
+              <span>Weapon-Class Sensitivity &amp; Drag Guidance ({phone.name})</span>
             </h2>
-            <div className="flex flex-wrap gap-2">
-              {siblingPopular.map((sib) => {
-                const topRoute = findTopPhoneRouteById(sib.id)!;
-                return (
-                  <a
-                    key={sib.id}
-                    href={topRoute.path}
-                    onClick={(e) => handleLinkClick(e, topRoute.path)}
-                    className="px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-[#00FF66]/50 text-xs font-mono-code text-zinc-300 hover:text-[#00FF66] transition-colors"
-                  >
-                    {sib.name}
-                  </a>
-                );
-              })}
-            </div>
+            <span className="text-[11px] font-mono-code text-zinc-400">
+              {activeGameTab === 'freefire_india' ? 'Free Fire India' : 'Free Fire MAX'} • 2-Finger One-Tap Baseline
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {WEAPON_CATEGORY_LIST.map((weaponId) => {
+              const info = WEAPON_CATEGORIES[weaponId];
+              const wOut = computePhoneDefaultOutput(phone, activeGameTab, '2finger', 'onetap', weaponId);
+              const wd = wOut.sensitivity.data as FreeFireSensi;
+              return (
+                <div
+                  key={weaponId}
+                  data-weapon-category={weaponId}
+                  className="p-4 rounded-xl bg-black/50 border border-zinc-800 space-y-2.5 flex flex-col justify-between"
+                >
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <h3 className="font-cyber font-bold text-sm text-[#00FF66]">{info.name}</h3>
+                      <span className="text-[10px] font-mono-code px-2 py-0.5 rounded bg-zinc-900 border border-zinc-800 text-zinc-300">
+                        {info.optimalDistance}
+                      </span>
+                    </div>
+                    <p className="text-[11px] font-mono-code text-zinc-400">
+                      Weapons: <span className="text-zinc-200">{info.representativeGuns.slice(0, 4).join(', ')}</span>
+                    </p>
+                    <div className="grid grid-cols-5 gap-1 pt-1 text-center font-mono-code text-[11px]">
+                      <div className="p-1.5 rounded bg-zinc-950 border border-zinc-800/80">
+                        <span className="block text-[9px] text-zinc-500 uppercase">Gen</span>
+                        <strong className="text-[#00FF66]">{wd.general}</strong>
+                      </div>
+                      <div className="p-1.5 rounded bg-zinc-950 border border-zinc-800/80">
+                        <span className="block text-[9px] text-zinc-500 uppercase">RD</span>
+                        <strong className="text-white">{wd.redDot}</strong>
+                      </div>
+                      <div className="p-1.5 rounded bg-zinc-950 border border-zinc-800/80">
+                        <span className="block text-[9px] text-zinc-500 uppercase">2x</span>
+                        <strong className="text-zinc-200">{wd.scope2x}</strong>
+                      </div>
+                      <div className="p-1.5 rounded bg-zinc-950 border border-zinc-800/80">
+                        <span className="block text-[9px] text-zinc-500 uppercase">4x</span>
+                        <strong className="text-zinc-200">{wd.scope4x}</strong>
+                      </div>
+                      <div className="p-1.5 rounded bg-zinc-950 border border-zinc-800/80">
+                        <span className="block text-[9px] text-zinc-500 uppercase">Awp</span>
+                        <strong className="text-zinc-300">{wd.sniperScope}</strong>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="pt-2 border-t border-zinc-800/70 space-y-1 text-xs">
+                    <div className="flex items-center justify-between text-[11px] font-mono-code text-zinc-400">
+                      <span>Fire: <strong className="text-white">{wOut.fireButton.sizePercent}%</strong></span>
+                      <span>{wOut.fireButton.dragTechniqueName}</span>
+                    </div>
+                    <p className="text-[11px] text-zinc-300 leading-relaxed">{wOut.fireButton.dragTip}</p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </section>
+
+        {/* Related Models (Same Brand + Comparable Cross-Brand Fallback) */}
+        {(siblingPopular.length > 0 || comparablePhones.length > 0) && (
+          <section aria-labelledby="sibling-models-heading" className="pt-4 border-t border-zinc-800/80 space-y-4">
+            {siblingPopular.length > 0 && (
+              <div className="space-y-2.5">
+                <h2 id="sibling-models-heading" className="text-sm font-cyber font-bold text-white flex items-center gap-2">
+                  <Monitor className="w-4 h-4 text-[#00FF66]" />
+                  <span>More Popular {phone.brand} Sensitivity Profiles</span>
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {siblingPopular.map((sib) => {
+                    const topRoute = findTopPhoneRouteById(sib.id)!;
+                    return (
+                      <a
+                        key={sib.id}
+                        href={topRoute.path}
+                        onClick={(e) => handleLinkClick(e, topRoute.path)}
+                        className="px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-[#00FF66]/50 text-xs font-mono-code text-zinc-300 hover:text-[#00FF66] transition-colors"
+                      >
+                        {sib.name}
+                      </a>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {comparablePhones.length > 0 && (
+              <div className="space-y-2.5" data-testid="comparable-phone-links">
+                <h2
+                  id={siblingPopular.length === 0 ? 'sibling-models-heading' : undefined}
+                  className="text-sm font-cyber font-bold text-white flex items-center gap-2"
+                >
+                  <Smartphone className="w-4 h-4 text-[#00FF66]" />
+                  <span>Comparable Cross-Brand Sensitivity Profiles ({hz}Hz / {phone.category} tier)</span>
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {comparablePhones.map((comp) => (
+                    <a
+                      key={comp.id}
+                      href={comp.path}
+                      onClick={(e) => handleLinkClick(e, comp.path)}
+                      className="px-3 py-1.5 rounded-lg bg-zinc-950 border border-zinc-800 hover:border-[#00FF66]/50 text-xs font-mono-code text-zinc-300 hover:text-[#00FF66] transition-colors"
+                    >
+                      {comp.name}{' '}
+                      <span className="text-zinc-500">({comp.brand} • {comp.refreshRate}Hz)</span>
+                    </a>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
         )}
       </article>
