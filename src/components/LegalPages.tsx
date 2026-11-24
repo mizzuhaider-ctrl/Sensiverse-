@@ -6,7 +6,6 @@ import {
   Mail,
   Cookie,
   ExternalLink,
-  AlertTriangle,
   Database,
   Scale,
   Crosshair,
@@ -372,7 +371,7 @@ export const LegalPages: React.FC<LegalPagesProps> = ({ route, onNavigate }) => 
         <Info className="w-6 h-6" />,
         'About SensiVerse',
         'ABOUT US',
-        'Hardware-matched Free Fire India and Free Fire MAX sensitivity, Android DPI, and fire button HUD calibration—built with fair-play transparency.'
+        'Hardware-matched Free Fire, Free Fire MAX, and Free Fire India sensitivity settings, DPI/no-DPI options, and fire button HUD calibration—built with fair-play transparency.'
       )}
 
       <div className="space-y-5 text-xs sm:text-sm text-zinc-300 leading-relaxed">
@@ -381,7 +380,7 @@ export const LegalPages: React.FC<LegalPagesProps> = ({ route, onNavigate }) => 
             Why SensiVerse Exists
           </h2>
           <p>
-            Copying random sensitivity numbers from another player&apos;s phone rarely works in Free Fire India or Free Fire MAX. A compact 6.1-inch 60Hz smartphone and a 6.78-inch 144Hz gaming phone respond completely differently to identical thumb swipe speeds. SensiVerse was created to give mobile players a mathematical, device-aware starting baseline instead of clickbait claims.
+            Copying random sensitivity numbers from another player&apos;s phone rarely works in Free Fire, Free Fire MAX, or Free Fire India. A compact 6.1-inch 60Hz smartphone and a 6.78-inch 144Hz gaming phone respond completely differently to identical thumb swipe speeds. SensiVerse was created to give mobile players worldwide a mathematical, device-aware starting baseline instead of clickbait claims.
           </p>
         </section>
 
@@ -389,10 +388,23 @@ export const LegalPages: React.FC<LegalPagesProps> = ({ route, onNavigate }) => 
           <div className="p-4 rounded-xl bg-black/50 border border-zinc-800/90 space-y-2">
             <div className="flex items-center gap-2 text-[#00FF66] font-cyber text-sm font-bold">
               <Smartphone className="w-4 h-4" />
-              <span>1,089 Phone Profiles</span>
+              <a
+                href="/phones"
+                onClick={(e) => handleLinkClick(e, '/phones')}
+                className="hover:underline"
+              >
+                1,089 Phone Profiles
+              </a>
             </div>
             <p className="text-xs text-zinc-400 leading-relaxed">
-              Covers mainstream Android devices across India and global markets alongside Apple iPhone models, factoring in screen diagonal, refresh rate (60Hz–165Hz), touch polling behavior, and custom device entry.
+              Covers mainstream Android devices across India and global markets alongside Apple iPhone models, factoring in screen diagonal, refresh rate (60Hz–185Hz), touch polling behavior (up to 2880Hz where verified), and custom device entry inside the{' '}
+              <a
+                href="/phones"
+                onClick={(e) => handleLinkClick(e, '/phones')}
+                className="text-[#00FF66] hover:underline"
+              >
+                26-brand phone directory
+              </a>.
             </p>
           </div>
 
@@ -422,7 +434,15 @@ export const LegalPages: React.FC<LegalPagesProps> = ({ route, onNavigate }) => 
             Independent Utility Notice
           </h2>
           <p>
-            SensiVerse operates independently and is not affiliated with Garena or any device manufacturer. All recommendations are designed for manual entry inside official in-game settings and practical validation inside the Training Ground. Have feedback or a phone model suggestion? Visit our{' '}
+            SensiVerse operates independently and is not affiliated with Garena or any device manufacturer. All recommendations are designed for manual entry inside official in-game settings and practical validation inside the Training Ground. Explore our{' '}
+            <a
+              href="/phones"
+              onClick={(e) => handleLinkClick(e, '/phones')}
+              className="text-[#00FF66] hover:underline"
+            >
+              Phone Sensitivity Directory
+            </a>
+            , visit our{' '}
             <a
               href="/contact-us"
               onClick={(e) => handleLinkClick(e, '/contact-us')}
@@ -430,7 +450,7 @@ export const LegalPages: React.FC<LegalPagesProps> = ({ route, onNavigate }) => 
             >
               Contact Us
             </a>{' '}
-            page or return to the{' '}
+            page, or return to the{' '}
             <a
               href="/"
               onClick={(e) => handleLinkClick(e, '/')}
@@ -454,13 +474,20 @@ export const LegalPages: React.FC<LegalPagesProps> = ({ route, onNavigate }) => 
       )}
 
       <div className="space-y-5 text-xs sm:text-sm text-zinc-300 leading-relaxed">
-        <section className="p-4 sm:p-5 rounded-xl bg-amber-500/10 border border-amber-500/30 space-y-2">
-          <div className="flex items-center gap-2 text-amber-300 font-cyber font-bold text-sm">
-            <AlertTriangle className="w-4 h-4 shrink-0" />
-            <span>Contact Email Setup Required</span>
+        <section className="p-4 sm:p-5 rounded-xl bg-[#00FF66]/5 border border-[#00FF66]/30 space-y-2.5">
+          <div className="flex items-center gap-2 text-[#00FF66] font-cyber font-bold text-sm">
+            <Mail className="w-4 h-4 shrink-0" />
+            <span>Official Contact Email</span>
           </div>
           <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed">
-            A public support email address has not yet been configured in the application source code. To avoid publishing an unverified or placeholder email, the site owner must add their verified contact email address here prior to final AdSense review.
+            Reach the SensiVerse site team directly at{' '}
+            <a
+              href="mailto:mizzuhaider@gmail.com"
+              className="text-[#00FF66] hover:underline font-mono-code font-semibold break-all"
+            >
+              mizzuhaider@gmail.com
+            </a>
+            .
           </p>
         </section>
 

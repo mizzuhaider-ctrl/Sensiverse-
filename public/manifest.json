@@ -1,8 +1,8 @@
 {
   "id": "/",
-  "name": "SensiVerse - Free Fire India & MAX Sensitivity, DPI & HUD",
+  "name": "SensiVerse - Free Fire & MAX Sensitivity, DPI & HUD",
   "short_name": "SensiVerse",
-  "description": "Hardware-calibrated 0–200 headshot sensitivity, Android DPI, and fire button HUD generator for Free Fire India and Free Fire MAX.",
+  "description": "Hardware-calibrated 0–200 headshot sensitivity, DPI/no-DPI, and fire button HUD generator for Free Fire, Free Fire MAX, and Free Fire India.",
   "lang": "en",
   "start_url": "/",
   "scope": "/",

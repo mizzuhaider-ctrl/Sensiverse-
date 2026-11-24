@@ -39,12 +39,12 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
 
           <h1 className="text-3xl xs:text-4xl sm:text-5xl lg:text-6xl font-black font-cyber tracking-tight text-white leading-[1.05] w-full">
-            FREE FIRE INDIA &amp; MAX<br />
+            FREE FIRE &amp; MAX<br />
             <span className="text-[#00FF66] drop-shadow-[0_0_20px_rgba(0,255,102,0.6)]">HEADSHOT SENSITIVITY</span>
           </h1>
 
           <p className="text-xs sm:text-sm font-mono-code text-[#00FF66]/90 uppercase tracking-wider">
-            Phone-Calibrated Sensitivity, DPI &amp; Fire Button HUD Generator
+            Phone-Specific Sensitivity Settings, DPI / No-DPI &amp; Fire Button HUD Generator
           </p>
 
           <p className="text-sm sm:text-base text-zinc-300 w-full max-w-2xl mx-auto lg:mx-0 leading-relaxed">
@@ -56,7 +56,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="p-3 sm:p-3.5 rounded-xl bg-black/70 border border-zinc-800/80 hover:border-[#00FF66]/30 transition-colors text-left sm:text-left flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2">
               <div className="flex items-center gap-1.5 text-[#00FF66]">
                 <Gauge className="w-4 h-4 shrink-0" />
-                <span className="font-cyber font-bold text-xs sm:text-sm">60-165Hz</span>
+                <span className="font-cyber font-bold text-xs sm:text-sm">60-185Hz</span>
               </div>
               <p className="text-[11px] text-zinc-400">Frame Sync Calibrated</p>
             </div>
@@ -64,9 +64,9 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             <div className="p-3 sm:p-3.5 rounded-xl bg-black/70 border border-zinc-800/80 hover:border-[#00FF66]/30 transition-colors text-left sm:text-left flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2">
               <div className="flex items-center gap-1.5 text-[#00FF66]">
                 <Cpu className="w-4 h-4 shrink-0" />
-                <span className="font-cyber font-bold text-xs sm:text-sm">720Hz Touch</span>
+                <span className="font-cyber font-bold text-xs sm:text-sm">Up to 2880Hz</span>
               </div>
-              <p className="text-[11px] text-zinc-400">Input Latency Tuned</p>
+              <p className="text-[11px] text-zinc-400">Touch Latency Tuned</p>
             </div>
 
             <div className="p-3 sm:p-3.5 rounded-xl bg-black/70 border border-zinc-800/80 hover:border-[#00FF66]/30 transition-colors text-left sm:text-left flex sm:flex-col items-center sm:items-start justify-between sm:justify-start gap-2">

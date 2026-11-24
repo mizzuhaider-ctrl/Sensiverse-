@@ -56,9 +56,9 @@ export interface DynamicSeoOverrides {
 export const HOME_SEO_METADATA: RouteSeoMetadata = {
   path: '/',
   canonicalUrl: PRODUCTION_CANONICAL_HOME,
-  title: 'Free Fire India & MAX Headshot Sensitivity, DPI | SensiVerse',
+  title: 'Free Fire & MAX Headshot Sensitivity, DPI | SensiVerse',
   description:
-    'Generate 0–200 Free Fire India and Free Fire MAX one-tap and drag headshot sensitivity, Android DPI, and fire button size calibrated for your phone.',
+    'Generate 0–200 Free Fire & MAX headshot sensitivity settings (plus Free Fire India), DPI or no-DPI, and fire button size for your phone.',
 };
 
 export const PHONES_HUB_SEO_METADATA: RouteSeoMetadata = {
@@ -66,7 +66,7 @@ export const PHONES_HUB_SEO_METADATA: RouteSeoMetadata = {
   canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}/phones`,
   title: 'Free Fire Phone Sensitivity & DPI Directory | SensiVerse',
   description:
-    'Browse 26 smartphone brands and 1,089 Free Fire India and Free Fire MAX sensitivity, Android DPI, and fire button HUD profiles.',
+    'Browse 26 phone brands and 1,089 Free Fire, MAX & India sensitivity settings, no-DPI/DPI baselines, and fire button HUD profiles.',
 };
 
 export const LEGAL_ROUTES_SEO: Record<LegalRoutePath, RouteSeoMetadata> = {
@@ -89,7 +89,7 @@ export const LEGAL_ROUTES_SEO: Record<LegalRoutePath, RouteSeoMetadata> = {
     canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}/about-us`,
     title: 'About Us | SensiVerse',
     description:
-      'About SensiVerse: hardware-calibrated Free Fire India & Free Fire MAX sensitivity, Android DPI, and fire button HUD utility.',
+      'About SensiVerse: hardware-calibrated Free Fire, Free Fire MAX & India sensitivity, DPI/no-DPI, and fire button HUD utility.',
   },
   '/contact-us': {
     path: '/contact-us',
@@ -147,7 +147,7 @@ export function getBrandSeoMetadata(
       path,
       canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
       title: 'Apple iPhone Free Fire Sensitivity & iOS Touch | SensiVerse',
-      description: `Calibrated 0–200 Free Fire India & MAX sensitivity, iOS Retina PPI scaling, and fire button size for ${countText}Apple iPhone models${hzText}.`,
+      description: `Calibrated 0–200 Free Fire & MAX headshot sensitivity settings, iOS Retina PPI scaling, and fire button size for ${countText}Apple iPhone models${hzText}.`,
     };
   }
 
@@ -155,7 +155,7 @@ export function getBrandSeoMetadata(
     path,
     canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
     title: `${brand} Free Fire Sensitivity & DPI | SensiVerse`,
-    description: `Hardware-calibrated 0–200 Free Fire India and Free Fire MAX sensitivity, Android DPI, and fire button size for ${countText}${brand} phones${hzText}.`,
+    description: `Calibrated 0–200 Free Fire & MAX headshot sensitivity settings, DPI/no-DPI options & fire button size for ${countText}${brand} phones${hzText}.`,
   };
 }
 
@@ -221,7 +221,7 @@ export function getPhoneSeoMetadata(
       path,
       canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
       title,
-      description: `Calibrated 0–200 Free Fire India & MAX headshot sensitivity${iosScalePart}${firePart} for ${displayName}${specSummary} on iOS.`,
+      description: `Calibrated 0–200 Free Fire & MAX headshot sensitivity settings${iosScalePart}${firePart} for ${displayName}${specSummary} on iOS.`,
     };
   }
 
@@ -240,7 +240,7 @@ export function getPhoneSeoMetadata(
     path,
     canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
     title,
-    description: `Calibrated 0–200 Free Fire India & MAX headshot sensitivity${dpiPart}${firePart} for ${displayName}${specSummary}.`,
+    description: `Calibrated 0–200 Free Fire & MAX headshot sensitivity settings${dpiPart}${firePart} for ${displayName}${specSummary}.`,
   };
 }
 

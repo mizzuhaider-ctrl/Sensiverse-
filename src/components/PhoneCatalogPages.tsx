@@ -271,10 +271,10 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
 
         <div className="space-y-2 pt-1">
           <h1 className="text-2xl sm:text-3xl font-black font-cyber text-white tracking-tight">
-            FREE FIRE INDIA &amp; MAX PHONE SENSITIVITY DIRECTORY
+            FREE FIRE &amp; MAX PHONE SENSITIVITY DIRECTORY
           </h1>
           <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-3xl">
-            Browse hardware-calibrated 0–200 Free Fire India and Free Fire MAX sensitivity profiles, recommended Android Smallest Width (DPI), and fire button HUD settings organized across all 26 supported smartphone brands and top flagship gaming models.
+            Browse hardware-calibrated 0–200 Free Fire, Free Fire MAX, and Free Fire India sensitivity settings, no-DPI or Android Smallest Width (DPI) baselines, and fire button HUD profiles organized across all 26 supported smartphone brands and top flagship gaming models.
           </p>
         </div>
       </div>
@@ -406,13 +406,13 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
           <div className="space-y-2 pt-1">
             <h1 className="text-2xl sm:text-3xl font-black font-cyber text-white tracking-tight">
               {isAppleBrand
-                ? 'APPLE IPHONE FREE FIRE INDIA & MAX SENSITIVITY & IOS TOUCH'
-                : `${brandRoute.brand.toUpperCase()} FREE FIRE INDIA & MAX SENSITIVITY & DPI`}
+                ? 'APPLE IPHONE FREE FIRE & MAX SENSITIVITY & IOS TOUCH'
+                : `${brandRoute.brand.toUpperCase()} FREE FIRE & MAX SENSITIVITY & DPI`}
             </h1>
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-3xl">
               {isAppleBrand
-                ? `Device-calibrated 0–200 sensitivity baselines, native iOS Retina PPI display scaling, and fire button HUD sizing across ${brandStats ? `${brandStats.count} verified Apple iPhone models` : 'Apple iPhone models'}.`
-                : `Device-calibrated 0–200 sensitivity baselines, Android Smallest Width (DPI) recommendations, and fire button HUD sizing across ${brandStats ? `${brandStats.count} verified ${brandRoute.brand} smartphones` : `${brandRoute.brand} smartphones`}.`}
+                ? `Device-calibrated 0–200 headshot sensitivity settings for Free Fire, Free Fire MAX & Free Fire India, native iOS Retina PPI display scaling, and fire button HUD sizing across ${brandStats ? `${brandStats.count} verified Apple iPhone models` : 'Apple iPhone models'}.`
+                : `Device-calibrated 0–200 headshot sensitivity settings (usable with stock no-DPI or Android Smallest Width DPI) for Free Fire, Free Fire MAX & Free Fire India, plus fire button HUD sizing across ${brandStats ? `${brandStats.count} verified ${brandRoute.brand} smartphones` : `${brandRoute.brand} smartphones`}.`}
             </p>
           </div>
 
@@ -500,7 +500,7 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
           <div className="flex items-center justify-between flex-wrap gap-2">
             <h2 id="brand-models-table-heading" className="text-base sm:text-lg font-bold font-cyber text-white flex items-center gap-2">
               <Sliders className="w-4 h-4 text-[#00FF66]" />
-              <span>All {brandRoute.brand} Models — Free Fire India &amp; MAX Baseline Chart</span>
+              <span>All {brandRoute.brand} Models — Free Fire, MAX &amp; India Baseline Chart</span>
             </h2>
             <span className="text-[11px] font-mono-code text-zinc-400">
               2-Finger Thumb • One-Tap Headshot • 0–200 Scale
@@ -769,17 +769,17 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
             </div>
             <h1 className="text-2xl sm:text-3xl font-black font-cyber text-white tracking-tight">
               {isIosDevice
-                ? `${phone.name} FREE FIRE INDIA & MAX SENSITIVITY, IOS TOUCH & FIRE BUTTON`
-                : `${phone.name} FREE FIRE INDIA & MAX SENSITIVITY, DPI & FIRE BUTTON`}
+                ? `${phone.name} FREE FIRE & MAX SENSITIVITY, IOS TOUCH & FIRE BUTTON`
+                : `${phone.name} FREE FIRE & MAX SENSITIVITY, DPI & FIRE BUTTON`}
             </h1>
             <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-3xl">
               {isIosDevice ? (
                 <>
-                  Engine-calibrated 0–200 headshot sensitivity settings for <strong className="text-white">{phone.name}</strong> ({screenSize}&quot; {hz}Hz{phone.chipset ? `, ${phone.chipset}` : ''}), tuned for native iOS Retina display scaling ({iosPpi} PPI) and {primaryOutput.fireButton.sizePercent}% fire button sizing.
+                  Engine-calibrated 0–200 headshot sensitivity settings for <strong className="text-white">{phone.name}</strong> ({screenSize}&quot; {hz}Hz{phone.chipset ? `, ${phone.chipset}` : ''}) across Free Fire, Free Fire MAX &amp; Free Fire India, tuned for native iOS Retina display scaling ({iosPpi} PPI) and {primaryOutput.fireButton.sizePercent}% fire button sizing.
                 </>
               ) : (
                 <>
-                  Engine-calibrated 0–200 headshot sensitivity settings for <strong className="text-white">{phone.name}</strong> ({screenSize}&quot; {hz}Hz{phone.chipset ? `, ${phone.chipset}` : ''}), with {phone.recommendedDpi} Android Smallest Width (DPI) and {primaryOutput.fireButton.sizePercent}% fire button sizing.
+                  Engine-calibrated 0–200 headshot sensitivity settings for <strong className="text-white">{phone.name}</strong> ({screenSize}&quot; {hz}Hz{phone.chipset ? `, ${phone.chipset}` : ''}) across Free Fire, Free Fire MAX &amp; Free Fire India, supporting stock no-DPI settings or {phone.recommendedDpi} Android Smallest Width (DPI) and {primaryOutput.fireButton.sizePercent}% fire button sizing.
                 </>
               )}
             </p>
@@ -929,7 +929,7 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
                 <span>Free Fire India &amp; Free Fire MAX Complete 0–200 Matrix ({phone.name})</span>
               </h3>
               <span className="text-[11px] font-mono-code text-zinc-400">
-                2-Finger Thumb • Direct Engine Comparison
+                2-Finger Thumb • Global Free Fire, MAX &amp; India Comparison
               </span>
             </div>
 

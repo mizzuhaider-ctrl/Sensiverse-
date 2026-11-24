@@ -1453,8 +1453,8 @@ const titleMatch = seoHtmlContent.match(/<title>(.*?)<\/title>/);
 assert(Boolean(titleMatch), 'index.html contains a valid <title> tag');
 const pageTitle = titleMatch ? titleMatch[1] : '';
 assert(
-  pageTitle === 'Free Fire India &amp; MAX Headshot Sensitivity, DPI | SensiVerse',
-  `Title matches Phase 3 Free Fire India & MAX SEO format: "${pageTitle}"`
+  pageTitle === 'Free Fire &amp; MAX Headshot Sensitivity, DPI | SensiVerse',
+  `Title matches Phase 1A Global Free Fire & MAX SEO format: "${pageTitle}"`
 );
 assert(
   pageTitle.replace('&amp;', '&').length >= 30 && pageTitle.replace('&amp;', '&').length <= 60,
@@ -1472,9 +1472,10 @@ assert(
 assert(
   metaDesc.includes('Free Fire') &&
   metaDesc.includes('Free Fire India') &&
-  metaDesc.includes('Free Fire MAX') &&
+  metaDesc.includes('MAX') &&
+  metaDesc.includes('no-DPI') &&
   metaDesc.includes('DPI'),
-  'Meta description naturally incorporates Free Fire India, Free Fire MAX, headshot, and DPI keywords'
+  'Meta description naturally incorporates Free Fire, MAX, Free Fire India, headshot, no-DPI, and DPI keywords'
 );
 assert(
   !metaDesc.toLowerCase().includes('100% headshot') && !metaDesc.toLowerCase().includes('guaranteed headshot'),
@@ -1504,14 +1505,15 @@ assert(
 
 // 4. Social Card & Open Graph Verification
 assert(
-  seoHtmlContent.includes('<meta property="og:title" content="Free Fire India &amp; MAX Headshot Sensitivity, DPI | SensiVerse" />') &&
-  seoHtmlContent.includes('<meta property="og:locale" content="en_IN" />') &&
+  seoHtmlContent.includes('<meta property="og:title" content="Free Fire &amp; MAX Headshot Sensitivity, DPI | SensiVerse" />') &&
+  seoHtmlContent.includes('<meta property="og:locale" content="en_US" />') &&
+  seoHtmlContent.includes('<meta property="og:locale:alternate" content="en_IN" />') &&
   seoHtmlContent.includes('<meta property="og:image:width" content="590" />') &&
   seoHtmlContent.includes('<meta property="og:image:height" content="365" />'),
-  'og:title, locale, and image dimensions are properly configured'
+  'og:title, global og:locale (en_US with en_IN alternate), and image dimensions are properly configured'
 );
 assert(
-  seoHtmlContent.includes('<meta property="og:description" content="Generate 0–200 Free Fire India and Free Fire MAX one-tap and drag headshot sensitivity, Android DPI, and fire button size calibrated for your phone." />'),
+  seoHtmlContent.includes('<meta property="og:description" content="Generate 0–200 Free Fire &amp; MAX headshot sensitivity settings (plus Free Fire India), DPI or no-DPI, and fire button size for your phone." />'),
   'og:description matches meta description'
 );
 assert(
@@ -1519,8 +1521,8 @@ assert(
   'twitter:card uses summary_large_image'
 );
 assert(
-  seoHtmlContent.includes('<meta name="twitter:title" content="Free Fire India &amp; MAX Headshot Sensitivity, DPI | SensiVerse" />') &&
-  seoHtmlContent.includes('<meta name="twitter:description" content="Generate 0–200 Free Fire India and Free Fire MAX one-tap and drag headshot sensitivity, Android DPI, and fire button size calibrated for your phone." />'),
+  seoHtmlContent.includes('<meta name="twitter:title" content="Free Fire &amp; MAX Headshot Sensitivity, DPI | SensiVerse" />') &&
+  seoHtmlContent.includes('<meta name="twitter:description" content="Generate 0–200 Free Fire &amp; MAX headshot sensitivity settings (plus Free Fire India), DPI or no-DPI, and fire button size for your phone." />'),
   'twitter:title and twitter:description match metadata'
 );
 
@@ -1538,7 +1540,7 @@ assert(
   'JSON-LD contains HowTo structured schema'
 );
 
-// Verify FAQPage JSON-LD has 7 questions matching SEOGuideSection visible FAQs 1:1
+// Verify FAQPage JSON-LD has 10 questions matching SEOGuideSection visible FAQs 1:1
 const jsonLdMatch = seoHtmlContent.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/);
 assert(Boolean(jsonLdMatch), 'index.html has parseable JSON-LD script block');
 if (jsonLdMatch) {
@@ -1552,8 +1554,8 @@ if (jsonLdMatch) {
     'JSON-LD includes WebSite node linked to Organization publisher'
   );
   assert(
-    Array.isArray(faqNode?.mainEntity) && faqNode.mainEntity.length === 7,
-    `FAQPage JSON-LD contains all 7 visible FAQs (Got: ${faqNode?.mainEntity?.length})`
+    Array.isArray(faqNode?.mainEntity) && faqNode.mainEntity.length === 10,
+    `FAQPage JSON-LD contains all 10 visible FAQs (Got: ${faqNode?.mainEntity?.length})`
   );
   assert(
     Boolean(
@@ -1572,15 +1574,16 @@ if (jsonLdMatch) {
   );
 }
 
-// Verify all 4 guide tabs and 7 FAQ answers stay mounted in SEOGuideSection DOM
+// Verify all 4 guide articles and 10 FAQ answers stay visibly mounted in SEOGuideSection DOM
 const seoGuideTsx = fs.readFileSync(path.resolve(process.cwd(), 'src/components/SEOGuideSection.tsx'), 'utf-8');
 assert(
   !seoGuideTsx.includes("{activeTab === 'ff_india' &&") &&
   !seoGuideTsx.includes("{activeTab === 'ff_max' &&") &&
   !seoGuideTsx.includes("{activeTab === 'firebutton' &&") &&
   !seoGuideTsx.includes("{activeTab === 'hardware' &&") &&
-  !seoGuideTsx.includes('{isOpen && ('),
-  'SEOGuideSection renders all 4 guide articles and 7 FAQ answers in DOM using CSS visibility toggling'
+  !seoGuideTsx.includes('{isOpen && (') &&
+  !seoGuideTsx.includes('aria-hidden='),
+  'SEOGuideSection renders all 4 guide articles and 10 FAQ answers visibly in DOM without hidden tab gating'
 );
 
 // Verify heading hierarchy & internal anchor links
@@ -4437,8 +4440,8 @@ assert(
   legalPagesCode.includes('https://policies.google.com/technologies/partner-sites') &&
   legalPagesCode.includes('non-personalized ads') &&
   legalPagesCode.includes('no first-party behavioral analytics SDK') &&
-  !legalPagesCode.includes('mailto:'),
-  'LegalPages accurately documents verified localStorage keys, AdSense cookie/opt-out policies, honest analytics status, and invents zero fake contact emails'
+  legalPagesCode.includes('href="mailto:mizzuhaider@gmail.com"'),
+  'LegalPages accurately documents verified localStorage keys, AdSense cookie/opt-out policies, honest analytics status, and official contact email'
 );
 
 assert(
@@ -4536,8 +4539,10 @@ if (fs.existsSync(distHtmlPath)) {
   if (fs.existsSync(distContactPath)) {
     const distContact = fs.readFileSync(distContactPath, 'utf-8');
     assert(
-      distContact.includes('Contact Email Setup Required') && !distContact.includes('mailto:'),
-      'Prerendered dist/contact-us.html preserves Contact Us email placeholder unchanged'
+      !distContact.includes('Contact Email Setup Required') &&
+      distContact.includes('href="mailto:mizzuhaider@gmail.com"') &&
+      distContact.includes('mizzuhaider@gmail.com'),
+      'Prerendered dist/contact-us.html renders official clickable mailto contact email'
     );
   }
 }
@@ -4783,11 +4788,13 @@ assert(
   'All 50 popular phone routes produce 50 unique, concise titles (<= 60 chars)'
 );
 
-// 2. Contact Us email placeholder remains untouched
-const contactPageHtmlCheck = legalPagesCode.includes('Contact Email Setup Required');
+// 2. Contact Us displays official clickable mailto email
+const contactPageHtmlCheck =
+  !legalPagesCode.includes('Contact Email Setup Required') &&
+  legalPagesCode.includes('href="mailto:mizzuhaider@gmail.com"');
 assert(
   contactPageHtmlCheck,
-  'Contact Us placeholder remains unchanged pending owner-confirmed email address'
+  'Contact Us renders official mizzuhaider@gmail.com mailto link without placeholder warning'
 );
 
 // 3. Prerendered dist/ verification for all 83 pages: concise titles, <=160 descriptions, and both FF India + FF MAX matrices
@@ -4985,6 +4992,235 @@ if (fs.existsSync(distHtmlPath)) {
     pocoX7Html.includes('60 FPS') &&
     pocoX7Html.includes('90 FPS'),
     'POCO X7 Pro page renders verified Multi-FPS Scaling comparison for 60 FPS and 90 FPS'
+  );
+}
+
+console.log('\n[TEST GROUP 55] Phase C P1.2a: Homepage Visible Guides/FAQs, Regional Summaries, Catalog Links & About Us Link');
+
+// 1. SEOGuideSection preserves bundle split (never imports ALL_VERIFIED_PHONES) and removes the homepage phone directory section
+assert(
+  !seoGuideTsx.includes('ALL_VERIFIED_PHONES') &&
+  !seoGuideTsx.includes('PHONE_DATABASE') &&
+  !seoGuideTsx.includes('homepage-phone-directory-links') &&
+  !seoGuideTsx.includes('popular-phones-directory') &&
+  !seoGuideTsx.includes('POPULAR FREE FIRE'),
+  'SEOGuideSection omits full verified phone dataset and removes the homepage Popular Phone Sensitivity Guides section'
+);
+
+// 2. Hardware bounds corrections (60-185Hz & up to 2880Hz) across Hero, SEOGuideSection, LegalPages, and index.html
+assert(
+  heroTsx.includes('60-185Hz') &&
+  heroTsx.includes('Up to 2880Hz') &&
+  !heroTsx.includes('60-165Hz') &&
+  seoGuideTsx.includes('60Hz to 185Hz') &&
+  seoGuideTsx.includes('2880Hz') &&
+  legalPagesCode.includes('60Hz–185Hz') &&
+  !legalPagesCode.includes('60Hz–165Hz') &&
+  seoHtmlContent.includes('60Hz to 185Hz, up to 2880Hz touch polling'),
+  'HeroSection, SEOGuideSection, LegalPages, and index.html reflect verified 60-185Hz refresh and up to 2880Hz touch bounds'
+);
+
+// 3. About Us links directly to /phones and Contact Us renders official mailto link
+assert(
+  legalPagesCode.includes('href="/phones"') &&
+  legalPagesCode.includes('1,089 Phone Profiles') &&
+  legalPagesCode.includes('href="mailto:mizzuhaider@gmail.com"'),
+  'About Us links directly to /phones and Contact Us renders official mizzuhaider@gmail.com mailto link'
+);
+
+// 4. Prerendered homepage & about-us verification (when dist/ exists)
+if (fs.existsSync(distHtmlPath)) {
+  const decodeEntities55 = (v: string) =>
+    v
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>');
+
+  const distHomeRaw = fs.readFileSync(distHtmlPath, 'utf-8');
+  const distHomeMainRaw = distHomeRaw.split('<main')[1]?.split('</main>')[0] || '';
+  const distHomeMainText = decodeEntities55(distHomeMainRaw);
+
+  // All 4 guide articles visible in initial SSR HTML without hidden/aria-hidden
+  const guideIds = ['guide-ff-india', 'guide-ff-max', 'guide-firebutton', 'guide-hardware'];
+  assert(
+    guideIds.every((id) => distHomeMainRaw.includes(`id="${id}"`)) &&
+    distHomeMainText.includes('Free Fire India: Sensitivity Calibration & Headshot Guide') &&
+    distHomeMainText.includes('Free Fire MAX: Drag Headshot Physics & Thumb Runway Optimization') &&
+    distHomeMainText.includes('Fire Button Layout: HUD Button Sizing, Runway Mechanics & Headshot-Focused Settings') &&
+    distHomeMainText.includes('Hardware-Based Recommendations: Refresh Rates (60Hz–185Hz), Touch Polling & Input Latency'),
+    'All 4 educational guides are visibly rendered inside prerendered dist/index.html <main>'
+  );
+
+  // Exact 1:1 parity between index.html FAQPage JSON-LD (10 questions) and visible #faq answers in dist/index.html
+  const jsonLd55 = JSON.parse(seoHtmlContent.match(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/)![1]);
+  const faqItems55 = jsonLd55['@graph']?.find((n: any) => n['@type'] === 'FAQPage')?.mainEntity || [];
+  const faqSectionHtml = (distHomeMainRaw.split('id="faq"')[1] || '').split('</div>\n    </section>')[0] || '';
+  assert(
+    faqItems55.length === 10 &&
+    !faqSectionHtml.includes('class="hidden"') &&
+    !/<(?!svg\b)[^>]*aria-hidden="true"/i.test(faqSectionHtml) &&
+    faqItems55.every((item: any) =>
+      distHomeMainText.includes(item.name) &&
+      distHomeMainText.includes(item.acceptedAnswer?.text || '')
+    ),
+    'All 10 FAQ questions & answers render visibly in dist/index.html and match FAQPage JSON-LD 1:1'
+  );
+
+  // Verified Brazil & Indonesia summaries
+  assert(
+    distHomeMainRaw.includes('data-testid="regional-presets-summary"') &&
+    distHomeMainText.includes('Free Fire Mania (Guia de Sensibilidade)') &&
+    distHomeMainText.includes('Dunia Games (Telkomsel Gaming Portal)') &&
+    distHomeMainText.includes('145 – 170') &&
+    distHomeMainText.includes('150 – 175'),
+    'Prerendered dist/index.html renders verified Brazilian and Indonesian editorial range summaries'
+  );
+
+  // Homepage omits removed popular phone directory section while preserving /phones and all 26 brand links in DeviceSelector + Footer
+  assert(
+    !distHomeRaw.includes('data-testid="homepage-phone-directory-links"') &&
+    !distHomeRaw.includes('id="popular-phones-directory"') &&
+    !distHomeRaw.includes('POPULAR FREE FIRE &amp; MAX PHONE SENSITIVITY GUIDES') &&
+    distHomeRaw.includes('href="/phones"') &&
+    BRAND_SLUG_ENTRIES.every((b) => distHomeRaw.includes(`href="${b.path}"`)),
+    'Prerendered dist/index.html omits the removed Popular Phone Guides section while preserving /phones and all 26 brand links via DeviceSelector and Footer'
+  );
+
+  // About Us prerendered page links to /phones
+  const distAboutHtml = fs.readFileSync(path.resolve(process.cwd(), 'dist/about-us.html'), 'utf-8');
+  const distAboutMain = distAboutHtml.split('<main')[1]?.split('</main>')[0] || '';
+  assert(
+    distAboutMain.includes('href="/phones"'),
+    'Prerendered dist/about-us.html links directly to /phones inside <main>'
+  );
+}
+
+console.log('\n[TEST GROUP 56] Phase 1A: Global English SEO Optimization, No-DPI Targeting & Preserved 83 Routes');
+
+// 1. No fake hreflang tags, HTML lang="en" preserved, AdSense script preserved
+assert(
+  seoHtmlContent.includes('<html lang="en"') &&
+  !/hreflang=/i.test(seoHtmlContent) &&
+  seoHtmlContent.includes('ca-pub-7778237012266559'),
+  'index.html keeps global lang="en", zero fake hreflang tags, and intact AdSense verification script'
+);
+
+// 2. All 1,089 generated phone SEO metadata remain <= 60 title / <= 160 description and globally framed
+assert(
+  allGeneratedPhoneTitles.every(
+    ({ meta }) =>
+      meta.title.length <= 60 &&
+      meta.description.length <= 160 &&
+      !meta.title.includes('Free Fire India') &&
+      !meta.description.includes('Free Fire India')
+  ),
+  `All ${allGeneratedPhoneTitles.length} phone SEO titles (<= 60) and descriptions (<= 160) are globally framed for Free Fire & MAX`
+);
+
+// 3. Prerendered checks across all 83 HTML routes for Phase 1A global headings & preserved Free Fire India content
+if (fs.existsSync(distHtmlPath)) {
+  const decodeHtml56 = (v: string) =>
+    v
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/&amp;/g, '&')
+      .replace(/&quot;/g, '"')
+      .replace(/&#x27;/g, "'")
+      .replace(/&#39;/g, "'")
+      .replace(/&lt;/g, '<')
+      .replace(/&gt;/g, '>');
+
+  const homeRaw56 = fs.readFileSync(distHtmlPath, 'utf-8');
+  const homeMain56 = decodeHtml56(homeRaw56.split('<main')[1]?.split('</main>')[0] || '');
+  const homeH1Match56 = homeMain56.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i);
+  const homeH1Text56 = (homeH1Match56?.[1] || '').replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+  assert(
+    homeH1Text56 === 'FREE FIRE & MAX HEADSHOT SENSITIVITY' &&
+    homeMain56.includes('no-DPI') &&
+    homeMain56.includes('Free Fire India') &&
+    homeMain56.includes('Free Fire MAX') &&
+    !/hreflang=/i.test(homeRaw56),
+    'Prerendered homepage renders global H1, no-DPI targeting, preserved Free Fire India content, and zero fake hreflang tags'
+  );
+
+  const hubRaw56 = fs.readFileSync(path.resolve(process.cwd(), 'dist/phones.html'), 'utf-8');
+  const hubMain56 = decodeHtml56(hubRaw56.split('<main')[1]?.split('</main>')[0] || '');
+  assert(
+    hubMain56.includes('FREE FIRE & MAX PHONE SENSITIVITY DIRECTORY') &&
+    hubMain56.includes('no-DPI') &&
+    hubMain56.includes('Free Fire India'),
+    'Prerendered /phones hub renders global H1 with no-DPI and preserved Free Fire India coverage'
+  );
+
+  let brandH1GlobalPass = 0;
+  for (const b of BRAND_SLUG_ENTRIES) {
+    const bRaw = fs.readFileSync(path.resolve(process.cwd(), `dist/phones/${b.slug}.html`), 'utf-8');
+    const bH1 = decodeHtml56((bRaw.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || '').replace(/<[^>]+>/g, ' '));
+    if (bH1.includes('FREE FIRE & MAX') && !bH1.includes('FREE FIRE INDIA') && bRaw.includes('FF India (Gen/RD)')) {
+      brandH1GlobalPass++;
+    }
+  }
+  assert(
+    brandH1GlobalPass === 26,
+    `All 26 brand pages use global FREE FIRE & MAX H1 while preserving Free Fire India tables (${brandH1GlobalPass}/26)`
+  );
+
+  let phoneH1GlobalPass = 0;
+  for (const ph of TOP_50_PHONE_ROUTES) {
+    const pRaw = fs.readFileSync(path.resolve(process.cwd(), `dist/phones/${ph.brandSlug}/${ph.modelSlug}.html`), 'utf-8');
+    const pH1 = decodeHtml56((pRaw.match(/<h1[^>]*>([\s\S]*?)<\/h1>/i)?.[1] || '').replace(/<[^>]+>/g, ' '));
+    if (
+      pH1.includes('FREE FIRE & MAX') &&
+      !pH1.includes('FREE FIRE INDIA') &&
+      pRaw.includes('data-game-engine="freefire_india"') &&
+      pRaw.includes('data-game-engine="freefire_max"')
+    ) {
+      phoneH1GlobalPass++;
+    }
+  }
+  assert(
+    phoneH1GlobalPass === 50,
+    `All 50 phone pages use global FREE FIRE & MAX H1 while preserving dual Free Fire India & MAX matrices (${phoneH1GlobalPass}/50)`
+  );
+}
+
+console.log('\n[TEST GROUP 57] Phase 1B: ads.txt Seller Declaration, Vercel Accessibility & Contact Us Email');
+
+const publicAdsTxtPath = path.resolve(process.cwd(), 'public/ads.txt');
+assert(fs.existsSync(publicAdsTxtPath), 'public/ads.txt exists');
+
+const adsTxtContent = fs.readFileSync(publicAdsTxtPath, 'utf-8').trim();
+const adsTxtMatch = adsTxtContent.match(/^google\.com,\s*(pub-\d+),\s*DIRECT,\s*f08c47fec0942fa0$/);
+const indexPublisherMatch = seoHtmlContent.match(/client=ca-(pub-\d+)/);
+assert(
+  Boolean(adsTxtMatch) &&
+  Boolean(indexPublisherMatch) &&
+  adsTxtMatch![1] === indexPublisherMatch![1] &&
+  adsTxtContent === 'google.com, pub-7778237012266559, DIRECT, f08c47fec0942fa0',
+  'public/ads.txt uses exact Google AdSense DIRECT seller declaration matching index.html publisher ID'
+);
+
+assert(
+  !vercelRewriteRegex.test('/ads.txt') && vercelConfigContent.includes('ads\\\\.txt'),
+  'vercel.json excludes /ads.txt from SPA fallback rewrites so https://sensiverse.vercel.app/ads.txt is publicly accessible'
+);
+
+const adsenseUnitCode = fs.readFileSync(path.resolve(process.cwd(), 'src/components/AdSenseUnit.tsx'), 'utf-8');
+assert(
+  !adsenseUnitCode.includes('adsbygoogle') &&
+  seoHtmlContent.includes('client=ca-pub-7778237012266559'),
+  'AdSenseUnit remains unchanged (no live ad units added) while AdSense verification script stays intact'
+);
+
+if (fs.existsSync(distHtmlPath)) {
+  const distAdsTxtPath = path.resolve(process.cwd(), 'dist/ads.txt');
+  assert(
+    fs.existsSync(distAdsTxtPath) &&
+    fs.readFileSync(distAdsTxtPath, 'utf-8').trim() === adsTxtContent,
+    'Production build emits dist/ads.txt matching public/ads.txt 1:1'
   );
 }
 

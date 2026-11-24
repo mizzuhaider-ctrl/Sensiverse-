@@ -17,7 +17,7 @@
       ]
     },
     {
-      "source": "/(manifest\\.json|robots\\.txt|sitemap\\.xml)",
+      "source": "/(manifest\\.json|robots\\.txt|sitemap\\.xml|ads\\.txt)",
       "headers": [
         {
           "key": "Cache-Control",
@@ -32,7 +32,7 @@
   ],
   "rewrites": [
     {
-      "source": "/((?!api/|assets/|favicon|apple-touch-icon|manifest\\.json|robots\\.txt|sitemap\\.xml|sensiverse-logo|google|(?:about-us|contact-us|privacy-policy|terms-and-conditions|cookie-policy|phones(?:/(?:apple(?:/(?:iphone-17-pro-max|iphone-16-pro-max|iphone-15-pro-max|iphone-15|iphone-14|iphone-13))?|samsung(?:/(?:samsung-galaxy-s25-ultra|samsung-galaxy-s24-ultra|samsung-galaxy-s24|samsung-galaxy-a55-5g))?|poco(?:/(?:poco-x7-pro|poco-x6-pro|poco-f6|poco-x3-pro|poco-m6-pro-5g))?|iqoo(?:/(?:iqoo-13|iqoo-neo-10|iqoo-neo-9-pro|iqoo-z9|iqoo-z9s-pro))?|oneplus(?:/(?:oneplus-13|oneplus-12r|nord-4|nord-ce-4))?|realme(?:/(?:gt-6|gt-6t|realme-13-pro-plus|realme-narzo-70-pro))?|redmi(?:/(?:note-14-pro-plus-5g-2024|note-13-pro-plus-5g-2023|note-13-5g-2023))?|vivo(?:/(?:vivo-x200-pro|vivo-v40-pro|vivo-t3-pro))?|xiaomi(?:/(?:xiaomi-14|xiaomi-11t-pro))?|infinix(?:/(?:infinix-gt-30-pro|infinix-gt-20-pro))?|oppo(?:/(?:oppo-reno12-pro-5g|oppo-f27-pro-plus-5g))?|motorola(?:/(?:motorola-edge-50-pro|motorola-edge-50-fusion))?|nothing(?:/(?:nothing-phone-3a-pro|nothing-phone-2a))?|asus-rog(?:/(?:rog-phone-9-pro|rog-phone-8-pro))?|redmagic(?:/redmagic-10-pro)?|google-pixel(?:/pixel-9-pro)?|tecno(?:/tecno-camon-30-pro-5g)?|cmf(?:/cmf-phone-2)?|black-shark|lenovo-legion|sony-xperia|huawei|honor|itel|hmd|fairphone))?)(?:\\.html)?$).*)",
+      "source": "/((?!api/|assets/|favicon|apple-touch-icon|manifest\\.json|robots\\.txt|sitemap\\.xml|ads\\.txt|sensiverse-logo|google|(?:about-us|contact-us|privacy-policy|terms-and-conditions|cookie-policy|phones(?:/(?:apple(?:/(?:iphone-17-pro-max|iphone-16-pro-max|iphone-15-pro-max|iphone-15|iphone-14|iphone-13))?|samsung(?:/(?:samsung-galaxy-s25-ultra|samsung-galaxy-s24-ultra|samsung-galaxy-s24|samsung-galaxy-a55-5g))?|poco(?:/(?:poco-x7-pro|poco-x6-pro|poco-f6|poco-x3-pro|poco-m6-pro-5g))?|iqoo(?:/(?:iqoo-13|iqoo-neo-10|iqoo-neo-9-pro|iqoo-z9|iqoo-z9s-pro))?|oneplus(?:/(?:oneplus-13|oneplus-12r|nord-4|nord-ce-4))?|realme(?:/(?:gt-6|gt-6t|realme-13-pro-plus|realme-narzo-70-pro))?|redmi(?:/(?:note-14-pro-plus-5g-2024|note-13-pro-plus-5g-2023|note-13-5g-2023))?|vivo(?:/(?:vivo-x200-pro|vivo-v40-pro|vivo-t3-pro))?|xiaomi(?:/(?:xiaomi-14|xiaomi-11t-pro))?|infinix(?:/(?:infinix-gt-30-pro|infinix-gt-20-pro))?|oppo(?:/(?:oppo-reno12-pro-5g|oppo-f27-pro-plus-5g))?|motorola(?:/(?:motorola-edge-50-pro|motorola-edge-50-fusion))?|nothing(?:/(?:nothing-phone-3a-pro|nothing-phone-2a))?|asus-rog(?:/(?:rog-phone-9-pro|rog-phone-8-pro))?|redmagic(?:/redmagic-10-pro)?|google-pixel(?:/pixel-9-pro)?|tecno(?:/tecno-camon-30-pro-5g)?|cmf(?:/cmf-phone-2)?|black-shark|lenovo-legion|sony-xperia|huawei|honor|itel|hmd|fairphone))?)(?:\\.html)?$).*)",
       "destination": "/index.html"
     }
   ]

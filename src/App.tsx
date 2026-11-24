@@ -1269,7 +1269,11 @@ export default function App() {
           <EthicalDisclaimer />
 
           {/* Section 8: In-Depth Hardware SEO Guides & FAQ */}
-          <SEOGuideSection />
+          <SEOGuideSection
+            onNavigate={navigateTo}
+            onOpenBrazilianSensi={() => setIsBrazilianModalOpen(true)}
+            onOpenIndonesianSensi={() => setIsIndonesianModalOpen(true)}
+          />
 
         </div>
 
