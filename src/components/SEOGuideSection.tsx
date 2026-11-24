@@ -34,9 +34,21 @@ const GUIDE_ANCHORS = [
 ] as const;
 
 export const SEOGuideSection: React.FC<SEOGuideSectionProps> = ({
+  onNavigate,
   onOpenBrazilianSensi,
   onOpenIndonesianSensi,
 }) => {
+  const handleInternalNav = (
+    e: React.MouseEvent<HTMLAnchorElement>,
+    path: string,
+    hash?: string
+  ) => {
+    if (!onNavigate) return;
+    if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+    e.preventDefault();
+    playCyberClick('click');
+    onNavigate(path, hash);
+  };
   const [collapsedFaqs, setCollapsedFaqs] = useState<Record<number, boolean>>({});
   const [activeGuide, setActiveGuide] = useState<
     'ff_india' | 'ff_max' | 'firebutton' | 'hardware'
@@ -361,7 +373,15 @@ export const SEOGuideSection: React.FC<SEOGuideSectionProps> = ({
           </div>
 
           <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed">
-            Copying professional player sensitivity numbers without matching their display specs is the #1 cause of aiming inconsistency. Display hardware dictates the exact relationship between physical touch and in-game camera rotation across SensiVerse&apos;s 1,089 supported models.
+            Copying professional player sensitivity numbers without matching their display specs is the #1 cause of aiming inconsistency. Display hardware dictates the exact relationship between physical touch and in-game camera rotation across SensiVerse&apos;s{' '}
+            <a
+              href="/phones"
+              onClick={(e) => handleInternalNav(e, '/phones')}
+              className="text-[#00FF66] hover:underline underline-offset-2 font-semibold"
+            >
+              1,089 supported models and 26 smartphone brands
+            </a>
+            .
           </p>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-1">
@@ -449,7 +469,7 @@ export const SEOGuideSection: React.FC<SEOGuideSectionProps> = ({
               </div>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Also includes internal heuristic 120Hz ProMotion (General {PHASE9_BRAZILIAN_PROFILES[1].values.general}) and 60Hz Standard (General {PHASE9_BRAZILIAN_PROFILES[2].values.general}) starting estimates.
+              Built for Brazil (<strong className="text-zinc-200">sensibilidade Free Fire para subir capa</strong>, sem DPI or Menor Largura DPI, and <strong className="text-zinc-200">tamanho do botão de atirar</strong>), plus internal heuristic 120Hz ProMotion (General {PHASE9_BRAZILIAN_PROFILES[1].values.general}) and 60Hz Standard (General {PHASE9_BRAZILIAN_PROFILES[2].values.general}) starting estimates.
             </p>
             {onOpenBrazilianSensi && (
               <button
@@ -504,7 +524,7 @@ export const SEOGuideSection: React.FC<SEOGuideSectionProps> = ({
               </div>
             </div>
             <p className="text-[11px] text-zinc-400 leading-relaxed">
-              Also includes internal heuristic 120Hz Rusher (General {INDONESIAN_SENSI_PROFILES[1].values.general}) and 60Hz Stability (General {INDONESIAN_SENSI_PROFILES[2].values.general}) adaptations with single-click Revert support.
+              Tuned for Indonesia &amp; SEA (<strong className="text-zinc-200">sensitivitas Free Fire auto headshot</strong>, tanpa DPI, and <strong className="text-zinc-200">ukuran tombol tembak FF</strong>), plus 120Hz Rusher (General {INDONESIAN_SENSI_PROFILES[1].values.general}) and 60Hz Stability (General {INDONESIAN_SENSI_PROFILES[2].values.general}) adaptations with single-click Revert.
             </p>
             {onOpenIndonesianSensi && (
               <button
@@ -519,6 +539,50 @@ export const SEOGuideSection: React.FC<SEOGuideSectionProps> = ({
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Worldwide LATAM, PH/US/EU & Weapon/HUD Quick Reference */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 pt-1">
+          <div className="p-4 rounded-xl bg-black/50 border border-zinc-800 space-y-2">
+            <h3 className="font-cyber font-bold text-xs sm:text-sm text-[#00FF66]">
+              🌎 LATAM (MX, CO, AR), PH, US &amp; EUROPE SENSITIVITY CALIBRATION
+            </h3>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Players across Mexico, Colombia, Argentina, Spain (<strong className="text-white">sensibilidad Free Fire para dar todo rojo</strong>, <strong className="text-white">sin DPI</strong>, y <strong className="text-white">botón de disparo 42%–54%</strong>), the Philippines, USA, India, and Europe can calibrate exact 0–200 sliders by{' '}
+              <a
+                href="/phones"
+                onClick={(e) => handleInternalNav(e, '/phones')}
+                className="text-[#00FF66] hover:underline underline-offset-2"
+              >
+                phone brand &amp; model
+              </a>{' '}
+              with 2-finger thumb or 3/4-finger{' '}
+              <a href="#fire-button-hud" className="text-[#00FF66] hover:underline underline-offset-2">
+                HUD layout coordinates
+              </a>.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl bg-black/50 border border-zinc-800 space-y-2">
+            <h3 className="font-cyber font-bold text-xs sm:text-sm text-[#00FF66]">
+              🎯 WEAPON-CLASS SENSITIVITY &amp; SCOPE COMPARISON
+            </h3>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Compare calibrated sensitivity across all 6 weapon roles in the{' '}
+              <a href="#step-6-results" className="text-[#00FF66] hover:underline underline-offset-2">
+                live generator
+              </a>{' '}
+              or per-device{' '}
+              <a
+                href="/phones"
+                onClick={(e) => handleInternalNav(e, '/phones')}
+                className="text-[#00FF66] hover:underline underline-offset-2"
+              >
+                phone guides
+              </a>
+              : <strong className="text-white">SMG</strong> (MP40, UMP), <strong className="text-white">Shotgun</strong> (M1887, M1014), <strong className="text-white">AR</strong> (AK, M4A1, SCAR), <strong className="text-white">Sniper</strong> (AWM, M82B), <strong className="text-white">Pistol</strong> (Desert Eagle), and <strong className="text-white">Marksman</strong> (Woodpecker, SVD).
+            </p>
           </div>
         </div>
       </section>

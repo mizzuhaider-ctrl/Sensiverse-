@@ -274,8 +274,35 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
             FREE FIRE &amp; MAX PHONE SENSITIVITY DIRECTORY
           </h1>
           <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-3xl">
-            Browse hardware-calibrated 0–200 Free Fire, Free Fire MAX, and Free Fire India sensitivity settings, no-DPI or Android Smallest Width (DPI) baselines, and fire button HUD profiles organized across all 26 supported smartphone brands and top flagship gaming models.
+            Browse hardware-calibrated 0–200 Free Fire, Free Fire MAX, and Free Fire India sensitivity settings, no-DPI or Android Smallest Width (DPI) baselines, 2/3/4-finger HUD layouts, weapon-class charts, and fire button profiles across all 26 smartphone brands. Built for global players in Brazil (<em>sensibilidade</em>), LATAM &amp; Spain (<em>sensibilidad sin DPI</em>), Indonesia (<em>sensitivitas FF</em>), India, USA, Philippines, and Europe.
           </p>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1" data-testid="hub-calibration-highlights">
+          <div className="p-3.5 rounded-xl bg-black/50 border border-zinc-800 space-y-1">
+            <span className="text-[11px] font-cyber font-bold text-[#00FF66] block">
+              NO-DPI, ANDROID DPI &amp; IOS RETINA PPI
+            </span>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Every model supports stock no-DPI play or optional Android Smallest Width (DPI) tuning—while Apple iPhone profiles calibrate strictly around native iOS Retina PPI.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-black/50 border border-zinc-800 space-y-1">
+            <span className="text-[11px] font-cyber font-bold text-[#00FF66] block">
+              2/3/4-FINGER HUD &amp; FIRE BUTTON
+            </span>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Compare 2-finger thumb and 3/4-finger claw HUD coordinates, joystick sizing, and lower-quadrant 40%–55% fire button sizing tuned per screen diagonal.
+            </p>
+          </div>
+          <div className="p-3.5 rounded-xl bg-black/50 border border-zinc-800 space-y-1">
+            <span className="text-[11px] font-cyber font-bold text-[#00FF66] block">
+              6-CLASS WEAPON SENSITIVITY MATRIX
+            </span>
+            <p className="text-xs text-zinc-300 leading-relaxed">
+              Inspect tailored drag speeds for SMG (MP40, UMP), Shotgun (M1887), AR (AK, SCAR), Sniper (AWM), Pistol (Desert Eagle), and Marksman rifles.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -430,7 +457,7 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
               </div>
               <div className="p-3 rounded-xl bg-black/60 border border-zinc-800">
                 <span className="text-[10px] font-mono-code text-zinc-400 uppercase block">
-                  {isAppleBrand ? 'iOS Retina PPI' : 'Recommended DPI'}
+                  {isAppleBrand ? 'iOS Display Scaling' : 'Recommended DPI'}
                 </span>
                 <span className="text-base sm:text-lg font-cyber font-bold text-white">
                   {isAppleBrand
@@ -445,6 +472,48 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
               <div className="p-3 rounded-xl bg-black/60 border border-zinc-800">
                 <span className="text-[10px] font-mono-code text-zinc-400 uppercase block">Esports / Gaming Tier</span>
                 <span className="text-base sm:text-lg font-cyber font-bold text-white">{brandStats.gamingCount} Models</span>
+              </div>
+            </div>
+          )}
+
+          {brandStats && (
+            <div
+              data-testid="brand-calibration-guide"
+              className="grid grid-cols-1 md:grid-cols-3 gap-3 pt-1 text-xs text-zinc-300 leading-relaxed"
+            >
+              <div className="p-3.5 rounded-xl bg-black/40 border border-zinc-800/90 space-y-1">
+                <span className="text-[11px] font-cyber font-bold text-[#00FF66] block">
+                  {isAppleBrand ? 'Native iOS Retina Touch Scaling' : `${brandRoute.brand} No-DPI vs DPI Tuning`}
+                </span>
+                <p className="text-zinc-300">
+                  {isAppleBrand
+                    ? `SensiVerse calibrates all ${brandStats.count} Apple iPhone profiles around ${brandStats.minPpi === brandStats.maxPpi ? `${brandStats.maxPpi} PPI` : `${brandStats.minPpi}–${brandStats.maxPpi} PPI`} native Retina touch response and ${brandStats.minHz}Hz–${brandStats.maxHz}Hz frame pacing—no unsafe system overrides required.`
+                    : `All ${brandStats.count} ${brandRoute.brand} baselines work smoothly with stock no-DPI scaling (0–200 in-game sliders), or optional ${brandStats.minDpi === brandStats.maxDpi ? brandStats.maxDpi : `${brandStats.minDpi}–${brandStats.maxDpi}`} Developer Options width across ${brandStats.minHz === brandStats.maxHz ? `${brandStats.maxHz}Hz` : `${brandStats.minHz}Hz–${brandStats.maxHz}Hz`} displays.`}
+                </p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-black/40 border border-zinc-800/90 space-y-1">
+                <span className="text-[11px] font-cyber font-bold text-[#00FF66] block">
+                  HUD Layout &amp; Fire Button Range
+                </span>
+                <p className="text-zinc-300">
+                  Pair 2-finger thumb or 3/4-finger claw HUD layouts with a 40%–55% lower-quadrant Fire Button to preserve upward drag runway during close-range duels.
+                </p>
+              </div>
+              <div className="p-3.5 rounded-xl bg-black/40 border border-zinc-800/90 space-y-1">
+                <span className="text-[11px] font-cyber font-bold text-[#00FF66] block">
+                  Weapons &amp; Live Customization
+                </span>
+                <p className="text-zinc-300">
+                  Compare Free Fire India and Free Fire MAX values below or{' '}
+                  <a
+                    href="/?game=freefire_max"
+                    onClick={(e) => handleLinkClick(e, '/', '#step-6-results')}
+                    className="text-[#00FF66] hover:underline font-semibold"
+                  >
+                    tune SMG (MP40), Shotgun (M1887), AR &amp; AWM scopes live
+                  </a>
+                  .
+                </p>
               </div>
             </div>
           )}
@@ -985,7 +1054,7 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
           <div className="p-4 sm:p-5 rounded-xl bg-black/50 border border-zinc-800 space-y-3" data-testid="hud-positioning-panel">
             <h2 id="grip-comparison-heading" className="text-sm sm:text-base font-cyber font-bold text-white flex items-center gap-2">
               <Crosshair className="w-4 h-4 text-[#00FF66]" />
-              <span>Thumb vs Claw Grip &amp; HUD Positioning</span>
+              <span>2/3/4-Finger HUD Layout, Grip &amp; Fire Button Positioning</span>
             </h2>
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono-code border-collapse">
@@ -1089,10 +1158,10 @@ export const PhoneCatalogPages: React.FC<PhoneCatalogPagesProps> = ({
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 id="weapon-class-guidance-heading" className="text-base sm:text-lg font-bold font-cyber text-white flex items-center gap-2">
               <Sliders className="w-4 h-4 text-[#00FF66]" />
-              <span>Weapon-Class Sensitivity &amp; Drag Guidance ({phone.name})</span>
+              <span>Weapon-Class Sensitivity Comparison ({phone.name})</span>
             </h2>
             <span className="text-[11px] font-mono-code text-zinc-400">
-              {activeGameTab === 'freefire_india' ? 'Free Fire India' : 'Free Fire MAX'} • 2-Finger One-Tap Baseline
+              {activeGameTab === 'freefire_india' ? 'Free Fire India' : 'Free Fire MAX'} • SMG vs Shotgun vs AR vs Sniper (0–200)
             </span>
           </div>
 

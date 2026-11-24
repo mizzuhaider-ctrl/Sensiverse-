@@ -36,6 +36,8 @@ import {
   PHASE9_BRAZILIAN_PROFILES 
 } from '../src/data/brazilSensiProfiles';
 import {
+  HOME_SEO_METADATA,
+  PHONES_HUB_SEO_METADATA,
   PRODUCTION_CANONICAL_HOME,
   PRODUCTION_CANONICAL_ORIGIN,
   resolveCanonicalUrl,
@@ -1513,7 +1515,7 @@ assert(
   'og:title, global og:locale (en_US with en_IN alternate), and image dimensions are properly configured'
 );
 assert(
-  seoHtmlContent.includes('<meta property="og:description" content="Generate 0–200 Free Fire &amp; MAX headshot sensitivity settings (plus Free Fire India), DPI or no-DPI, and fire button size for your phone." />'),
+  seoHtmlContent.includes(`<meta property="og:description" content="${HOME_SEO_METADATA.description.replace(/&/g, '&amp;')}" />`),
   'og:description matches meta description'
 );
 assert(
@@ -1522,7 +1524,7 @@ assert(
 );
 assert(
   seoHtmlContent.includes('<meta name="twitter:title" content="Free Fire &amp; MAX Headshot Sensitivity, DPI | SensiVerse" />') &&
-  seoHtmlContent.includes('<meta name="twitter:description" content="Generate 0–200 Free Fire &amp; MAX headshot sensitivity settings (plus Free Fire India), DPI or no-DPI, and fire button size for your phone." />'),
+  seoHtmlContent.includes(`<meta name="twitter:description" content="${HOME_SEO_METADATA.description.replace(/&/g, '&amp;')}" />`),
   'twitter:title and twitter:description match metadata'
 );
 
@@ -5221,6 +5223,80 @@ if (fs.existsSync(distHtmlPath)) {
     fs.existsSync(distAdsTxtPath) &&
     fs.readFileSync(distAdsTxtPath, 'utf-8').trim() === adsTxtContent,
     'Production build emits dist/ads.txt matching public/ads.txt 1:1'
+  );
+}
+
+console.log('\n[TEST GROUP 58] Global Multi-Market SEO Optimization, Brand/Hub Enrichments & Truthfulness Guardrails');
+
+// 1. Homepage SEO metadata & Schema.org WebApplication feature coverage
+assert(
+  HOME_SEO_METADATA.description.length <= 160 &&
+  HOME_SEO_METADATA.description.includes('no-DPI') &&
+  HOME_SEO_METADATA.description.includes('HUD layout') &&
+  PHONES_HUB_SEO_METADATA.description.length <= 160 &&
+  PHONES_HUB_SEO_METADATA.description.includes('HUD layouts') &&
+  seoHtmlContent.includes('sensibilidade free fire') &&
+  seoHtmlContent.includes('sensibilidad free fire') &&
+  seoHtmlContent.includes('sensitivitas free fire') &&
+  seoHtmlContent.includes('Weapon-class sensitivity comparisons'),
+  'Homepage SEO, /phones metadata, and WebApplication JSON-LD cover global & multi-market search intent truthfully'
+);
+
+// 2. SEOGuideSection contextual /phones link & honest regional/weapon summaries without banned tools or homepage phone cards
+const excludedFakeToolTerms = [
+  'Diamond Calculator',
+  'Redeem Code',
+  'Stylish Nickname',
+  'Player ID Profile',
+  'Character Combination',
+];
+assert(
+  seoGuideTsx.includes('href="/phones"') &&
+  seoGuideTsx.includes('sensibilidade Free Fire para subir capa') &&
+  seoGuideTsx.includes('sensibilidad Free Fire para dar todo rojo') &&
+  seoGuideTsx.includes('sensitivitas Free Fire auto headshot') &&
+  seoGuideTsx.includes('WEAPON-CLASS SENSITIVITY') &&
+  excludedFakeToolTerms.every((term) => !seoGuideTsx.includes(term) && !seoHtmlContent.includes(term)),
+  'SEOGuideSection links contextually to /phones, adds honest BR/LATAM/ID/Weapon references, and avoids fake tools'
+);
+
+// 3. Prerendered /phones hub, all 26 brand pages, and all 50 phone pages reflect enrichments & Apple iOS safety
+if (fs.existsSync(distHtmlPath)) {
+  const hubHtml58 = fs.readFileSync(path.resolve(process.cwd(), 'dist/phones.html'), 'utf-8');
+  assert(
+    hubHtml58.includes('data-testid="hub-calibration-highlights"') &&
+    hubHtml58.includes('6-CLASS WEAPON SENSITIVITY MATRIX'),
+    'Prerendered /phones hub includes calibration, HUD & 6-class weapon highlights'
+  );
+
+  let brandGuidePass = 0;
+  for (const b of BRAND_SLUG_ENTRIES) {
+    const bh = fs.readFileSync(path.resolve(process.cwd(), `dist/phones/${b.slug}.html`), 'utf-8');
+    if (bh.includes('data-testid="brand-calibration-guide"')) {
+      brandGuidePass++;
+    }
+  }
+  assert(
+    brandGuidePass === 26,
+    `All 26 prerendered brand pages render dynamic Brand Calibration, No-DPI/iOS & HUD Guide (${brandGuidePass}/26)`
+  );
+
+  let phoneWeaponComparisonPass = 0;
+  for (const ph of TOP_50_PHONE_ROUTES) {
+    const pHtml58 = fs.readFileSync(
+      path.resolve(process.cwd(), `dist/phones/${ph.brandSlug}/${ph.modelSlug}.html`),
+      'utf-8'
+    );
+    if (
+      pHtml58.includes('2/3/4-Finger HUD Layout, Grip &amp; Fire Button Positioning') &&
+      pHtml58.includes('Weapon-Class Sensitivity Comparison')
+    ) {
+      phoneWeaponComparisonPass++;
+    }
+  }
+  assert(
+    phoneWeaponComparisonPass === 50,
+    `All 50 prerendered phone pages include updated HUD Layout & Weapon-Class Sensitivity Comparison headings (${phoneWeaponComparisonPass}/50)`
   );
 }
 

@@ -58,7 +58,7 @@ export const HOME_SEO_METADATA: RouteSeoMetadata = {
   canonicalUrl: PRODUCTION_CANONICAL_HOME,
   title: 'Free Fire & MAX Headshot Sensitivity, DPI | SensiVerse',
   description:
-    'Generate 0–200 Free Fire & MAX headshot sensitivity settings (plus Free Fire India), DPI or no-DPI, and fire button size for your phone.',
+    'Generate 0–200 Free Fire & MAX headshot sensitivity settings (plus Free Fire India), no-DPI or DPI, HUD layout & fire button size for 1,089 phones.',
 };
 
 export const PHONES_HUB_SEO_METADATA: RouteSeoMetadata = {
@@ -66,7 +66,7 @@ export const PHONES_HUB_SEO_METADATA: RouteSeoMetadata = {
   canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}/phones`,
   title: 'Free Fire Phone Sensitivity & DPI Directory | SensiVerse',
   description:
-    'Browse 26 phone brands and 1,089 Free Fire, MAX & India sensitivity settings, no-DPI/DPI baselines, and fire button HUD profiles.',
+    'Browse 26 brands & 1,089 Free Fire, MAX & India phone sensitivity settings, no-DPI/DPI baselines, HUD layouts, weapon charts & fire button.',
 };
 
 export const LEGAL_ROUTES_SEO: Record<LegalRoutePath, RouteSeoMetadata> = {
@@ -147,7 +147,7 @@ export function getBrandSeoMetadata(
       path,
       canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
       title: 'Apple iPhone Free Fire Sensitivity & iOS Touch | SensiVerse',
-      description: `Calibrated 0–200 Free Fire & MAX headshot sensitivity settings, iOS Retina PPI scaling, and fire button size for ${countText}Apple iPhone models${hzText}.`,
+      description: `Calibrated 0–200 Free Fire & MAX headshot sensitivity, iOS Retina PPI scaling, HUD layout & fire button size for ${countText}Apple iPhone models${hzText}.`,
     };
   }
 
@@ -155,7 +155,7 @@ export function getBrandSeoMetadata(
     path,
     canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
     title: `${brand} Free Fire Sensitivity & DPI | SensiVerse`,
-    description: `Calibrated 0–200 Free Fire & MAX headshot sensitivity settings, DPI/no-DPI options & fire button size for ${countText}${brand} phones${hzText}.`,
+    description: `Calibrated 0–200 Free Fire & MAX headshot sensitivity, no-DPI/DPI, HUD layout & fire button size for ${countText}${brand} phones${hzText}.`,
   };
 }
 
@@ -217,11 +217,14 @@ export function getPhoneSeoMetadata(
           ? conciseIosTitle
           : fallbackIosTitle;
 
+    const enrichedIosDesc = `Calibrated 0–200 Free Fire & MAX headshot sensitivity${iosScalePart}${firePart}, HUD & weapons for ${displayName}${specSummary} on iOS.`;
+    const fallbackIosDesc = `Calibrated 0–200 Free Fire & MAX headshot sensitivity settings${iosScalePart}${firePart} for ${displayName}${specSummary} on iOS.`;
+
     return {
       path,
       canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
       title,
-      description: `Calibrated 0–200 Free Fire & MAX headshot sensitivity settings${iosScalePart}${firePart} for ${displayName}${specSummary} on iOS.`,
+      description: enrichedIosDesc.length <= 160 ? enrichedIosDesc : fallbackIosDesc,
     };
   }
 
@@ -235,12 +238,14 @@ export function getPhoneSeoMetadata(
         ? conciseTitle
         : fallbackTitle;
   const dpiPart = specs?.dpi ? `, ${specs.dpi} DPI` : '';
+  const enrichedAndroidDesc = `Calibrated 0–200 Free Fire & MAX headshot sensitivity${dpiPart}${firePart}, no-DPI & HUD for ${displayName}${specSummary}.`;
+  const fallbackAndroidDesc = `Calibrated 0–200 Free Fire & MAX headshot sensitivity settings${dpiPart}${firePart} for ${displayName}${specSummary}.`;
 
   return {
     path,
     canonicalUrl: `${PRODUCTION_CANONICAL_ORIGIN}${path}`,
     title,
-    description: `Calibrated 0–200 Free Fire & MAX headshot sensitivity settings${dpiPart}${firePart} for ${displayName}${specSummary}.`,
+    description: enrichedAndroidDesc.length <= 160 ? enrichedAndroidDesc : fallbackAndroidDesc,
   };
 }
 
